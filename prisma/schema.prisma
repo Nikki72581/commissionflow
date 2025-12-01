@@ -1,0 +1,161 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza19tUHRPckFnSkt6SFBQRFFhcmV3dEoiLCJhcGlfa2V5IjoiMDFLQkRWMktXU0c3VFo4RlI3VjdXRjJLNEgiLCJ0ZW5hbnRfaWQiOiI0NGI5ZTY0MGNjNTQ4OTdmNWIyMDRmYjY4YzIxOWUwMTFlYzgwYTU3NzQ5YTMxYmEzZjBlMzMxMGQwYzRiYjdiIiwiaW50ZXJuYWxfc2VjcmV0IjoiMTBkNzExYTItNWVjMy00MDkyLWE1YmYtYzFiODNkYmI0ZWVjIn0.66K4gz5Wvr9N4qy3Sfts_cqwTg8R_ohfK2B2phRqQcY")
+}
+
+enum UserRole {
+  ADMIN
+  SALESPERSON
+}
+
+enum PlanTier {
+  STARTER
+  GROWTH
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum CommissionStatus {
+  PENDING
+  CALCULATED
+  APPROVED
+  PAID
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  planTier  PlanTier @default(STARTER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users                User[]
+  commissionPlans      CommissionPlan[]
+  salesTransactions    SalesTransaction[]
+  commissionCalculations CommissionCalculation[]
+  payouts              Payout[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  clerkId        String   @unique
+  email          String
+  firstName      String?
+  lastName       String?
+  role           UserRole @default(SALESPERSON)
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesTransactions      SalesTransaction[]
+  commissionCalculations CommissionCalculation[]
+  payouts                Payout[]
+
+  @@index([organizationId])
+  @@index([clerkId])
+  @@map("users")
+}
+
+model CommissionPlan {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  description    String?
+  structure      Json // Flexible JSON structure for commission rules
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  commissionCalculations CommissionCalculation[]
+
+  @@index([organizationId])
+  @@index([active])
+  @@map("commission_plans")
+}
+
+model SalesTransaction {
+  id             String   @id @default(cuid())
+  organizationId String
+  salespersonId  String
+  amount         Float
+  date           DateTime
+  product        String?
+  description    String?
+  metadata       Json? // Additional flexible data
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesperson            User                    @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  commissionCalculations CommissionCalculation[]
+
+  @@index([organizationId])
+  @@index([salespersonId])
+  @@index([date])
+  @@map("sales_transactions")
+}
+
+model CommissionCalculation {
+  id            String           @id @default(cuid())
+  transactionId String
+  salespersonId String
+  planId        String
+  organizationId String
+  amount        Float
+  status        CommissionStatus @default(PENDING)
+  period        String // e.g., "2024-01" for January 2024
+  calculatedAt  DateTime         @default(now())
+  approvedAt    DateTime?
+  notes         String?
+
+  transaction  SalesTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  salesperson  User             @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  plan         CommissionPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([salespersonId])
+  @@index([period])
+  @@index([status])
+  @@map("commission_calculations")
+}
+
+model Payout {
+  id             String        @id @default(cuid())
+  organizationId String
+  salespersonId  String
+  amount         Float
+  period         String
+  status         PayoutStatus  @default(PENDING)
+  paidAt         DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  notes          String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesperson  User         @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([salespersonId])
+  @@index([period])
+  @@index([status])
+  @@map("payouts")
+}
