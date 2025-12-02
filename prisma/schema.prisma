@@ -1,4 +1,4 @@
-// prisma/schema.prisma
+// prisma/schema.prisma (Prisma 7)
 
 generator client {
   provider = "prisma-client-js"
@@ -6,7 +6,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("prisma+postgres://accelerate.prisma-data.net/?api_key=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqd3RfaWQiOjEsInNlY3VyZV9rZXkiOiJza19tUHRPckFnSkt6SFBQRFFhcmV3dEoiLCJhcGlfa2V5IjoiMDFLQkRWMktXU0c3VFo4RlI3VjdXRjJLNEgiLCJ0ZW5hbnRfaWQiOiI0NGI5ZTY0MGNjNTQ4OTdmNWIyMDRmYjY4YzIxOWUwMTFlYzgwYTU3NzQ5YTMxYmEzZjBlMzMxMGQwYzRiYjdiIiwiaW50ZXJuYWxfc2VjcmV0IjoiMTBkNzExYTItNWVjMy00MDkyLWE1YmYtYzFiODNkYmI0ZWVjIn0.66K4gz5Wvr9N4qy3Sfts_cqwTg8R_ohfK2B2phRqQcY")
+  // No url here in Prisma 7
 }
 
 enum UserRole {
@@ -78,7 +78,7 @@ model CommissionPlan {
   organizationId String
   name           String
   description    String?
-  structure      Json // Flexible JSON structure for commission rules
+  structure      Json
   active         Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -99,7 +99,7 @@ model SalesTransaction {
   date           DateTime
   product        String?
   description    String?
-  metadata       Json? // Additional flexible data
+  metadata       Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -121,7 +121,7 @@ model CommissionCalculation {
   organizationId String
   amount        Float
   status        CommissionStatus @default(PENDING)
-  period        String // e.g., "2024-01" for January 2024
+  period        String
   calculatedAt  DateTime         @default(now())
   approvedAt    DateTime?
   notes         String?
