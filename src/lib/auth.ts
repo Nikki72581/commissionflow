@@ -15,6 +15,7 @@ export async function getCurrentUserWithOrg() {
     include: { organization: true },
   });
 
+  // If user doesn't exist in our database, they need to complete onboarding
   if (!user) {
     redirect('/onboarding');
   }
@@ -30,4 +31,14 @@ export async function requireAdmin() {
   }
 
   return user;
+}
+
+export async function getClerkUser() {
+  const clerkUser = await currentUser();
+  
+  if (!clerkUser) {
+    redirect('/sign-in');
+  }
+
+  return clerkUser;
 }
