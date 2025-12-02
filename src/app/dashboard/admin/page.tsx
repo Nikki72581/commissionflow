@@ -144,7 +144,7 @@ export default async function AdminDashboard() {
             <CardDescription>
               Upload sales transactions to calculate commissions
             </CardDescription>
-          </CardContent>
+          </CardHeader>
           <CardContent>
             <Button asChild variant="outline" className="w-full">
               <Link href="/dashboard/admin/import">Import Now</Link>
