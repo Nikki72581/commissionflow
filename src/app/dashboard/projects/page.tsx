@@ -45,19 +45,19 @@ async function ProjectsTable({ searchQuery }: { searchQuery?: string }) {
     )
   }
 
-  let projects = projectsResult.data
-  const clients = clientsResult.data
+  let projects = projectsResult.data || []
+const clients = clientsResult.data || []
 
-  // Filter by search query
-  if (searchQuery) {
-    const query = searchQuery.toLowerCase()
-    projects = projects.filter(
-      (project) =>
-        project.name.toLowerCase().includes(query) ||
-        project.client.name.toLowerCase().includes(query) ||
-        project.description?.toLowerCase().includes(query)
-    )
-  }
+// Filter by search query
+if (searchQuery && projects.length > 0) {
+  const query = searchQuery.toLowerCase()
+  projects = projects.filter(
+    (project) =>
+      project.name.toLowerCase().includes(query) ||
+      project.client.name.toLowerCase().includes(query) ||
+      project.description?.toLowerCase().includes(query)
+  )
+}
 
   if (projects.length === 0) {
     if (searchQuery) {
@@ -174,7 +174,7 @@ export default async function ProjectsPage({
   searchParams: { search?: string }
 }) {
   const clientsResult = await getClients()
-  const clients = clientsResult.success ? clientsResult.data : []
+  const clients = clientsResult.data ?? []
 
   return (
     <div className="space-y-6">

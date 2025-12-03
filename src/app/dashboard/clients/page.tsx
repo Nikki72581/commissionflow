@@ -34,17 +34,17 @@ async function ClientsTable({ searchQuery }: { searchQuery?: string }) {
     )
   }
 
-  let clients = result.data
+  let clients = result.data || []
 
-  // Filter by search query
-  if (searchQuery) {
-    const query = searchQuery.toLowerCase()
-    clients = clients.filter(
-      (client) =>
-        client.name.toLowerCase().includes(query) ||
-        client.email?.toLowerCase().includes(query)
-    )
-  }
+// Filter by search query
+if (searchQuery && clients.length > 0) {
+  const query = searchQuery.toLowerCase()
+  clients = clients.filter(
+    (client) =>
+      client.name.toLowerCase().includes(query) ||
+      client.email?.toLowerCase().includes(query)
+  )
+}
 
   if (clients.length === 0) {
     if (searchQuery) {
