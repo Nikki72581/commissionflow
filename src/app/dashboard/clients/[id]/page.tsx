@@ -1,0 +1,195 @@
+import { Suspense } from 'react'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { ArrowLeft, Briefcase, Calendar, Mail, Phone, MapPin } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+import { EmptyState } from '@/components/ui/empty-state'
+import { getClient } from '@/app/actions/clients'
+import { ProjectFormDialog } from '@/components/projects/project-form-dialog'
+import { ProjectActions } from '@/components/projects/project-actions'
+import { formatDate } from '@/lib/utils'
+
+async function ClientDetails({ clientId }: { clientId: string }) {
+  const result = await getClient(clientId)
+
+  if (!result.success || !result.data) {
+    notFound()
+  }
+
+  const client = result.data
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard/clients">
+              <Button variant="ghost" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">{client.name}</h1>
+              <p className="text-muted-foreground">
+                Client since {formatDate(client.createdAt)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        {/* Client Information */}
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle>Client Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {client.email && (
+              <div className="flex items-start gap-3">
+                <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Email</p>
+                  <a
+                    href={`mailto:${client.email}`}
+                    className="text-sm text-muted-foreground hover:underline"
+                  >
+                    {client.email}
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {client.phone && (
+              <div className="flex items-start gap-3">
+                <Phone className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Phone</p>
+                  <a
+                    href={`tel:${client.phone}`}
+                    className="text-sm text-muted-foreground hover:underline"
+                  >
+                    {client.phone}
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {client.address && (
+              <div className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Address</p>
+                  <p className="text-sm text-muted-foreground">{client.address}</p>
+                </div>
+              </div>
+            )}
+
+            {client.notes && (
+              <>
+                <Separator />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Notes</p>
+                  <p className="text-sm text-muted-foreground">{client.notes}</p>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Projects */}
+        <Card className="md:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle>Projects</CardTitle>
+            <ProjectFormDialog
+              clients={[client]}
+              defaultClientId={client.id}
+            />
+          </CardHeader>
+          <CardContent>
+            {client.projects.length === 0 ? (
+              <EmptyState
+                icon={Briefcase}
+                title="No projects yet"
+                description="Create a project to start tracking commissions for this client."
+              />
+            ) : (
+              <div className="space-y-3">
+                {client.projects.map((project) => (
+                  <div
+                    key={project.id}
+                    className="flex items-center justify-between rounded-lg border p-4"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/dashboard/projects/${project.id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {project.name}
+                        </Link>
+                        <Badge
+                          variant={
+                            project.status === 'active'
+                              ? 'default'
+                              : project.status === 'completed'
+                              ? 'secondary'
+                              : 'outline'
+                          }
+                        >
+                          {project.status}
+                        </Badge>
+                      </div>
+                      {project.description && (
+                        <p className="text-sm text-muted-foreground">
+                          {project.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(project.createdAt)}
+                        </span>
+                        {project.commissionPlans.length > 0 && (
+                          <span>
+                            {project.commissionPlans.length} commission{' '}
+                            {project.commissionPlans.length === 1 ? 'plan' : 'plans'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <ProjectActions project={project} clients={[client]} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+function ClientDetailsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="h-20 bg-muted animate-pulse rounded" />
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="h-96 bg-muted animate-pulse rounded" />
+        <div className="md:col-span-2 h-96 bg-muted animate-pulse rounded" />
+      </div>
+    </div>
+  )
+}
+
+export default function ClientPage({ params }: { params: { id: string } }) {
+  return (
+    <Suspense fallback={<ClientDetailsSkeleton />}>
+      <ClientDetails clientId={params.id} />
+    </Suspense>
+  )
+}
