@@ -166,6 +166,10 @@ async function ClientDetails({ clientId }: { clientId: string }) {
                       project={{
                         ...project,
                         status: project.status as 'active' | 'completed' | 'cancelled',
+                        client,
+                        _count: {
+                          salesTransactions: project.commissionPlans.length,
+                        },
                       }}
                       clients={[client]}
                     />
