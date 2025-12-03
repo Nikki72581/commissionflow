@@ -1,0 +1,51 @@
+import { z } from 'zod'
+
+/**
+ * Schema for creating a sales transaction
+ */
+export const createSalesTransactionSchema = z.object({
+  amount: z.number().min(0.01, 'Amount must be greater than 0'),
+  transactionDate: z.string().min(1, 'Transaction date is required'),
+  description: z.string().optional(),
+  projectId: z.string().min(1, 'Project is required'),
+  userId: z.string().min(1, 'Salesperson is required'),
+  commissionPlanId: z.string().optional(), // If not provided, will use project's default plan
+})
+
+/**
+ * Schema for updating a sales transaction
+ */
+export const updateSalesTransactionSchema = z.object({
+  amount: z.number().min(0.01, 'Amount must be greater than 0').optional(),
+  transactionDate: z.string().optional(),
+  description: z.string().optional(),
+  projectId: z.string().optional(),
+  userId: z.string().optional(),
+  commissionPlanId: z.string().optional(),
+})
+
+/**
+ * Schema for CSV import row
+ */
+export const csvImportRowSchema = z.object({
+  amount: z.string().min(1, 'Amount is required'),
+  date: z.string().min(1, 'Date is required'),
+  description: z.string().optional(),
+  projectName: z.string().min(1, 'Project name is required'),
+  salespersonEmail: z.string().email('Valid email is required'),
+})
+
+/**
+ * Schema for bulk approval
+ */
+export const bulkApproveSchema = z.object({
+  calculationIds: z.array(z.string()).min(1, 'At least one calculation must be selected'),
+})
+
+/**
+ * Types inferred from schemas
+ */
+export type CreateSalesTransactionInput = z.infer<typeof createSalesTransactionSchema>
+export type UpdateSalesTransactionInput = z.infer<typeof updateSalesTransactionSchema>
+export type CsvImportRow = z.infer<typeof csvImportRowSchema>
+export type BulkApproveInput = z.infer<typeof bulkApproveSchema>
