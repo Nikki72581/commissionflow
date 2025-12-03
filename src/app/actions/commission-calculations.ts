@@ -151,7 +151,7 @@ export async function approveCalculation(calculationId: string) {
       data: {
         status: 'APPROVED',
         approvedAt: new Date(),
-      } as any,
+      },
       include: {
         salesTransaction: true,
         user: true,
@@ -210,7 +210,7 @@ export async function bulkApproveCalculations(data: BulkApproveInput) {
       data: {
         status: 'APPROVED',
         approvedAt: new Date(),
-      } as any,
+      },
     })
 
     revalidatePath('/dashboard/commissions')
@@ -261,7 +261,7 @@ export async function markCalculationPaid(calculationId: string) {
       data: {
         status: 'PAID',
         paidAt: new Date(),
-      } as any,
+      },
       include: {
         salesTransaction: true,
         user: true,

@@ -22,7 +22,7 @@ import {
 
 interface CommissionActionsProps {
   calculationId: string
-  status: 'PENDING' | 'APPROVED' | 'PAID'
+  status: 'PENDING' | 'CALCULATED' | 'APPROVED' | 'PAID'
   amount: number
 }
 
@@ -80,8 +80,8 @@ export function CommissionActions({ calculationId, status, amount }: CommissionA
   return (
     <>
       <div className="flex items-center gap-2">
-        {/* Approve button - only for PENDING */}
-        {status === 'PENDING' && (
+        {/* Approve button - for PENDING and CALCULATED */}
+        {(status === 'PENDING' || status === 'CALCULATED') && (
           <Button
             onClick={() => setShowApproveDialog(true)}
             size="sm"
@@ -104,8 +104,8 @@ export function CommissionActions({ calculationId, status, amount }: CommissionA
           </Button>
         )}
 
-        {/* Reject button - for PENDING and APPROVED */}
-        {(status === 'PENDING' || status === 'APPROVED') && (
+        {/* Reject button - for PENDING, CALCULATED and APPROVED */}
+        {(status === 'PENDING' || status === 'CALCULATED' || status === 'APPROVED') && (
           <Button
             onClick={() => setShowRejectDialog(true)}
             size="sm"

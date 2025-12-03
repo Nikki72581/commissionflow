@@ -210,6 +210,8 @@ model CommissionCalculation {
   amount             Float            // Calculated commission amount
   status             CommissionStatus @default(PENDING)
   calculatedAt       DateTime         @default(now())
+  approvedAt         DateTime?        // When the commission was approved
+  paidAt             DateTime?        // When the commission was paid
   createdAt          DateTime         @default(now())
   updatedAt          DateTime         @updatedAt
 
