@@ -162,7 +162,13 @@ async function ClientDetails({ clientId }: { clientId: string }) {
                         )}
                       </div>
                     </div>
-                    <ProjectActions project={project} clients={[client]} />
+                    <ProjectActions
+                      project={{
+                        ...project,
+                        status: project.status as 'active' | 'completed' | 'cancelled',
+                      }}
+                      clients={[client]}
+                    />
                   </div>
                 ))}
               </div>
