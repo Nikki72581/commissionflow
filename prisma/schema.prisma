@@ -1,4 +1,4 @@
-// prisma/schema.prisma (Prisma 7)
+// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -8,6 +8,10 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ============================================
+// ENUMS
+// ============================================
 
 enum UserRole {
   ADMIN
@@ -35,6 +39,16 @@ enum PayoutStatus {
   FAILED
 }
 
+enum CommissionRuleType {
+  PERCENTAGE    // % of revenue
+  FLAT_AMOUNT   // Fixed amount per sale
+  TIERED        // Different rates at different thresholds
+}
+
+// ============================================
+// CORE MODELS
+// ============================================
+
 model Organization {
   id        String   @id @default(cuid())
   name      String
@@ -43,11 +57,13 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users                User[]
-  commissionPlans      CommissionPlan[]
-  salesTransactions    SalesTransaction[]
+  users                  User[]
+  clients                Client[]
+  projects               Project[]
+  commissionPlans        CommissionPlan[]
+  salesTransactions      SalesTransaction[]
   commissionCalculations CommissionCalculation[]
-  payouts              Payout[]
+  payouts                Payout[]
 
   @@map("organizations")
 }
@@ -73,89 +89,162 @@ model User {
   @@map("users")
 }
 
-model CommissionPlan {
+model Client {
   id             String   @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
   organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projects     Project[]
+
+  @@index([organizationId])
+  @@map("clients")
+}
+
+model Project {
+  id             String   @id @default(cuid())
   name           String
   description    String?
-  structure      Json
-  active         Boolean  @default(true)
+  clientId       String
+  organizationId String
+  startDate      DateTime?
+  endDate        DateTime?
+  status         String   @default("active") // active, completed, cancelled
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client            Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  commissionPlans   CommissionPlan[]
+  salesTransactions SalesTransaction[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@map("projects")
+}
+
+// ============================================
+// COMMISSION PLANNING MODELS
+// ============================================
+
+model CommissionPlan {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  projectId      String?
+  organizationId String
+  isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project                Project?                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rules                  CommissionRule[]
   commissionCalculations CommissionCalculation[]
 
   @@index([organizationId])
-  @@index([active])
+  @@index([projectId])
   @@map("commission_plans")
 }
 
+model CommissionRule {
+  id               String              @id @default(cuid())
+  commissionPlanId String
+  ruleType         CommissionRuleType
+  percentage       Float?              // For PERCENTAGE type
+  flatAmount       Float?              // For FLAT_AMOUNT type
+  tierThreshold    Float?              // For TIERED type - revenue threshold
+  tierPercentage   Float?              // For TIERED type - rate above threshold
+  minAmount        Float?              // Minimum commission
+  maxAmount        Float?              // Maximum commission (cap)
+  description      String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  commissionPlan CommissionPlan @relation(fields: [commissionPlanId], references: [id], onDelete: Cascade)
+
+  @@index([commissionPlanId])
+  @@map("commission_rules")
+}
+
+// ============================================
+// TRANSACTION & CALCULATION MODELS
+// ============================================
+
 model SalesTransaction {
-  id             String   @id @default(cuid())
-  organizationId String
-  salespersonId  String
+  id             String    @id @default(cuid())
   amount         Float
-  date           DateTime
-  product        String?
+  projectId      String
+  userId         String    // Salesperson who made the sale
+  organizationId String
+  transactionDate DateTime @default(now())
   description    String?
-  metadata       Json?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  invoiceNumber  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  salesperson            User                    @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  project                Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   commissionCalculations CommissionCalculation[]
 
   @@index([organizationId])
-  @@index([salespersonId])
-  @@index([date])
+  @@index([projectId])
+  @@index([userId])
+  @@index([transactionDate])
   @@map("sales_transactions")
 }
 
 model CommissionCalculation {
-  id            String           @id @default(cuid())
-  transactionId String
-  salespersonId String
-  planId        String
-  organizationId String
-  amount        Float
-  status        CommissionStatus @default(PENDING)
-  period        String
-  calculatedAt  DateTime         @default(now())
-  approvedAt    DateTime?
-  notes         String?
+  id                 String           @id @default(cuid())
+  salesTransactionId String
+  commissionPlanId   String
+  userId             String           // Salesperson earning the commission
+  organizationId     String
+  amount             Float            // Calculated commission amount
+  status             CommissionStatus @default(PENDING)
+  calculatedAt       DateTime         @default(now())
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
-  transaction  SalesTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  salesperson  User             @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
-  plan         CommissionPlan   @relation(fields: [planId], references: [id], onDelete: Cascade)
-  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesTransaction SalesTransaction @relation(fields: [salesTransactionId], references: [id], onDelete: Cascade)
+  commissionPlan   CommissionPlan   @relation(fields: [commissionPlanId], references: [id], onDelete: Cascade)
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payout           Payout?          @relation(fields: [payoutId], references: [id])
+  payoutId         String?
 
   @@index([organizationId])
-  @@index([salespersonId])
-  @@index([period])
+  @@index([salesTransactionId])
+  @@index([userId])
   @@index([status])
   @@map("commission_calculations")
 }
 
 model Payout {
   id             String        @id @default(cuid())
+  userId         String        // Salesperson receiving payout
   organizationId String
-  salespersonId  String
   amount         Float
-  period         String
   status         PayoutStatus  @default(PENDING)
-  paidAt         DateTime?
+  paymentMethod  String?
+  paymentDate    DateTime?
+  notes          String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-  notes          String?
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  salesperson  User         @relation(fields: [salespersonId], references: [id], onDelete: Cascade)
+  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commissions  CommissionCalculation[]
 
   @@index([organizationId])
-  @@index([salespersonId])
-  @@index([period])
+  @@index([userId])
   @@index([status])
   @@map("payouts")
 }
