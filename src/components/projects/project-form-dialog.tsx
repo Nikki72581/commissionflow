@@ -33,7 +33,7 @@ interface Project {
   clientId: string
   startDate?: Date | null
   endDate?: Date | null
-  status: string
+  status: 'active' | 'completed' | 'cancelled'
 }
 
 interface ProjectFormDialogProps {
@@ -56,7 +56,9 @@ export function ProjectFormDialog({
   const [selectedClientId, setSelectedClientId] = useState(
     project?.clientId || defaultClientId || ''
   )
-  const [selectedStatus, setSelectedStatus] = useState(project?.status || 'active')
+  const [selectedStatus, setSelectedStatus] = useState<'active' | 'completed' | 'cancelled'>(
+    (project?.status as 'active' | 'completed' | 'cancelled') || 'active'
+  )
 
   const isEdit = !!project
 
@@ -197,7 +199,7 @@ export function ProjectFormDialog({
 
             <div className="grid gap-2">
               <Label htmlFor="status">Status</Label>
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <Select value={selectedStatus} onValueChange={value => setSelectedStatus(value as 'active' | 'completed' | 'cancelled')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
