@@ -23,33 +23,12 @@ export const metadata = {
   description: 'Manage your sales transactions',
 }
 
-// Helper function to get users (we need to create this action)
-async function getUsersList() {
-  // This will fetch all users in the organization
-  // For now, return empty array - we'll create this action next
-  return { success: true, data: [] }
-}
-
 async function SalesTable({ searchQuery }: { searchQuery?: string }) {
-  const [salesResult, projectsResult] = await Promise.all([
+  const [salesResult, projectsResult, usersResult] = await Promise.all([
     getSalesTransactions(),
     getProjects(),
+    getUsers(),
   ])
-
-  // Get users from Prisma directly for now
-  const { prisma } = await import('@/lib/db')
-  const { auth } = await import('@clerk/nextjs/server')
-  const { userId } = await auth()
-  
-  const currentUser = await prisma.user.findUnique({
-    where: { clerkId: userId! },
-    select: { organizationId: true },
-  })
-
-  const users = await prisma.user.findMany({
-    where: { organizationId: currentUser?.organizationId },
-    select: { id: true, firstName: true, lastName: true, email: true },
-  })
 
   if (!salesResult.success) {
     return (
@@ -69,6 +48,7 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
 
   let sales = salesResult.data || []
   const projects = projectsResult.data || []
+  const users = usersResult.success ? usersResult.data || [] : []
 
   // Filter by search query
   if (searchQuery && sales.length > 0) {
@@ -192,23 +172,13 @@ export default async function SalesPage({
 }: {
   searchParams: { search?: string }
 }) {
-  const [projectsResult] = await Promise.all([getProjects()])
-  const projects = projectsResult.success ? projectsResult.data : []
-
-  // Get users from Prisma
-  const { prisma } = await import('@/lib/db')
-  const { auth } = await import('@clerk/nextjs/server')
-  const { userId } = await auth()
+  const [projectsResult, usersResult] = await Promise.all([
+    getProjects(),
+    getUsers(),
+  ])
   
-  const currentUser = await prisma.user.findUnique({
-    where: { clerkId: userId! },
-    select: { organizationId: true },
-  })
-
-  const users = await prisma.user.findMany({
-    where: { organizationId: currentUser?.organizationId },
-    select: { id: true, firstName: true, lastName: true, email: true },
-  })
+  const projects = projectsResult.success ? projectsResult.data : []
+  const users = usersResult.success ? usersResult.data : []
 
   return (
     <div className="space-y-6">
