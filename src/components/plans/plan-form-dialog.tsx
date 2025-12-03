@@ -151,12 +151,12 @@ export function CommissionPlanFormDialog({
 
             <div className="grid gap-2">
               <Label htmlFor="projectId">Attach to Project (Optional)</Label>
-              <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+              <Select value={selectedProjectId || 'none'} onValueChange={(value) => setSelectedProjectId(value === 'none' ? '' : value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a project (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No project (general plan)</SelectItem>
+                  <SelectItem value="none">No project (general plan)</SelectItem>
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name} ({project.client.name})
