@@ -21,14 +21,14 @@ export default async function SalespersonDashboard() {
   ] = await Promise.all([
     db.commissionCalculation.aggregate({
       where: { 
-        salespersonId: user.id,
+        userId: user.id,
         status: { in: ['APPROVED', 'PAID'] }
       },
       _sum: { amount: true }
     }),
     db.commissionCalculation.aggregate({
       where: { 
-        salespersonId: user.id,
+        userId: user.id,
         calculatedAt: {
           gte: monthStart,
           lte: monthEnd
@@ -38,13 +38,13 @@ export default async function SalespersonDashboard() {
     }),
     db.commissionCalculation.count({
       where: {
-        salespersonId: user.id,
+        userId: user.id,
         status: 'PENDING'
       }
     }),
     db.commissionCalculation.count({
       where: {
-        salespersonId: user.id,
+        userId: user.id,
         status: 'APPROVED'
       }
     })
