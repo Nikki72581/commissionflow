@@ -177,9 +177,14 @@ export default async function SalesPage({
     getUsers(),
   ])
   
-  const projects = projectsResult.success ? projectsResult.data : []
-  const users = usersResult.success ? usersResult.data : []
-
+const projects = projectsResult.success ? (projectsResult.data || []) : []
+const users = (usersResult.success ? (usersResult.data || []) : [])
+  .filter(user => user.firstName && user.lastName) as Array<{
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  }>
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
