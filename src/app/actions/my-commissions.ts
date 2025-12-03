@@ -291,20 +291,20 @@ export async function getMyCommissionExportData(dateRange?: DateRange) {
     })
 
     // Format for CSV export
-    const exportData = calculations.map(calc => ({
-      salespersonName: `${user.firstName} ${user.lastName}`,
-      salespersonEmail: user.email,
-      saleDate: calc.salesTransaction.transactionDate,
-      saleAmount: calc.salesTransaction.amount,
-      commissionAmount: calc.amount,
-      commissionRate: (calc.amount / calc.salesTransaction.amount) * 100,
-      project: calc.salesTransaction.project.name,
-      client: calc.salesTransaction.project.client.name,
-      plan: calc.commissionPlan.name,
-      status: calc.status,
-      approvedDate: calc.approvedAt,
-      paidDate: calc.paidAt,
-    }))
+const exportData = calculations.map(calc => ({
+  salespersonName: `${user.firstName} ${user.lastName}`,
+  salespersonEmail: user.email,
+  saleDate: calc.salesTransaction.transactionDate,
+  saleAmount: calc.salesTransaction.amount,
+  commissionAmount: calc.amount,
+  commissionPercentage: (calc.amount / calc.salesTransaction.amount) * 100,  // ✅ Fixed
+  projectName: calc.salesTransaction.project.name,  // ✅ Fixed
+  clientName: calc.salesTransaction.project.client.name,  // ✅ Fixed
+  commissionPlan: calc.commissionPlan.name,  // ✅ Fixed
+  status: calc.status,
+  approvedDate: calc.approvedAt,
+  paidDate: calc.paidAt,
+}))
 
     return {
       success: true,
