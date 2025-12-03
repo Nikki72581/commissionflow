@@ -38,7 +38,7 @@ export default async function AdminDashboard() {
     db.commissionPlan.count({
       where: {
         organizationId: user.organizationId,
-        active: true
+        isActive: true
       }
     })
   ]);
