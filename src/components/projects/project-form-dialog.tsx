@@ -24,21 +24,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createProject, updateProject } from '@/app/actions/projects'
-import type { Client } from '@/lib/types'
-
-interface Project {
-  id: string
-  name: string
-  description?: string | null
-  clientId: string
-  startDate?: Date | null
-  endDate?: Date | null
-  status: 'active' | 'completed' | 'cancelled'
-}
+import type { Client, ProjectWithClient } from '@/lib/types'
 
 interface ProjectFormDialogProps {
   clients: Client[]
-  project?: Project
+  project?: Pick<ProjectWithClient, 'id' | 'name' | 'description' | 'clientId' | 'startDate' | 'endDate' | 'status'>
   defaultClientId?: string
   trigger?: React.ReactNode
 }

@@ -35,6 +35,23 @@ export type ProjectWithRelations = Prisma.ProjectGetPayload<{
   }
 }>
 
+export type ProjectWithClient = Prisma.ProjectGetPayload<{
+  include: {
+    client: true
+    commissionPlans: {
+      select: {
+        id: true
+        name: true
+      }
+    }
+    _count: {
+      select: {
+        salesTransactions: true
+      }
+    }
+  }
+}>
+
 export type CommissionPlanWithRules = Prisma.CommissionPlanGetPayload<{
   include: {
     rules: true

@@ -22,20 +22,10 @@ import {
 } from '@/components/ui/alert-dialog'
 import { ProjectFormDialog } from './project-form-dialog'
 import { deleteProject } from '@/app/actions/projects'
-import type { Client } from '@/lib/types'
-
-interface Project {
-  id: string
-  name: string
-  description?: string | null
-  clientId: string
-  startDate?: Date | null
-  endDate?: Date | null
-  status: "active" | "completed" | "cancelled"
-}
+import type { Client, ProjectWithClient } from '@/lib/types'
 
 interface ProjectActionsProps {
-  project: Project
+  project: ProjectWithClient
   clients: Client[]
 }
 

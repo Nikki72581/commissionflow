@@ -150,7 +150,10 @@ if (searchQuery && projects.length > 0) {
                 {formatDate(project.createdAt)}
               </TableCell>
               <TableCell>
-                <ProjectActions project={project} clients={clients} />
+                <ProjectActions
+                  project={project as any}
+                  clients={clients}
+                />
               </TableCell>
             </TableRow>
           ))}
