@@ -31,7 +31,7 @@ interface Project {
   clientId: string
   startDate?: Date | null
   endDate?: Date | null
-  status: string
+  status: "active" | "completed" | "cancelled"
 }
 
 interface ProjectActionsProps {
