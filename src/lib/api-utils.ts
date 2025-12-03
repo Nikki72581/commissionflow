@@ -105,7 +105,7 @@ export function handleApiError(error: unknown): NextResponse<ApiErrorResponse> {
     return createErrorResponse(
       ApiErrorType.VALIDATION_ERROR,
       'Validation failed',
-      error.errors
+      error.issues
     )
   }
 
