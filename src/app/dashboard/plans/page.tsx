@@ -18,7 +18,7 @@ import { CommissionPlanFormDialog } from '@/components/plans/plan-form-dialog'
 import { PlanActions } from '@/components/plans/plan-actions'
 import { formatDate } from '@/lib/utils'
 import { getRuleTypeLabel } from '@/lib/commission-calculator'
-
+export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Commission Plans | CommissionFlow',
   description: 'Manage your commission plans',

@@ -17,7 +17,7 @@ import { getProjects } from '@/app/actions/projects'
 import { getUsers } from '@/app/actions/users'
 import { SalesTransactionFormDialog } from '@/components/sales/sales-transaction-form-dialog'
 import { formatDate, formatCurrency } from '@/lib/utils'
-
+export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Sales | CommissionFlow',
   description: 'Manage your sales transactions',

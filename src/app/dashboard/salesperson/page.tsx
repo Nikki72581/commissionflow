@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DollarSign, TrendingUp, Calendar, CheckCircle } from 'lucide-react';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-
+export const dynamic = 'force-dynamic'
 export default async function SalespersonDashboard() {
   const user = await getCurrentUserWithOrg();
 

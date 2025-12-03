@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Users, DollarSign, TrendingUp, Clock, Plus } from 'lucide-react';
 import Link from 'next/link';
-
+export const dynamic = 'force-dynamic'
 export default async function AdminDashboard() {
   const user = await requireAdmin();
 

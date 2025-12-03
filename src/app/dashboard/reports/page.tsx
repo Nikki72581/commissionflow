@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { ArrowUpDown, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
-
+export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Performance Reports | CommissionFlow',
   description: 'Detailed salesperson performance metrics',

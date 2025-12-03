@@ -11,7 +11,7 @@ import { getClient } from '@/app/actions/clients'
 import { ProjectFormDialog } from '@/components/projects/project-form-dialog'
 import { ProjectActions } from '@/components/projects/project-actions'
 import { formatDate } from '@/lib/utils'
-
+export const dynamic = 'force-dynamic'
 async function ClientDetails({ clientId }: { clientId: string }) {
   const result = await getClient(clientId)
 

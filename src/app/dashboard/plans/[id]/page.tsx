@@ -14,7 +14,7 @@ import { RuleActions } from '@/components/plans/rule-actions'
 import { CommissionPreview } from '@/components/plans/commission-preview'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { formatRule, getRuleTypeLabel } from '@/lib/commission-calculator'
-
+export const dynamic = 'force-dynamic'
 async function PlanDetails({ planId }: { planId: string }) {
   const [planResult, projectsResult] = await Promise.all([
     getCommissionPlan(planId),

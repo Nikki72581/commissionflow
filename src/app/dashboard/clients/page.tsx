@@ -17,7 +17,7 @@ import { getClients } from '@/app/actions/clients'
 import { ClientFormDialog } from '@/components/clients/client-form-dialog'
 import { ClientActions } from '@/components/clients/client-actions'
 import { formatDate } from '@/lib/utils'
-
+export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Clients | CommissionFlow',
   description: 'Manage your clients',

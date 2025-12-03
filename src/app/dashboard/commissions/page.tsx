@@ -23,6 +23,8 @@ import { getCommissionCalculations } from '@/app/actions/commission-calculations
 import { CommissionActions } from '@/components/commissions/commission-actions'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata = {
   title: 'Commissions | CommissionFlow',
   description: 'Review and approve commission calculations',
@@ -201,11 +203,11 @@ async function CommissionsTable({
                   >
                     {calc.status}
                   </Badge>
-                  {calc.status === 'PAID' && calc.paidAt && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {formatDate(calc.paidAt)}
-                    </div>
-                  )}
+{calc.status === 'PAID' && (calc as any).paidAt && (
+  <div className="text-xs text-muted-foreground mt-1">
+    {formatDate((calc as any).paidAt)}
+  </div>
+)}
                 </TableCell>
                 <TableCell className="text-right">
                   <CommissionActions
