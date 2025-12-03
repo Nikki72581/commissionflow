@@ -31,12 +31,14 @@ interface Commission {
   id: string
   amount: number
   status: string
-  calculatedAt: Date
-  approvedAt: Date | null
+  calculatedAt?: Date
+  approvedAt?: Date | null
+  paidAt?: Date | null
   salesTransaction: {
     id: string
     amount: number
-    saleDate: Date
+    trandate?: Date
+    saleDate?: Date
     project: {
       name: string
       client: {
@@ -62,7 +64,7 @@ export default function MyCommissionsPage() {
 
   async function fetchData() {
     setLoading(true)
-    
+
     const [statsResult, commissionsResult, exportResult] = await Promise.all([
       getMyCommissionStats(dateRange),
       getMyCommissions(dateRange),
@@ -72,9 +74,8 @@ export default function MyCommissionsPage() {
     if (statsResult.success) {
       setStats(statsResult.data as CommissionStats)
     }
-
     if (commissionsResult.success) {
-      setCommissions(commissionsResult.data as Commission[])
+      setCommissions((commissionsResult.data ?? []) as Commission[])
     }
 
     if (exportResult.success) {
@@ -211,7 +212,11 @@ export default function MyCommissionsPage() {
                   {commissions.map((commission) => (
                     <TableRow key={commission.id}>
                       <TableCell>
-                        {formatDate(commission.salesTransaction.saleDate)}
+                        {commission.salesTransaction.saleDate
+                          ? formatDate(commission.salesTransaction.saleDate)
+                          : commission.salesTransaction.trandate
+                          ? formatDate(commission.salesTransaction.trandate)
+                          : 'N/A'}
                       </TableCell>
                       <TableCell>
                         {commission.salesTransaction.project.client.name}
@@ -245,9 +250,9 @@ export default function MyCommissionsPage() {
                         >
                           {commission.status}
                         </Badge>
-                        {commission.status === 'PAID' && (commission as any).paidAt && (
+                        {commission.status === 'PAID' && commission.paidAt && (
                           <div className="text-xs text-muted-foreground mt-1">
-                            Paid: {formatDate((commission as any).paidAt)}
+                            Paid: {formatDate(commission.paidAt)}
                           </div>
                         )}
                         {commission.status === 'APPROVED' && commission.approvedAt && (
