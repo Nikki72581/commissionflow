@@ -3,8 +3,8 @@ import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar'
 import { EnhancedHeader } from '@/components/navigation/enhanced-header'
 import { MobileBottomNav } from '@/components/navigation/mobile-navigation'
 import { auth } from '@clerk/nextjs/server'
-import { prisma } from '@/lib/prisma'
 
+import { prisma } from '@/lib/prisma'
 
 export default async function DashboardLayout({
   children,
