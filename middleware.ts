@@ -1,5 +1,6 @@
 // middleware.ts
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
 
 const isPublicRoute = createRouteMatcher([
   '/',
@@ -11,6 +12,14 @@ const isPublicRoute = createRouteMatcher([
 const isOnboardingRoute = createRouteMatcher(['/onboarding']);
 
 export default clerkMiddleware(async (auth, request) => {
+  const { userId } = await auth();
+  
+  // Redirect authenticated users from root to dashboard
+  if (userId && request.nextUrl.pathname === '/') {
+    const dashboardUrl = new URL('/dashboard', request.url);
+    return NextResponse.redirect(dashboardUrl);
+  }
+  
   // Allow public routes without authentication
   if (isPublicRoute(request)) {
     return;
