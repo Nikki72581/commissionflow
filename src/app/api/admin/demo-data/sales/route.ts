@@ -1,4 +1,6 @@
 // src/app/api/admin/demo-data/sales/route.ts
+// IMPROVED VERSION with better plan matching logic
+
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/db'
@@ -14,46 +16,96 @@ function randomItem<T>(arr: T[]): T {
 }
 
 async function calculateCommission(saleAmount: number, commissionPlanId: string) {
-  // Get commission rules for this plan
   const rules = await prisma.commissionRule.findMany({
     where: { commissionPlanId },
   })
+
+  console.log(`   💰 Calculating commission with ${rules.length} rule(s)`)
 
   let commissionAmount = 0
 
   for (const rule of rules) {
     if (rule.ruleType === CommissionRuleType.PERCENTAGE) {
       commissionAmount += saleAmount * (rule.percentage! / 100)
+      console.log(`      - PERCENTAGE: ${rule.percentage}% = $${(saleAmount * (rule.percentage! / 100)).toFixed(2)}`)
     } else if (rule.ruleType === CommissionRuleType.FLAT_AMOUNT) {
       commissionAmount += rule.flatAmount!
+      console.log(`      - FLAT: $${rule.flatAmount}`)
     } else if (rule.ruleType === CommissionRuleType.TIERED) {
       if (saleAmount <= rule.tierThreshold!) {
-        commissionAmount += saleAmount * (rule.percentage! / 100)
+        const amt = saleAmount * (rule.percentage! / 100)
+        commissionAmount += amt
+        console.log(`      - TIERED (below threshold): ${rule.percentage}% = $${amt.toFixed(2)}`)
       } else {
-        commissionAmount += rule.tierThreshold! * (rule.percentage! / 100)
-        commissionAmount += (saleAmount - rule.tierThreshold!) * (rule.tierPercentage! / 100)
+        const baseAmt = rule.tierThreshold! * (rule.percentage! / 100)
+        const tierAmt = (saleAmount - rule.tierThreshold!) * (rule.tierPercentage! / 100)
+        commissionAmount += baseAmt + tierAmt
+        console.log(`      - TIERED: base $${baseAmt.toFixed(2)} + tier $${tierAmt.toFixed(2)}`)
       }
     }
   }
 
-  // Apply min/max caps if any rule has them
+  // Apply caps
   const maxCap = Math.max(...rules.filter(r => r.maxAmount).map(r => r.maxAmount!), 0)
   const minCap = Math.max(...rules.filter(r => r.minAmount).map(r => r.minAmount!), 0)
   
-  if (maxCap > 0) commissionAmount = Math.min(commissionAmount, maxCap)
-  if (minCap > 0) commissionAmount = Math.max(commissionAmount, minCap)
+  if (maxCap > 0) {
+    console.log(`      - Max cap: $${maxCap}`)
+    commissionAmount = Math.min(commissionAmount, maxCap)
+  }
+  if (minCap > 0) {
+    console.log(`      - Min cap: $${minCap}`)
+    commissionAmount = Math.max(commissionAmount, minCap)
+  }
 
-  return Math.round(commissionAmount * 100) / 100
+  const final = Math.round(commissionAmount * 100) / 100
+  console.log(`      = TOTAL: $${final}`)
+  return final
+}
+
+function findApplicablePlan(project: any, commissionPlans: any[]) {
+  console.log(`   🔍 Finding plan for project: ${project.name}`)
+  
+  // First: Try to find project-specific plan
+  const projectPlan = commissionPlans.find(p => p.projectId === project.id && p.isActive)
+  if (projectPlan) {
+    console.log(`   ✅ Using PROJECT-SPECIFIC plan: "${projectPlan.name}"`)
+    return projectPlan
+  }
+  
+  // Second: Try to find org-wide active plans
+  const orgPlans = commissionPlans.filter(p => !p.projectId && p.isActive)
+  if (orgPlans.length > 0) {
+    const selectedPlan = randomItem(orgPlans)
+    console.log(`   ✅ Using ORG-WIDE plan: "${selectedPlan.name}" (${orgPlans.length} org-wide plans available)`)
+    return selectedPlan
+  }
+  
+  // Third: Try ANY plan with rules (even if not marked active)
+  const plansWithRules = commissionPlans.filter(p => {
+    // We'll check for rules in the next query
+    return true
+  })
+  
+  if (plansWithRules.length > 0) {
+    const fallbackPlan = randomItem(plansWithRules)
+    console.log(`   ⚠️  Using FALLBACK plan: "${fallbackPlan.name}" (not marked active or project-specific)`)
+    return fallbackPlan
+  }
+  
+  console.log(`   ❌ No applicable plan found!`)
+  return null
 }
 
 export async function POST(req: NextRequest) {
+  console.log('📥 Sales API route called')
+  
   try {
     const { userId } = await auth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Get user and verify admin role
     const user = await prisma.user.findUnique({
       where: { clerkId: userId },
       select: { role: true, organizationId: true },
@@ -63,45 +115,58 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 })
     }
 
-    const { count = 10 } = await req.json()
+    const body = await req.json()
+    const count = body.count || 10
+    console.log(`📊 Creating ${count} sales\n`)
 
     // Get required data
     const [projects, salespeople, commissionPlans] = await Promise.all([
-      prisma.project.findMany({
+      prisma.project.findMany({ where: { organizationId: user.organizationId } }),
+      prisma.user.findMany({ where: { organizationId: user.organizationId, role: 'SALESPERSON' } }),
+      prisma.commissionPlan.findMany({ 
         where: { organizationId: user.organizationId },
-      }),
-      prisma.user.findMany({
-        where: { 
-          organizationId: user.organizationId,
-          role: 'SALESPERSON'
-        },
-      }),
-      prisma.commissionPlan.findMany({
-        where: { organizationId: user.organizationId },
+        include: { rules: true }
       }),
     ])
 
+    console.log('📋 Available resources:')
+    console.log(`   - Projects: ${projects.length}`)
+    console.log(`   - Salespeople: ${salespeople.length}`)
+    console.log(`   - Commission Plans: ${commissionPlans.length}`)
+    
+    // Log details about commission plans
+    if (commissionPlans.length > 0) {
+      console.log('\n📊 Commission Plans Detail:')
+      commissionPlans.forEach(plan => {
+        const projectInfo = plan.projectId ? 'Project-specific' : 'ORG-WIDE'
+        const activeInfo = plan.isActive ? 'ACTIVE' : 'INACTIVE'
+        const rulesInfo = `${plan.rules.length} rule(s)`
+        console.log(`   - "${plan.name}" [${projectInfo}, ${activeInfo}, ${rulesInfo}]`)
+      })
+    }
+    console.log()
+
     if (projects.length === 0) {
-      return NextResponse.json({ 
-        error: 'No projects found. Please generate projects first.' 
-      }, { status: 400 })
+      return NextResponse.json({ error: 'No projects found. Please generate projects first.' }, { status: 400 })
     }
-
     if (salespeople.length === 0) {
-      return NextResponse.json({ 
-        error: 'No salespeople found in your organization.' 
-      }, { status: 400 })
+      return NextResponse.json({ error: 'No salespeople found in your organization.' }, { status: 400 })
     }
-
     if (commissionPlans.length === 0) {
+      return NextResponse.json({ error: 'No commission plans found. Please create at least one commission plan first.' }, { status: 400 })
+    }
+
+    // Check if at least one plan has rules
+    const plansWithRules = commissionPlans.filter(p => p.rules.length > 0)
+    if (plansWithRules.length === 0) {
       return NextResponse.json({ 
-        error: 'No commission plans found. Please create at least one commission plan first.' 
+        error: `Found ${commissionPlans.length} commission plan(s), but none have any rules! Please add at least one rule to a plan.` 
       }, { status: 400 })
     }
 
-    // Generate sales and commissions
     const sales = []
     const commissions = []
+    const skipped = []
     const startDate = new Date('2024-01-01')
     const endDate = new Date()
 
@@ -109,9 +174,14 @@ export async function POST(req: NextRequest) {
       const project = randomItem(projects)
       const salesperson = randomItem(salespeople)
       const transactionDate = randomDate(startDate, endDate)
-      const amount = Math.round(5000 + Math.random() * 95000) // $5k-$100k
+      const amount = Math.round(5000 + Math.random() * 95000)
 
-      // Create sales transaction
+      console.log(`\n💼 Sale ${i + 1}/${count}:`)
+      console.log(`   Project: ${project.name}`)
+      console.log(`   Amount: $${amount.toLocaleString()}`)
+      console.log(`   Salesperson: ${salesperson.firstName} ${salesperson.lastName}`)
+
+      // Create sale
       const sale = await prisma.salesTransaction.create({
         data: {
           amount,
@@ -124,17 +194,28 @@ export async function POST(req: NextRequest) {
         },
       })
       sales.push(sale)
+      console.log(`   ✅ Created sale: ${sale.invoiceNumber}`)
 
-      // Find applicable commission plan (prefer project-specific, fallback to org-wide)
-      const applicablePlan = commissionPlans.find(p => p.projectId === project.id) || 
-                            randomItem(commissionPlans.filter(p => !p.projectId && p.isActive))
+      // Find applicable plan using improved logic
+      const applicablePlan = findApplicablePlan(project, commissionPlans)
 
-      if (!applicablePlan) continue
+      if (!applicablePlan) {
+        console.log(`   ⚠️  No plan found - skipping commission`)
+        skipped.push(sale.invoiceNumber)
+        continue
+      }
+
+      // Check plan has rules
+      if (applicablePlan.rules.length === 0) {
+        console.log(`   ⚠️  Plan "${applicablePlan.name}" has no rules - skipping commission`)
+        skipped.push(sale.invoiceNumber)
+        continue
+      }
 
       // Calculate commission
       const commissionAmount = await calculateCommission(amount, applicablePlan.id)
 
-      // Determine status based on how old the transaction is
+      // Determine status based on age
       const daysSince = (new Date().getTime() - transactionDate.getTime()) / (1000 * 60 * 60 * 24)
       let status: CommissionStatus
       let approvedAt: Date | null = null
@@ -153,7 +234,6 @@ export async function POST(req: NextRequest) {
         paidAt = new Date(transactionDate.getTime() + 21 * 24 * 60 * 60 * 1000)
       }
 
-      // Create commission calculation
       const commission = await prisma.commissionCalculation.create({
         data: {
           salesTransactionId: sale.id,
@@ -168,25 +248,38 @@ export async function POST(req: NextRequest) {
         },
       })
       commissions.push(commission)
+      console.log(`   ✅ Created commission: $${commissionAmount} [${status}]`)
     }
 
+    console.log('\n🎉 Summary:')
+    console.log(`   - Sales created: ${sales.length}`)
+    console.log(`   - Commissions created: ${commissions.length}`)
+    if (skipped.length > 0) {
+      console.log(`   - Skipped (no plan): ${skipped.length}`)
+    }
+    
     return NextResponse.json({ 
       success: true, 
       salesCount: sales.length,
       commissionsCount: commissions.length,
-      sales: sales.map(s => ({ 
-        id: s.id, 
-        amount: s.amount, 
-        invoiceNumber: s.invoiceNumber 
-      })),
-      commissions: commissions.map(c => ({ 
-        id: c.id, 
-        amount: c.amount, 
-        status: c.status 
-      }))
+      skippedCount: skipped.length,
+      message: skipped.length > 0 
+        ? `Created ${sales.length} sales and ${commissions.length} commissions. ${skipped.length} sales had no applicable plan.`
+        : `Created ${sales.length} sales and ${commissions.length} commissions.`
     })
+    
   } catch (error: any) {
-    console.error('Error generating sales:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    console.error('❌ Error in sales route:', error)
+    return NextResponse.json({ 
+      error: error.message || 'Internal server error'
+    }, { status: 500 })
   }
+}
+
+export async function GET() {
+  return NextResponse.json({ 
+    message: 'Sales endpoint is working. Use POST to create sales.',
+    method: 'POST',
+    requiredBody: { count: 'number' }
+  })
 }
