@@ -1,5 +1,5 @@
 'use client'
-
+import { useClerk } from '@clerk/nextjs'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -36,21 +36,26 @@ interface EnhancedHeaderProps {
   userEmail?: string
   userRole?: 'ADMIN' | 'SALESPERSON'
   notificationCount?: number
-  onSignOut?: () => void
+  //Remove: onSignOut?: () => void
 }
 
 export function EnhancedHeader({
-  userName = 'John Doe',
-  userEmail = 'john@example.com',
-  userRole = 'ADMIN',
+  userName,
+  userEmail,
+  userRole,
   notificationCount = 0,
-  onSignOut,
+  // Remove: onSignOut
 }: EnhancedHeaderProps) {
+  const { signOut } = useClerk()
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSignOut = async () => {
+    await signOut({ redirectUrl: '/' })
+  }
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (searchQuery.trim()) {
       router.push(`/dashboard/search?q=${encodeURIComponent(searchQuery)}`)
@@ -280,7 +285,7 @@ export function EnhancedHeader({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onSignOut}>
+              <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Sign Out</span>
               </DropdownMenuItem>

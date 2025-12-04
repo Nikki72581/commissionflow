@@ -39,15 +39,12 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-      <EnhancedHeader
-        userName={userName}
-        userEmail={userEmail}
-        userRole={userRole as 'ADMIN' | 'SALESPERSON'}
-        notificationCount={pendingCount}
-        onSignOut={() => {
-          // Handle sign out
-        }}
-      />
+<EnhancedHeader
+  userName={userName}
+  userEmail={userEmail}
+  userRole={userRole as 'ADMIN' | 'SALESPERSON'}
+  notificationCount={pendingCount}
+/>
 
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
