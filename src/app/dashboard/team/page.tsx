@@ -1,0 +1,288 @@
+import { Suspense } from 'react'
+import { Users, Search, Award, DollarSign, TrendingUp } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getUsers } from '@/app/actions/users'
+import { db } from '@/lib/db'
+import { formatDate } from '@/lib/utils'
+import { getCurrentUserWithOrg } from '@/lib/auth'
+
+export const dynamic = 'force-dynamic'
+
+export const metadata = {
+  title: 'Team | CommissionFlow',
+  description: 'Manage your team members',
+}
+
+async function getTeamStats(organizationId: string) {
+  const [totalUsers, salespeople, admins, totalCommissions] = await Promise.all([
+    db.user.count({
+      where: { organizationId },
+    }),
+    db.user.count({
+      where: { organizationId, role: 'SALESPERSON' },
+    }),
+    db.user.count({
+      where: { organizationId, role: 'ADMIN' },
+    }),
+    db.commissionCalculation.aggregate({
+      where: {
+        organizationId,
+        status: { in: ['APPROVED', 'PAID'] },
+      },
+      _sum: { amount: true },
+    }),
+  ])
+
+  return {
+    totalUsers,
+    salespeople,
+    admins,
+    totalCommissions: totalCommissions._sum.amount || 0,
+  }
+}
+
+async function getUserCommissionStats(userId: string) {
+  const [totalEarned, pendingCount] = await Promise.all([
+    db.commissionCalculation.aggregate({
+      where: {
+        userId,
+        status: { in: ['APPROVED', 'PAID'] },
+      },
+      _sum: { amount: true },
+    }),
+    db.commissionCalculation.count({
+      where: {
+        userId,
+        status: 'PENDING',
+      },
+    }),
+  ])
+
+  return {
+    totalEarned: totalEarned._sum.amount || 0,
+    pendingCount,
+  }
+}
+
+async function TeamTable({ searchQuery }: { searchQuery?: string }) {
+  const result = await getUsers()
+
+  if (!result.success) {
+    return (
+      <div className="rounded-md bg-destructive/15 p-4 text-sm text-destructive">
+        {result.error}
+      </div>
+    )
+  }
+
+  let users = result.data || []
+
+  // Filter by search query
+  if (searchQuery && users.length > 0) {
+    const query = searchQuery.toLowerCase()
+    users = users.filter(
+      (user) =>
+        user.email.toLowerCase().includes(query) ||
+        user.firstName?.toLowerCase().includes(query) ||
+        user.lastName?.toLowerCase().includes(query)
+    )
+  }
+
+  if (users.length === 0) {
+    if (searchQuery) {
+      return (
+        <EmptyState
+          icon={Search}
+          title="No team members found"
+          description={`No team members match "${searchQuery}". Try a different search term.`}
+        />
+      )
+    }
+
+    return (
+      <EmptyState
+        icon={Users}
+        title="No team members yet"
+        description="Team members will appear here once they join your organization."
+      />
+    )
+  }
+
+  // Fetch commission stats for all users
+  const usersWithStats = await Promise.all(
+    users.map(async (user) => {
+      const stats = await getUserCommissionStats(user.id)
+      return {
+        ...user,
+        ...stats,
+      }
+    })
+  )
+
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Total Earned</TableHead>
+            <TableHead>Pending</TableHead>
+            <TableHead>Joined</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {usersWithStats.map((user) => {
+            const fullName = [user.firstName, user.lastName]
+              .filter(Boolean)
+              .join(' ') || 'Unnamed User'
+
+            return (
+              <TableRow key={user.id}>
+                <TableCell>
+                  <div className="font-medium">{fullName}</div>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {user.email}
+                </TableCell>
+                <TableCell>
+                  <Badge
+                    variant={user.role === 'ADMIN' ? 'default' : 'secondary'}
+                  >
+                    {user.role}
+                  </Badge>
+                </TableCell>
+                <TableCell className="font-medium">
+                  ${user.totalEarned.toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                  })}
+                </TableCell>
+                <TableCell>
+                  {user.pendingCount > 0 ? (
+                    <Badge variant="outline">{user.pendingCount}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground"></span>
+                  )}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {formatDate(user.createdAt)}
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  )
+}
+
+function TeamTableSkeleton() {
+  return (
+    <div className="rounded-md border">
+      <div className="p-8 text-center text-muted-foreground">Loading team members...</div>
+    </div>
+  )
+}
+
+export default async function TeamPage({
+  searchParams,
+}: {
+  searchParams: { search?: string }
+}) {
+  const user = await getCurrentUserWithOrg()
+  const stats = await getTeamStats(user.organizationId)
+
+  const teamMetrics = [
+    {
+      title: 'Total Team Members',
+      value: stats.totalUsers.toString(),
+      icon: Users,
+      description: 'Active users',
+    },
+    {
+      title: 'Salespeople',
+      value: stats.salespeople.toString(),
+      icon: TrendingUp,
+      description: 'Sales team members',
+    },
+    {
+      title: 'Admins',
+      value: stats.admins.toString(),
+      icon: Award,
+      description: 'Admin users',
+    },
+    {
+      title: 'Total Commissions',
+      value: `$${stats.totalCommissions.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`,
+      icon: DollarSign,
+      description: 'All-time earnings',
+    },
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Team</h1>
+        <p className="text-muted-foreground">
+          View and manage your team members
+        </p>
+      </div>
+
+      {/* Team Metrics */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {teamMetrics.map((metric) => (
+          <Card key={metric.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                {metric.title}
+              </CardTitle>
+              <metric.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{metric.value}</div>
+              <p className="text-xs text-muted-foreground">
+                {metric.description}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Search Bar */}
+      <div className="flex items-center gap-4">
+        <form className="flex-1" action="/dashboard/team" method="GET">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              name="search"
+              placeholder="Search team members..."
+              defaultValue={searchParams.search}
+              className="pl-9"
+            />
+          </div>
+        </form>
+      </div>
+
+      {/* Team Table */}
+      <Suspense fallback={<TeamTableSkeleton />}>
+        <TeamTable searchQuery={searchParams.search} />
+      </Suspense>
+    </div>
+  )
+}
