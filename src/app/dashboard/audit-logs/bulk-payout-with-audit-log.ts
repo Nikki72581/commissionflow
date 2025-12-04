@@ -3,8 +3,8 @@
 import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
-import { sendBulkPayoutNotifications } from './email-notifications'
 import { logBulkPayout } from '@/lib/audit-log'
+import { sendBulkPayoutNotifications } from '@/app/actions/email-notifications'
 
 /**
  * Get organization ID for current user
