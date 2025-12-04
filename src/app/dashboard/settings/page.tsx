@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { updateUserProfile, getUserProfile } from '@/app/actions/settings'
+import { updateUserProfile, getUserProfile, updateNotificationPreferences } from '@/app/actions/settings'
 import { User, Bell, Shield, Loader2 } from 'lucide-react'
 
 interface UserProfile {
@@ -17,6 +17,10 @@ interface UserProfile {
   lastName: string | null
   role: string
   createdAt: Date
+  emailNotifications: boolean
+  salesAlerts: boolean
+  commissionAlerts: boolean
+  weeklyReports: boolean
 }
 
 export default function SettingsPage() {
@@ -32,7 +36,7 @@ export default function SettingsPage() {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
 
-  // Notification preferences (local state for now)
+  // Notification preferences
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [salesAlerts, setSalesAlerts] = useState(true)
   const [commissionAlerts, setCommissionAlerts] = useState(true)
@@ -50,6 +54,10 @@ export default function SettingsPage() {
           setFirstName(result.data.firstName || '')
           setLastName(result.data.lastName || '')
           setEmail(result.data.email)
+          setEmailNotifications(result.data.emailNotifications)
+          setSalesAlerts(result.data.salesAlerts)
+          setCommissionAlerts(result.data.commissionAlerts)
+          setWeeklyReports(result.data.weeklyReports)
         } else {
           setError(result.error || 'Failed to load profile')
         }
@@ -81,6 +89,32 @@ export default function SettingsPage() {
         router.refresh()
       } else {
         setError(result.error || 'Failed to update profile')
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handlePreferencesUpdate() {
+    setError(null)
+    setSuccess(null)
+    setSaving(true)
+
+    try {
+      const result = await updateNotificationPreferences({
+        emailNotifications,
+        salesAlerts,
+        commissionAlerts,
+        weeklyReports,
+      })
+
+      if (result.success) {
+        setSuccess('Notification preferences updated successfully')
+        router.refresh()
+      } else {
+        setError(result.error || 'Failed to update preferences')
       }
     } catch (err) {
       setError('An unexpected error occurred')
@@ -282,8 +316,19 @@ export default function SettingsPage() {
           </div>
 
           <div className="flex justify-end pt-4">
-            <Button variant="outline">
-              Save Preferences
+            <Button
+              variant="outline"
+              onClick={handlePreferencesUpdate}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Preferences'
+              )}
             </Button>
           </div>
         </CardContent>

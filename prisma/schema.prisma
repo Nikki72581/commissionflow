@@ -79,7 +79,13 @@ model User {
   organizationId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  auditLogs      AuditLog[]  
+  auditLogs      AuditLog[]
+
+  // Notification preferences
+  emailNotifications Boolean  @default(true)
+  salesAlerts        Boolean  @default(true)
+  commissionAlerts   Boolean  @default(true)
+  weeklyReports      Boolean  @default(false)
 
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   salesTransactions      SalesTransaction[]

@@ -5,7 +5,9 @@ import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import {
   updateUserProfileSchema,
-  type UpdateUserProfileInput
+  updateNotificationPreferencesSchema,
+  type UpdateUserProfileInput,
+  type UpdateNotificationPreferencesInput
 } from '@/lib/validations/user'
 
 /**
@@ -50,10 +52,10 @@ export async function updateUserProfile(data: UpdateUserProfileInput) {
       data: {
         userId: user.id,
         organizationId: user.organizationId,
-        action: 'UPDATE',
-        entityType: 'USER',
+        action: 'settings_updated',
+        entityType: 'user',
         entityId: user.id,
-        details: `Updated profile: ${Object.keys(validatedData).join(', ')}`,
+        description: `Updated profile: ${Object.keys(validatedData).join(', ')}`,
       },
     })
 
@@ -90,6 +92,10 @@ export async function getUserProfile() {
         lastName: user.lastName,
         role: user.role,
         createdAt: user.createdAt,
+        emailNotifications: user.emailNotifications,
+        salesAlerts: user.salesAlerts,
+        commissionAlerts: user.commissionAlerts,
+        weeklyReports: user.weeklyReports,
       },
     }
   } catch (error) {
@@ -97,6 +103,51 @@ export async function getUserProfile() {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch profile',
+    }
+  }
+}
+
+/**
+ * Update user notification preferences
+ */
+export async function updateNotificationPreferences(data: UpdateNotificationPreferencesInput) {
+  try {
+    const user = await getCurrentUser()
+    const validatedData = updateNotificationPreferencesSchema.parse(data)
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        ...validatedData,
+        updatedAt: new Date(),
+      },
+    })
+
+    // Create audit log for preferences update
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        organizationId: user.organizationId,
+        action: 'settings_updated',
+        entityType: 'user',
+        entityId: user.id,
+        description: `Updated notification preferences: ${Object.keys(validatedData).join(', ')}`,
+      },
+    })
+
+    revalidatePath('/dashboard/settings')
+    revalidatePath('/dashboard')
+
+    return {
+      success: true,
+      data: updatedUser,
+      message: 'Notification preferences updated successfully',
+    }
+  } catch (error) {
+    console.error('Error updating notification preferences:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update preferences',
     }
   }
 }
