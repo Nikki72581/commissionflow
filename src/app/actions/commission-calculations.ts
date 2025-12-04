@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { bulkApproveSchema } from '@/lib/validations/sales-transaction'
 import type { BulkApproveInput } from '@/lib/validations/sales-transaction'
+import { sendCommissionApprovedNotification } from '@/app/actions/email-notifications'
 
 /**
  * Get organization ID for current user
@@ -157,8 +158,26 @@ export async function approveCalculation(calculationId: string) {
         user: true,
         commissionPlan: true,
       },
+      
     })
+// After approving commission:
+async function approveCommission(calculationId: string) {
+  // Your existing approval logic
+  const result = await prisma.commissionCalculation.update({
+    where: { id: calculationId },
+    data: {
+      status: 'APPROVED',
+      approvedAt: new Date(),
+    },
+  })
 
+  // ADD THIS: Send notification (async, non-blocking)
+  sendCommissionApprovedNotification(calculationId).catch((error) => {
+    console.error('Failed to send approval notification:', error)
+  })
+
+  return result
+}
     revalidatePath('/dashboard/commissions')
     revalidatePath(`/dashboard/commissions/${calculationId}`)
     
