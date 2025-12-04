@@ -64,6 +64,7 @@ model Organization {
   salesTransactions      SalesTransaction[]
   commissionCalculations CommissionCalculation[]
   payouts                Payout[]
+  auditLogs      AuditLog[] 
 
   @@map("organizations")
 }
@@ -78,6 +79,7 @@ model User {
   organizationId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  auditLogs      AuditLog[]  
 
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   salesTransactions      SalesTransaction[]
@@ -250,3 +252,39 @@ model Payout {
   @@index([status])
   @@map("payouts")
 }
+
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  
+  // Who performed the action
+  userId         String?
+  userName       String?  // Cached for display
+  userEmail      String?  // Cached for display
+  
+  // What action was performed
+  action         String   // e.g. "commission_approved", "commission_paid", "bulk_payout"
+  entityType     String   // e.g. "commission", "sale", "plan"
+  entityId       String?  // ID of the entity affected
+  
+  // Details
+  description    String   // Human-readable description
+  metadata       Json?    // Additional structured data
+  
+  // Context
+  organizationId String
+  ipAddress      String?
+  userAgent      String?
+  
+  // Relations
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
