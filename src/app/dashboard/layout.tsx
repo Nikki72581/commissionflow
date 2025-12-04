@@ -1,72 +1,76 @@
-// app/dashboard/layout.tsx
-import { UserButton } from '@clerk/nextjs';
-import { getCurrentUserWithOrg } from '@/lib/auth';
-import Link from 'next/link';
-import { DollarSign, LayoutDashboard, Users, Settings, FileText, Upload } from 'lucide-react';
+// src/app/dashboard/layout.tsx
+import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar'
+import { EnhancedHeader } from '@/components/navigation/enhanced-header'
+import { MobileBottomNav } from '@/components/navigation/mobile-navigation'
+import { auth } from '@clerk/nextjs/server'
+import { prisma } from '@/lib/prisma'
+
 
 export default async function DashboardLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
-  const user = await getCurrentUserWithOrg();
-  const isAdmin = user.role === 'ADMIN';
+  const { userId } = await auth()
+  
+  // Get user info
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId! },
+    select: {
+      firstName: true,
+      lastName: true,
+      email: true,
+      role: true,
+    },
+  })
 
-  const navigation = isAdmin
-    ? [
-        { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
-        { name: 'Commission Plans', href: '/dashboard/admin/plans', icon: FileText },
-        { name: 'Team', href: '/dashboard/admin/team', icon: Users },
-        { name: 'Import Data', href: '/dashboard/admin/import', icon: Upload },
-        { name: 'Settings', href: '/dashboard/admin/settings', icon: Settings },
-      ]
-    : [
-        { name: 'Dashboard', href: '/dashboard/salesperson', icon: LayoutDashboard },
-        { name: 'My Commissions', href: '/dashboard/salesperson/commissions', icon: DollarSign },
-        { name: 'Settings', href: '/dashboard/salesperson/settings', icon: Settings },
-      ];
+  // Get pending count for badges
+  const pendingCount = await prisma.commissionCalculation.count({
+    where: {
+      status: 'PENDING',
+      user: { clerkId: userId! },
+    },
+  })
+
+  const userName = `${user?.firstName} ${user?.lastName}`
+  const userEmail = user?.email || ''
+  const userRole = user?.role || 'SALESPERSON'
 
   return (
-    <div className="flex h-screen bg-muted/50">
-      {/* Sidebar */}
-      <aside className="w-64 bg-card border-r flex flex-col">
-        <div className="p-6 border-b">
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            <DollarSign className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">CommissionFlow</span>
-          </Link>
-        </div>
+    <div className="flex min-h-screen flex-col">
+      {/* Header */}
+      <EnhancedHeader
+        userName={userName}
+        userEmail={userEmail}
+        userRole={userRole as 'ADMIN' | 'SALESPERSON'}
+        notificationCount={pendingCount}
+        onSignOut={() => {
+          // Handle sign out
+        }}
+      />
 
-        <nav className="flex-1 p-4 space-y-1">
-          {navigation.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-muted transition-colors"
-            >
-              <item.icon className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm font-medium">{item.name}</span>
-            </Link>
-          ))}
-        </nav>
+      <div className="flex flex-1">
+        {/* Desktop Sidebar */}
+        <aside className="hidden w-64 border-r md:block">
+          <EnhancedSidebar
+            userRole={userRole as 'ADMIN' | 'SALESPERSON'}
+            pendingCount={pendingCount}
+          />
+        </aside>
 
-        <div className="p-4 border-t">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.firstName} {user.lastName}</p>
-              <p className="text-xs text-muted-foreground truncate">{user.organization.name}</p>
-            </div>
-            <UserButton afterSignOutUrl="/" />
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="container py-6">
+            {children}
           </div>
-        </div>
-      </aside>
+        </main>
+      </div>
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="container mx-auto p-8">
-          {children}
-        </div>
-      </main>
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav
+        userRole={userRole as 'ADMIN' | 'SALESPERSON'}
+        pendingCount={pendingCount}
+      />
     </div>
-  );
+  )
 }
