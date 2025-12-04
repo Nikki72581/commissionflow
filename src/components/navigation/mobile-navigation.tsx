@@ -162,7 +162,7 @@ export function MobileHeader({
                 <EnhancedSidebar
                   userRole={userRole}
                   pendingCount={pendingCount}
-                </div>
+                />
               </div>
             </div>
           </SheetContent>
