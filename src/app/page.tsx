@@ -1,3 +1,5 @@
+'use client';
+
 import { CheckCircle, Zap, Shield, TrendingUp, Users, DollarSign, ArrowRight, Sparkles, BarChart3, Lock, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +36,7 @@ export default function App() {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-background p-4 space-y-4">
-            <Link href="#features"></Link> className="block text-sm hover:text-blue-600"Features
+            <a href="#features" className="block text-sm hover:text-blue-600">Features</a>
             <a href="#pricing" className="block text-sm hover:text-blue-600">Pricing</a>
             <a href="#" className="block text-sm hover:text-blue-600">Sign In</a>
             <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">Get Started</Button>
