@@ -23,10 +23,12 @@ export default function App() {
           <nav className="hidden md:flex items-center space-x-6">
             <a href="#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
             <a href="#pricing" className="text-sm hover:text-blue-600 transition-colors">Pricing</a>
-            <a href="#" className="text-sm hover:text-blue-600 transition-colors">Sign In</a>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
-              Get Started <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <Link href="/sign-in" className="text-sm hover:text-blue-600 transition-colors">Sign In</Link>
+            <Link href="/sign-in">
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
+                Get Started <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
           </nav>
           <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -38,8 +40,10 @@ export default function App() {
           <div className="md:hidden border-t bg-background p-4 space-y-4">
             <a href="#features" className="block text-sm hover:text-blue-600">Features</a>
             <a href="#pricing" className="block text-sm hover:text-blue-600">Pricing</a>
-            <a href="#" className="block text-sm hover:text-blue-600">Sign In</a>
-            <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">Get Started</Button>
+            <Link href="/sign-in" className="block text-sm hover:text-blue-600">Sign In</Link>
+            <Link href="/sign-in" className="block w-full">
+              <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">Get Started</Button>
+            </Link>
           </div>
         )}
       </header>
@@ -70,12 +74,16 @@ export default function App() {
             Ditch the spreadsheets. Harness AI to design, calculate, and manage sales commissions with complete confidence and transparency.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <Button size="lg" className="px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
-              Start Free Trial <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button variant="outline" size="lg" className="px-8 border-2">
-              View Pricing
-            </Button>
+            <Link href="/sign-in">
+              <Button size="lg" className="px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
+                Start Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <a href="#pricing">
+              <Button variant="outline" size="lg" className="px-8 border-2">
+                View Pricing
+              </Button>
+            </a>
           </div>
           <p className="text-sm text-muted-foreground">🎉 No credit card required • 14-day free trial • Setup in minutes</p>
           
@@ -298,12 +306,16 @@ export default function App() {
             Join hundreds of forward-thinking companies that have eliminated commission headaches forever.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="px-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
-              Start Your Free Trial <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button variant="outline" size="lg" className="px-10 border-2">
-              View Demo Dashboard
-            </Button>
+            <Link href="/sign-in">
+              <Button size="lg" className="px-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
+                Start Your Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="outline" size="lg" className="px-10 border-2">
+                View Demo Dashboard
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
