@@ -46,11 +46,17 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome to CommissionFlow!</CardTitle>
-          <CardDescription>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background gradient blobs */}
+      <div className="absolute inset-0 -z-10 bg-background">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
+      <Card className="w-full max-w-md border-2 shadow-xl">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Welcome to CommissionFlow!</CardTitle>
+          <CardDescription className="text-base">
             Let's set up your organization to get started.
           </CardDescription>
         </CardHeader>
@@ -104,7 +110,7 @@ export default function OnboardingPage() {
               </Select>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90" disabled={loading}>
               {loading ? 'Setting up...' : 'Complete Setup'}
             </Button>
           </form>

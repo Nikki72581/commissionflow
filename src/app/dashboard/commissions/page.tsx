@@ -104,25 +104,25 @@ async function CommissionsTable({
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border p-4">
+        <div className="rounded-lg border-2 hover:border-blue-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-muted/20 p-4">
           <div className="text-sm text-muted-foreground">Total</div>
-          <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
+          <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{formatCurrency(totalAmount)}</div>
         </div>
-        <div className="rounded-lg border p-4">
+        <div className="rounded-lg border-2 hover:border-orange-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-orange-500/5 p-4">
           <div className="text-sm text-muted-foreground">Pending</div>
           <div className="text-2xl font-bold">{formatCurrency(pendingAmount)}</div>
           <Badge variant="outline" className="mt-1">
             {calculations.filter((c) => c.status === 'PENDING').length} items
           </Badge>
         </div>
-        <div className="rounded-lg border p-4">
+        <div className="rounded-lg border-2 hover:border-green-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-green-500/5 p-4">
           <div className="text-sm text-muted-foreground">Approved</div>
           <div className="text-2xl font-bold">{formatCurrency(approvedAmount)}</div>
           <Badge variant="secondary" className="mt-1">
             {calculations.filter((c) => c.status === 'APPROVED').length} items
           </Badge>
         </div>
-        <div className="rounded-lg border p-4">
+        <div className="rounded-lg border-2 hover:border-blue-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-blue-500/5 p-4">
           <div className="text-sm text-muted-foreground">Paid</div>
           <div className="text-2xl font-bold">{formatCurrency(paidAmount)}</div>
           <Badge variant="default" className="mt-1">
@@ -253,7 +253,7 @@ export default async function CommissionsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Commissions</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Commissions</h1>
           <p className="text-muted-foreground">
             Review and approve commission calculations
           </p>

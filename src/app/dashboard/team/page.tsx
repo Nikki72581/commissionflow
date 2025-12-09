@@ -238,7 +238,7 @@ export default async function TeamPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Team</h1>
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Team</h1>
         <p className="text-muted-foreground">
           View and manage your team members
         </p>
@@ -247,15 +247,17 @@ export default async function TeamPage({
       {/* Team Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {teamMetrics.map((metric) => (
-          <Card key={metric.title}>
+          <Card key={metric.title} className="border-2 hover:border-blue-500/50 transition-all hover:shadow-lg hover:shadow-blue-500/10 bg-gradient-to-br from-card to-muted/20">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 {metric.title}
               </CardTitle>
-              <metric.icon className="h-4 w-4 text-muted-foreground" />
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+                <metric.icon className="h-5 w-5 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metric.value}</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{metric.value}</div>
               <p className="text-xs text-muted-foreground">
                 {metric.description}
               </p>

@@ -120,9 +120,11 @@ export function EnhancedHeader({
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between gap-4 px-4">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <DollarSign className="h-6 w-6" />
-          <span className="hidden sm:inline-block">CommissionFlow</span>
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <div className="h-8 w-8 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+            <DollarSign className="h-5 w-5 text-white" />
+          </div>
+          <span className="hidden sm:inline-block font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CommissionFlow</span>
         </Link>
 
         {/* Search Bar */}
@@ -155,7 +157,7 @@ export function EnhancedHeader({
           {userRole === 'ADMIN' && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button size="sm" className="gap-2">
+                <Button size="sm" className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
                   <Plus className="h-4 w-4" />
                   <span className="hidden sm:inline-block">Create</span>
                 </Button>
