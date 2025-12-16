@@ -196,10 +196,16 @@ function ClientDetailsSkeleton() {
   )
 }
 
-export default function ClientPage({ params }: { params: { id: string } }) {
+export default async function ClientPage({
+  params
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+
   return (
     <Suspense fallback={<ClientDetailsSkeleton />}>
-      <ClientDetails clientId={params.id} />
+      <ClientDetails clientId={id} />
     </Suspense>
   )
 }

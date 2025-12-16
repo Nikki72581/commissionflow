@@ -74,10 +74,6 @@ async function main() {
           lastName: admin.last,
           role: UserRole.ADMIN,
           organizationId: org.id,
-          emailNotifications: true,
-          salesAlerts: true,
-          commissionAlerts: true,
-          weeklyReports: true,
         },
       })
       admins.push(user)
@@ -103,10 +99,6 @@ async function main() {
           lastName,
           role: UserRole.SALESPERSON,
           organizationId: org.id,
-          emailNotifications: true,
-          salesAlerts: Math.random() > 0.3,
-          commissionAlerts: true,
-          weeklyReports: Math.random() > 0.5,
         },
       })
       salespeople.push(user)

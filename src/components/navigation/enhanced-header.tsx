@@ -3,19 +3,19 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { OrganizationSwitcher, UserButton } from '@clerk/nextjs'
 import {
   Search,
   Plus,
   Bell,
-  User,
   Settings,
-  LogOut,
   ShoppingCart,
   Users,
   FolderKanban,
   FileText,
   DollarSign,
-  Command,
+  Building2,
+  LayoutDashboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,16 +35,17 @@ interface EnhancedHeaderProps {
   userName?: string
   userEmail?: string
   userRole?: 'ADMIN' | 'SALESPERSON'
+  organizationName?: string
+  organizationSlug?: string
   notificationCount?: number
   onSignOut?: () => void
 }
 
 export function EnhancedHeader({
   userName = 'John Doe',
-  userEmail = 'john@example.com',
   userRole = 'ADMIN',
+  organizationName = 'My Organization',
   notificationCount = 0,
-  onSignOut,
 }: EnhancedHeaderProps) {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
@@ -112,13 +113,22 @@ export function EnhancedHeader({
   ]
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container flex h-16 items-center justify-between gap-4 px-4">
         {/* Logo */}
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <DollarSign className="h-6 w-6" />
           <span className="hidden sm:inline-block">CommissionFlow</span>
         </Link>
+
+        {/* Organization Info - Always visible, responsive layout */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border">
+          <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs font-medium leading-none truncate">{organizationName}</span>
+            <span className="text-[10px] text-muted-foreground truncate hidden sm:block">{userName}</span>
+          </div>
+        </div>
 
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="flex-1 max-w-md">
@@ -145,7 +155,7 @@ export function EnhancedHeader({
         </form>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {/* Quick Create Dropdown */}
           {userRole === 'ADMIN' && (
             <DropdownMenu>
@@ -239,53 +249,47 @@ export function EnhancedHeader({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <User className="h-5 w-5" />
-                <span className="sr-only">User menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">{userName}</p>
-                  <p className="text-xs text-muted-foreground">{userEmail}</p>
-                  <Badge variant="outline" className="w-fit">
-                    {userRole}
-                  </Badge>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
+          {/* Organization Switcher - Allows switching between orgs */}
+          <OrganizationSwitcher
+            afterCreateOrganizationUrl="/dashboard"
+            afterLeaveOrganizationUrl="/dashboard"
+            appearance={{
+              elements: {
+                rootBox: 'flex items-center',
+                organizationSwitcherTrigger: 'px-3 py-2 rounded-lg border hover:bg-accent',
+              },
+            }}
+          />
+
+          {/* User Button with account management */}
+          <UserButton
+            appearance={{
+              elements: {
+                avatarBox: 'h-9 w-9',
+              },
+            }}
+          >
+            <UserButton.MenuItems>
+              <UserButton.Link
+                label="Dashboard"
+                labelIcon={<LayoutDashboard className="h-4 w-4" />}
+                href="/dashboard"
+              />
               {userRole === 'SALESPERSON' && (
-                <DropdownMenuItem asChild>
-                  <Link href="/dashboard/my-commissions">
-                    <DollarSign className="mr-2 h-4 w-4" />
-                    <span>My Commissions</span>
-                  </Link>
-                </DropdownMenuItem>
+                <UserButton.Link
+                  label="My Commissions"
+                  labelIcon={<DollarSign className="h-4 w-4" />}
+                  href="/dashboard/my-commissions"
+                />
               )}
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/keyboard-shortcuts">
-                  <Command className="mr-2 h-4 w-4" />
-                  <span>Keyboard Shortcuts</span>
-                  <DropdownMenuShortcut>?</DropdownMenuShortcut>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign Out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <UserButton.Link
+                label="Settings"
+                labelIcon={<Settings className="h-4 w-4" />}
+                href="/dashboard/settings"
+              />
+              <UserButton.Action label="manageAccount" />
+            </UserButton.MenuItems>
+          </UserButton>
         </div>
       </div>
     </header>

@@ -3,7 +3,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
-import { sendBulkPayoutNotifications } from './email-notifications'
+// import { sendBulkPayoutNotifications } from './email-notifications'
 import { logBulkPayout } from '@/lib/audit-log'
 
 /**
@@ -142,20 +142,20 @@ export async function bulkMarkAsPaid(input: BulkPayoutInput) {
       // Don't throw - audit log failures shouldn't break the main operation
     })
 
-    // Send email notifications (async, don't block)
-    if (shouldNotify) {
-      sendBulkPayoutNotifications(input.calculationIds)
-        .then((notifResult) => {
-          if (notifResult.success) {
-            console.log(`Sent ${notifResult.data?.successCount} payout notifications`)
-          } else {
-            console.error('Failed to send notifications:', notifResult.error)
-          }
-        })
-        .catch((error) => {
-          console.error('Notification error:', error)
-        })
-    }
+    // Send email notifications (async, don't block) - disabled until email service is configured
+    // if (shouldNotify) {
+    //   sendBulkPayoutNotifications(input.calculationIds)
+    //     .then((notifResult: any) => {
+    //       if (notifResult.success) {
+    //         console.log(`Sent ${notifResult.data?.successCount} payout notifications`)
+    //       } else {
+    //         console.error('Failed to send notifications:', notifResult.error)
+    //       }
+    //     })
+    //     .catch((error: any) => {
+    //       console.error('Notification error:', error)
+    //     })
+    // }
 
     revalidatePath('/dashboard/commissions')
     revalidatePath('/dashboard/my-commissions')

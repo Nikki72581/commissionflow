@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { bulkApproveSchema } from '@/lib/validations/sales-transaction'
 import type { BulkApproveInput } from '@/lib/validations/sales-transaction'
-import { sendCommissionApprovedNotification } from '@/app/actions/email-notifications'
+// import { sendCommissionApprovedNotification } from '@/app/actions/email-notifications'
 
 /**
  * Get organization ID for current user
@@ -171,10 +171,10 @@ async function approveCommission(calculationId: string) {
     },
   })
 
-  // ADD THIS: Send notification (async, non-blocking)
-  sendCommissionApprovedNotification(calculationId).catch((error) => {
-    console.error('Failed to send approval notification:', error)
-  })
+  // ADD THIS: Send notification (async, non-blocking) - disabled until email service is configured
+  // sendCommissionApprovedNotification(calculationId).catch((error: any) => {
+  //   console.error('Failed to send approval notification:', error)
+  // })
 
   return result
 }
