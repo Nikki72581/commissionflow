@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, DollarSign, TrendingUp, Calendar, FileText } from 'lucide-react'
+import { ArrowLeft, DollarSign, TrendingUp, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -109,16 +109,6 @@ async function ProjectDetails({ projectId }: { projectId: string }) {
                 </div>
               </>
             )}
-
-            {project.notes && (
-              <>
-                <Separator />
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">Notes</p>
-                  <p className="text-sm text-muted-foreground">{project.notes}</p>
-                </div>
-              </>
-            )}
           </CardContent>
         </Card>
 
@@ -188,7 +178,9 @@ async function ProjectDetails({ projectId }: { projectId: string }) {
                             {formatCurrency(transaction.amount)}
                           </p>
                           <span className="text-sm text-muted-foreground">
-                            by {transaction.user.name || transaction.user.email}
+                            by {transaction.user.firstName && transaction.user.lastName
+                              ? `${transaction.user.firstName} ${transaction.user.lastName}`
+                              : transaction.user.email}
                           </span>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
