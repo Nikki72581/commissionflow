@@ -16,6 +16,7 @@ import {
   FileText,
   DollarSign,
   Command,
+  Building2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,16 +36,18 @@ interface EnhancedHeaderProps {
   userName?: string
   userEmail?: string
   userRole?: 'ADMIN' | 'SALESPERSON'
+  organizationName?: string
+  organizationSlug?: string
   notificationCount?: number
-  //Remove: onSignOut?: () => void
 }
 
 export function EnhancedHeader({
   userName,
   userEmail,
   userRole,
+  organizationName,
+  organizationSlug,
   notificationCount = 0,
-  // Remove: onSignOut
 }: EnhancedHeaderProps) {
   const { signOut } = useClerk()
   const router = useRouter()
@@ -126,6 +129,17 @@ export function EnhancedHeader({
           </div>
           <span className="hidden sm:inline-block font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CommissionFlow</span>
         </Link>
+
+        {/* Organization Info */}
+        {organizationName && (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 rounded-lg border">
+            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-medium leading-none truncate">{organizationName}</span>
+              <span className="text-[10px] text-muted-foreground truncate hidden sm:block">{userName}</span>
+            </div>
+          </div>
+        )}
 
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="flex-1 max-w-md">

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -29,6 +29,7 @@ export function ClientFormDialog({ client, trigger }: ClientFormDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const isEdit = !!client
 
@@ -52,8 +53,15 @@ export function ClientFormDialog({ client, trigger }: ClientFormDialogProps) {
         : await createClient(data)
 
       if (result.success) {
-        setOpen(false)
-        router.refresh()
+        // Show success animation
+        setShowSuccess(true)
+
+        // Wait for animation, then close and refresh
+        setTimeout(() => {
+          setShowSuccess(false)
+          setOpen(false)
+          router.refresh()
+        }, 1500)
       } else {
         setError(result.error || 'Something went wrong')
       }
@@ -77,15 +85,28 @@ export function ClientFormDialog({ client, trigger }: ClientFormDialogProps) {
         </DialogTrigger>
       )}
       <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{isEdit ? 'Edit Client' : 'New Client'}</DialogTitle>
-            <DialogDescription>
-              {isEdit
-                ? 'Update the client information below.'
-                : 'Add a new client to your organization.'}
-            </DialogDescription>
-          </DialogHeader>
+        {showSuccess ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="animate-in zoom-in duration-500">
+              <CheckCircle2 className="h-16 w-16 text-green-500" />
+            </div>
+            <p className="mt-4 text-lg font-semibold animate-in fade-in slide-in-from-bottom-4 duration-700">
+              Success!
+            </p>
+            <p className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+              Client {isEdit ? 'updated' : 'created'} successfully
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <DialogHeader>
+              <DialogTitle>{isEdit ? 'Edit Client' : 'New Client'}</DialogTitle>
+              <DialogDescription>
+                {isEdit
+                  ? 'Update the client information below.'
+                  : 'Add a new client to your organization.'}
+              </DialogDescription>
+            </DialogHeader>
 
           <div className="grid gap-4 py-4">
             {error && (
@@ -165,6 +186,7 @@ export function ClientFormDialog({ client, trigger }: ClientFormDialogProps) {
             </Button>
           </DialogFooter>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   )

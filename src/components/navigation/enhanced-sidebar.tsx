@@ -151,12 +151,16 @@ interface EnhancedSidebarProps {
   userRole?: 'ADMIN' | 'SALESPERSON'
   pendingCount?: number
   unpaidCount?: number
+  userName?: string
+  organizationName?: string
 }
 
-export function EnhancedSidebar({ 
+export function EnhancedSidebar({
   userRole = 'ADMIN',
   pendingCount = 0,
   unpaidCount = 0,
+  userName,
+  organizationName,
 }: EnhancedSidebarProps) {
   const pathname = usePathname()
   const [expandedSections, setExpandedSections] = useState<string[]>([
@@ -261,6 +265,23 @@ export function EnhancedSidebar({
 
   return (
     <div className="flex h-full flex-col gap-2">
+      {/* Organization & User Info Header */}
+      {(organizationName || userName) && (
+        <div className="border-b border-border p-4">
+          <div className="space-y-1">
+            {organizationName && (
+              <p className="text-sm font-semibold truncate">{organizationName}</p>
+            )}
+            {userName && (
+              <p className="text-xs text-muted-foreground truncate">{userName}</p>
+            )}
+            <Badge variant="outline" className="w-fit text-xs">
+              {userRole}
+            </Badge>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto py-2">
         <nav className="space-y-1 px-2">
           {navigation.map((item) => renderNavItem(item))}

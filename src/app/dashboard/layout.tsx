@@ -13,7 +13,7 @@ export default async function DashboardLayout({
 }) {
   const { userId } = await auth()
   
-  // Get user info
+  // Get user info with organization
   const user = await prisma.user.findUnique({
     where: { clerkId: userId! },
     select: {
@@ -21,6 +21,14 @@ export default async function DashboardLayout({
       lastName: true,
       email: true,
       role: true,
+      organization: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          planTier: true,
+        },
+      },
     },
   })
 
@@ -35,16 +43,20 @@ export default async function DashboardLayout({
   const userName = `${user?.firstName} ${user?.lastName}`
   const userEmail = user?.email || ''
   const userRole = user?.role || 'SALESPERSON'
+  const organizationName = user?.organization?.name || 'Unknown Organization'
+  const organizationSlug = user?.organization?.slug || ''
 
   return (
     <div className="flex min-h-screen flex-col">
       {/* Header */}
-<EnhancedHeader
-  userName={userName}
-  userEmail={userEmail}
-  userRole={userRole as 'ADMIN' | 'SALESPERSON'}
-  notificationCount={pendingCount}
-/>
+      <EnhancedHeader
+        userName={userName}
+        userEmail={userEmail}
+        userRole={userRole as 'ADMIN' | 'SALESPERSON'}
+        organizationName={organizationName}
+        organizationSlug={organizationSlug}
+        notificationCount={pendingCount}
+      />
 
       <div className="flex flex-1">
         {/* Desktop Sidebar */}
@@ -52,6 +64,8 @@ export default async function DashboardLayout({
           <EnhancedSidebar
             userRole={userRole as 'ADMIN' | 'SALESPERSON'}
             pendingCount={pendingCount}
+            userName={userName}
+            organizationName={organizationName}
           />
         </aside>
 
