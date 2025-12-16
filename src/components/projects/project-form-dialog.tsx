@@ -67,6 +67,18 @@ export function ProjectFormDialog({
       status: selectedStatus,
     }
 
+    // Validate that start date is not after end date
+    if (data.startDate && data.endDate) {
+      const startDate = new Date(data.startDate)
+      const endDate = new Date(data.endDate)
+
+      if (startDate > endDate) {
+        setError('Start date cannot be after end date')
+        setLoading(false)
+        return
+      }
+    }
+
     try {
       const result = isEdit
         ? await updateProject(project.id, data)
