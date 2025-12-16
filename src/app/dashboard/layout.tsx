@@ -56,9 +56,6 @@ export default async function DashboardLayout({
         organizationName={organizationName}
         organizationSlug={organizationSlug}
         notificationCount={pendingCount}
-        onSignOut={() => {
-          // Handle sign out
-        }}
       />
 
       <div className="flex flex-1">
