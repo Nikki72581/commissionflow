@@ -241,7 +241,8 @@ function PlanDetailsSkeleton() {
   )
 }
 
-export default function PlanPage({ params }: { params: { id: string } }) {
+export default async function PlanPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params
   return (
     <Suspense fallback={<PlanDetailsSkeleton />}>
       <PlanDetails planId={params.id} />

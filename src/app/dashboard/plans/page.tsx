@@ -178,11 +178,10 @@ function PlansTableSkeleton() {
   )
 }
 
-export default async function PlansPage({
-  searchParams,
-}: {
-  searchParams: { search?: string }
+export default async function PlansPage(props: {
+  searchParams: Promise<{ search?: string }>
 }) {
+  const searchParams = await props.searchParams
   const projectsResult = await getProjects()
   const projects = projectsResult.success ? projectsResult.data : []
 
