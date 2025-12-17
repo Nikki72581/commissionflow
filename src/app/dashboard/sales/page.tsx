@@ -30,10 +30,20 @@ export const metadata = {
 
 interface SalesTableProps {
   searchQuery?: string
+  projects: any[]
+  clients: any[]
+  users: any[]
+  productCategories: any[]
+  requireProjects: boolean
 }
 
 async function SalesTable({
   searchQuery,
+  projects,
+  clients,
+  users,
+  productCategories,
+  requireProjects,
 }: SalesTableProps) {
   const salesResult = await getSalesTransactions()
 
@@ -175,6 +185,11 @@ async function SalesTable({
                 <TableCell>
                   <SalesTransactionActions
                     transaction={sale}
+                    projects={projects}
+                    clients={clients}
+                    users={users}
+                    productCategories={productCategories}
+                    requireProjects={requireProjects}
                   />
                 </TableCell>
               </TableRow>
@@ -256,6 +271,11 @@ const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.req
       <Suspense fallback={<SalesTableSkeleton />}>
         <SalesTable
           searchQuery={searchParams.search}
+          projects={projects}
+          clients={clients}
+          users={users}
+          productCategories={productCategories}
+          requireProjects={requireProjects}
         />
       </Suspense>
     </div>

@@ -119,21 +119,30 @@ export async function POST(req: NextRequest) {
     const count = body.count || 10
     console.log(`📊 Creating ${count} sales\n`)
 
+    // Get organization settings
+    const organization = await prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: { requireProjects: true },
+    })
+
     // Get required data
-    const [projects, salespeople, commissionPlans] = await Promise.all([
+    const [projects, clients, salespeople, commissionPlans] = await Promise.all([
       prisma.project.findMany({ where: { organizationId: user.organizationId } }),
+      prisma.client.findMany({ where: { organizationId: user.organizationId } }),
       prisma.user.findMany({ where: { organizationId: user.organizationId, role: 'SALESPERSON' } }),
-      prisma.commissionPlan.findMany({ 
+      prisma.commissionPlan.findMany({
         where: { organizationId: user.organizationId },
         include: { rules: true }
       }),
     ])
 
     console.log('📋 Available resources:')
+    console.log(`   - Organization requires projects: ${organization?.requireProjects}`)
     console.log(`   - Projects: ${projects.length}`)
+    console.log(`   - Clients: ${clients.length}`)
     console.log(`   - Salespeople: ${salespeople.length}`)
     console.log(`   - Commission Plans: ${commissionPlans.length}`)
-    
+
     // Log details about commission plans
     if (commissionPlans.length > 0) {
       console.log('\n📊 Commission Plans Detail:')
@@ -146,8 +155,12 @@ export async function POST(req: NextRequest) {
     }
     console.log()
 
-    if (projects.length === 0) {
-      return NextResponse.json({ error: 'No projects found. Please generate projects first.' }, { status: 400 })
+    // Check if we have the required resources based on organization settings
+    if (organization?.requireProjects && projects.length === 0) {
+      return NextResponse.json({ error: 'No projects found. Please generate projects first (or disable requireProjects in organization settings).' }, { status: 400 })
+    }
+    if (!organization?.requireProjects && clients.length === 0 && projects.length === 0) {
+      return NextResponse.json({ error: 'No clients or projects found. Please generate at least clients or projects first.' }, { status: 400 })
     }
     if (salespeople.length === 0) {
       return NextResponse.json({ error: 'No salespeople found in your organization.' }, { status: 400 })
@@ -171,33 +184,72 @@ export async function POST(req: NextRequest) {
     const endDate = new Date()
 
     for (let i = 0; i < count; i++) {
-      const project = randomItem(projects)
       const salesperson = randomItem(salespeople)
       const transactionDate = randomDate(startDate, endDate)
       const amount = Math.round(5000 + Math.random() * 95000)
 
-      console.log(`\n💼 Sale ${i + 1}/${count}:`)
-      console.log(`   Project: ${project.name}`)
-      console.log(`   Amount: $${amount.toLocaleString()}`)
-      console.log(`   Salesperson: ${salesperson.firstName} ${salesperson.lastName}`)
+      // Determine if this sale should have a project or just a client
+      let project = null
+      let client = null
+
+      if (organization?.requireProjects || (projects.length > 0 && Math.random() > 0.3)) {
+        // Use a project (either required or 70% of the time when available)
+        project = randomItem(projects)
+        console.log(`\n💼 Sale ${i + 1}/${count}:`)
+        console.log(`   Project: ${project.name}`)
+        console.log(`   Amount: $${amount.toLocaleString()}`)
+        console.log(`   Salesperson: ${salesperson.firstName} ${salesperson.lastName}`)
+      } else {
+        // Use a client directly (no project)
+        client = randomItem(clients)
+        console.log(`\n💼 Sale ${i + 1}/${count}:`)
+        console.log(`   Client: ${client.name} (no project)`)
+        console.log(`   Amount: $${amount.toLocaleString()}`)
+        console.log(`   Salesperson: ${salesperson.firstName} ${salesperson.lastName}`)
+      }
 
       // Create sale
+      const saleData: any = {
+        amount,
+        userId: salesperson.id,
+        organizationId: user.organizationId,
+        transactionDate,
+        description: faker.commerce.productDescription(),
+        invoiceNumber: `INV-${faker.string.alphanumeric(8).toUpperCase()}`,
+      }
+
+      if (project) {
+        saleData.projectId = project.id
+      }
+      if (client) {
+        saleData.clientId = client.id
+      }
+
       const sale = await prisma.salesTransaction.create({
-        data: {
-          amount,
-          projectId: project.id,
-          userId: salesperson.id,
-          organizationId: user.organizationId,
-          transactionDate,
-          description: faker.commerce.productDescription(),
-          invoiceNumber: `INV-${faker.string.alphanumeric(8).toUpperCase()}`,
-        },
+        data: saleData,
       })
       sales.push(sale)
       console.log(`   ✅ Created sale: ${sale.invoiceNumber}`)
 
       // Find applicable plan using improved logic
-      const applicablePlan = findApplicablePlan(project, commissionPlans)
+      let applicablePlan
+      if (project) {
+        applicablePlan = findApplicablePlan(project, commissionPlans)
+      } else {
+        // For sales without projects, use org-wide plans
+        const orgWidePlans = commissionPlans.filter(p => !p.projectId && p.isActive)
+        if (orgWidePlans.length > 0) {
+          applicablePlan = randomItem(orgWidePlans)
+          console.log(`   ✅ Using ORG-WIDE plan: "${applicablePlan.name}"`)
+        } else {
+          // Fallback to any plan with rules
+          const anyPlanWithRules = commissionPlans.filter(p => p.rules.length > 0)
+          if (anyPlanWithRules.length > 0) {
+            applicablePlan = randomItem(anyPlanWithRules)
+            console.log(`   ⚠️  Using FALLBACK plan: "${applicablePlan.name}"`)
+          }
+        }
+      }
 
       if (!applicablePlan) {
         console.log(`   ⚠️  No plan found - skipping commission`)

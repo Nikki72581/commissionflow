@@ -20,6 +20,7 @@ import {
   HelpCircle,
   ChevronDown,
   ChevronRight,
+  Database,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
@@ -143,6 +144,12 @@ const navigation: NavItem[] = [
         title: 'Settings',
         href: '/dashboard/settings',
         icon: Settings,
+        adminOnly: true,
+      },
+      {
+        title: 'Demo Data',
+        href: '/dashboard/admin/demo-data',
+        icon: Database,
         adminOnly: true,
       },
     ],

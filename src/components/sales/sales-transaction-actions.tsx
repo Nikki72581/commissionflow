@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MoreHorizontal, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { deleteSalesTransaction } from '@/app/actions/sales-transactions'
+import { SalesTransactionFormDialog } from './sales-transaction-form-dialog'
 import { toast } from 'sonner'
 
 interface CommissionCalculation {
@@ -42,16 +43,53 @@ interface SalesTransaction {
   commissionCalculations: CommissionCalculation[]
 }
 
+interface Project {
+  id: string
+  name: string
+  client: {
+    id: string
+    name: string
+  }
+}
+
+interface Client {
+  id: string
+  name: string
+}
+
+interface User {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+}
+
+interface ProductCategory {
+  id: string
+  name: string
+}
+
 interface SalesTransactionActionsProps {
   transaction: SalesTransaction
+  projects: Project[]
+  clients: Client[]
+  users: User[]
+  productCategories: ProductCategory[]
+  requireProjects: boolean
 }
 
 export function SalesTransactionActions({
   transaction,
+  projects,
+  clients,
+  users,
+  productCategories,
+  requireProjects,
 }: SalesTransactionActionsProps) {
   const router = useRouter()
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   // Check if transaction can be edited or deleted
   const hasCommission = transaction.commissionCalculations.length > 0
@@ -96,6 +134,12 @@ export function SalesTransactionActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {canEdit && (
+            <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit
+            </DropdownMenuItem>
+          )}
           {canDelete && (
             <DropdownMenuItem
               onClick={() => setIsDeleteDialogOpen(true)}
@@ -107,6 +151,19 @@ export function SalesTransactionActions({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {canEdit && (
+        <SalesTransactionFormDialog
+          transaction={transaction}
+          projects={projects}
+          clients={clients}
+          users={users}
+          productCategories={productCategories}
+          requireProjects={requireProjects}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+        />
+      )}
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
