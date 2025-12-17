@@ -65,6 +65,7 @@ export type SalesTransactionWithRelations = Prisma.SalesTransactionGetPayload<{
         client: true
       }
     }
+    client: true
     user: true
     productCategory: true
     commissionCalculations: {

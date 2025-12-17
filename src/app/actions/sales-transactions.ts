@@ -199,6 +199,7 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         invoiceNumber: validatedData.invoiceNumber,
         description: validatedData.description,
         projectId: validatedData.projectId,
+        clientId: validatedData.clientId, // Add clientId
         userId: validatedData.userId,
         organizationId,
       },
@@ -210,6 +211,7 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
             }
           },
         },
+        client: true, // Include direct client reference
         user: true,
         productCategory: true,
       },
@@ -314,6 +316,7 @@ export async function getSalesTransactions() {
             client: true,
           },
         },
+        client: true, // Include direct client reference for transactions without projects
         user: true,
         productCategory: true,
         commissionCalculations: {
@@ -455,6 +458,7 @@ export async function updateSalesTransaction(
         project: {
           include: { client: true },
         },
+        client: true,
         user: true,
       },
     })

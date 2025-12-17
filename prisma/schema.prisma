@@ -148,10 +148,11 @@ model Client {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  territory       Territory?       @relation(fields: [territoryId], references: [id], onDelete: SetNull)
-  projects        Project[]
-  commissionRules CommissionRule[]
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  territory         Territory?         @relation(fields: [territoryId], references: [id], onDelete: SetNull)
+  projects          Project[]
+  salesTransactions SalesTransaction[]
+  commissionRules   CommissionRule[]
 
   @@index([organizationId])
   @@index([territoryId])
@@ -291,6 +292,7 @@ model SalesTransaction {
   transactionType     TransactionType  @default(SALE)
   parentTransactionId String?
   projectId           String?          // Optional - depends on organization.requireProjects setting
+  clientId            String?          // Direct client reference (for when no project is assigned)
   userId              String           // Salesperson who made the sale
   productCategoryId   String?
   organizationId      String
@@ -302,6 +304,7 @@ model SalesTransaction {
 
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   project                Project?                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client                 Client?                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
   user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   productCategory        ProductCategory?        @relation(fields: [productCategoryId], references: [id], onDelete: SetNull)
   parentTransaction      SalesTransaction?       @relation("Returns", fields: [parentTransactionId], references: [id])
@@ -310,6 +313,7 @@ model SalesTransaction {
 
   @@index([organizationId])
   @@index([projectId])
+  @@index([clientId])
   @@index([userId])
   @@index([productCategoryId])
   @@index([transactionType])

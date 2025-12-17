@@ -29,6 +29,7 @@ export const updateSalesTransactionSchema = z.object({
   invoiceNumber: z.string().optional(),
   description: z.string().optional(),
   projectId: z.string().optional(),
+  clientId: z.string().optional(),
   userId: z.string().optional(),
   commissionPlanId: z.string().optional(),
 })

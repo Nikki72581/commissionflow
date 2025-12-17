@@ -19,6 +19,7 @@ import { getUsers } from '@/app/actions/users'
 import { getProductCategories } from '@/app/actions/product-categories'
 import { getOrganizationSettings } from '@/app/actions/settings'
 import { SalesTransactionFormDialog } from '@/components/sales/sales-transaction-form-dialog'
+import { SalesTransactionActions } from '@/components/sales/sales-transaction-actions'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { SalesTransactionWithRelations } from '@/lib/types'
 export const dynamic = 'force-dynamic'
@@ -27,12 +28,24 @@ export const metadata = {
   description: 'Manage your sales transactions',
 }
 
-async function SalesTable({ searchQuery }: { searchQuery?: string }) {
-  const [salesResult, projectsResult, usersResult] = await Promise.all([
-    getSalesTransactions(),
-    getProjects(),
-    getUsers(),
-  ])
+interface SalesTableProps {
+  searchQuery?: string
+  projects: any[]
+  clients: any[]
+  users: any[]
+  productCategories: any[]
+  requireProjects: boolean
+}
+
+async function SalesTable({
+  searchQuery,
+  projects,
+  clients,
+  users,
+  productCategories,
+  requireProjects,
+}: SalesTableProps) {
+  const salesResult = await getSalesTransactions()
 
   if (!salesResult.success) {
     return (
@@ -42,28 +55,22 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
     )
   }
 
-  if (!projectsResult.success) {
-    return (
-      <div className="rounded-md bg-destructive/15 p-4 text-sm text-destructive">
-        {projectsResult.error}
-      </div>
-    )
-  }
-
   let sales = (salesResult.data || []) as SalesTransactionWithRelations[]
-  const projects = projectsResult.data || []
-  const users = usersResult.success ? usersResult.data || [] : []
 
   // Filter by search query
   if (searchQuery && sales.length > 0) {
     const query = searchQuery.toLowerCase()
     sales = sales.filter(
-      (sale) =>
-        sale.description?.toLowerCase().includes(query) ||
-        sale.project?.name.toLowerCase().includes(query) ||
-        sale.project?.client.name.toLowerCase().includes(query) ||
-        (sale.user.firstName && sale.user.lastName &&
-          `${sale.user.firstName} ${sale.user.lastName}`.toLowerCase().includes(query))
+      (sale) => {
+        const clientName = sale.project?.client.name || sale.client?.name
+        return (
+          sale.description?.toLowerCase().includes(query) ||
+          sale.project?.name.toLowerCase().includes(query) ||
+          clientName?.toLowerCase().includes(query) ||
+          (sale.user.firstName && sale.user.lastName &&
+            `${sale.user.firstName} ${sale.user.lastName}`.toLowerCase().includes(query))
+        )
+      }
     )
   }
 
@@ -102,6 +109,7 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
             <TableHead>Salesperson</TableHead>
             <TableHead>Commission</TableHead>
             <TableHead>Description</TableHead>
+            <TableHead className="w-[50px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -144,7 +152,7 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
                   )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {sale.project?.client.name || '—'}
+                  {sale.project?.client.name || sale.client?.name || '—'}
                 </TableCell>
                 <TableCell>
                   {sale.user.firstName} {sale.user.lastName}
@@ -173,6 +181,16 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
                 </TableCell>
                 <TableCell className="max-w-xs truncate text-muted-foreground">
                   {sale.description || '—'}
+                </TableCell>
+                <TableCell>
+                  <SalesTransactionActions
+                    transaction={sale}
+                    projects={projects}
+                    clients={clients}
+                    users={users}
+                    productCategories={productCategories}
+                    requireProjects={requireProjects}
+                  />
                 </TableCell>
               </TableRow>
             )
@@ -251,7 +269,14 @@ const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.req
       </div>
 
       <Suspense fallback={<SalesTableSkeleton />}>
-        <SalesTable searchQuery={searchParams.search} />
+        <SalesTable
+          searchQuery={searchParams.search}
+          projects={projects}
+          clients={clients}
+          users={users}
+          productCategories={productCategories}
+          requireProjects={requireProjects}
+        />
       </Suspense>
     </div>
   )
