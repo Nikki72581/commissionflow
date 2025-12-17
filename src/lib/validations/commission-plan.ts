@@ -42,6 +42,18 @@ export const createCommissionRuleSchema = z
     minAmount: z.number().min(0).optional(),
     maxAmount: z.number().min(0).optional(),
     description: z.string().optional(),
+    // Scope and priority
+    scope: z
+      .enum(['GLOBAL', 'CUSTOMER_TIER', 'PRODUCT_CATEGORY', 'TERRITORY', 'CUSTOMER_SPECIFIC'])
+      .default('GLOBAL'),
+    priority: z
+      .enum(['PROJECT_SPECIFIC', 'CUSTOMER_SPECIFIC', 'PRODUCT_CATEGORY', 'TERRITORY', 'CUSTOMER_TIER', 'DEFAULT'])
+      .optional(),
+    // Scope filters
+    customerTier: z.enum(['STANDARD', 'VIP', 'NEW', 'ENTERPRISE']).optional(),
+    productCategoryId: z.string().optional(),
+    territoryId: z.string().optional(),
+    clientId: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -91,6 +103,18 @@ export const updateCommissionRuleSchema = z
     minAmount: z.number().min(0).optional(),
     maxAmount: z.number().min(0).optional(),
     description: z.string().optional(),
+    // Scope and priority
+    scope: z
+      .enum(['GLOBAL', 'CUSTOMER_TIER', 'PRODUCT_CATEGORY', 'TERRITORY', 'CUSTOMER_SPECIFIC'])
+      .optional(),
+    priority: z
+      .enum(['PROJECT_SPECIFIC', 'CUSTOMER_SPECIFIC', 'PRODUCT_CATEGORY', 'TERRITORY', 'CUSTOMER_TIER', 'DEFAULT'])
+      .optional(),
+    // Scope filters
+    customerTier: z.enum(['STANDARD', 'VIP', 'NEW', 'ENTERPRISE']).optional(),
+    productCategoryId: z.string().optional(),
+    territoryId: z.string().optional(),
+    clientId: z.string().optional(),
   })
   .refine(
     (data) => {

@@ -1,4 +1,11 @@
-import type { CommissionRule, CommissionBasis, CustomerTier } from '@prisma/client'
+import type {
+  CommissionRule,
+  CommissionBasis,
+  CustomerTier,
+  RuleScope,
+  RulePriority,
+} from '@prisma/client'
+import { compareRulePrecedence } from './rule-precedence-validator'
 
 export interface CalculationResult {
   baseAmount: number
@@ -37,6 +44,30 @@ export interface EnhancedCalculationResult extends CalculationResult {
     productCategory?: string
     territory?: string
   }
+}
+
+export interface ScopedCommissionRule extends CommissionRule {
+  scope: RuleScope
+  priority: RulePriority
+  customerTier: CustomerTier | null
+  productCategoryId: string | null
+  territoryId: string | null
+  clientId: string | null
+}
+
+export interface PrecedenceCalculationResult extends EnhancedCalculationResult {
+  selectedRule?: {
+    id: string
+    scope: RuleScope
+    priority: RulePriority
+    description: string
+  }
+  matchedRules: Array<{
+    id: string
+    scope: RuleScope
+    priority: RulePriority
+    selected: boolean
+  }>
 }
 
 /**
@@ -223,5 +254,143 @@ export function calculateCommissionWithContext(
       productCategory: context.productCategoryId,
       territory: context.territoryId,
     },
+  }
+}
+
+/**
+ * Check if a scoped rule applies to the current transaction context
+ */
+export function ruleApplies(
+  rule: ScopedCommissionRule,
+  context: CalculationContext
+): boolean {
+  switch (rule.scope) {
+    case 'GLOBAL':
+      // Global rules always apply
+      return true
+
+    case 'CUSTOMER_TIER':
+      // Must match customer tier
+      return rule.customerTier === context.customerTier
+
+    case 'PRODUCT_CATEGORY':
+      // Must match product category
+      return rule.productCategoryId === context.productCategoryId
+
+    case 'TERRITORY':
+      // Must match territory
+      return rule.territoryId === context.territoryId
+
+    case 'CUSTOMER_SPECIFIC':
+      // Must match specific customer
+      return rule.clientId === context.customerId
+
+    default:
+      return false
+  }
+}
+
+/**
+ * Filter and sort rules by applicability and precedence
+ * Returns rules sorted by priority (highest first)
+ */
+export function getApplicableRules(
+  rules: ScopedCommissionRule[],
+  context: CalculationContext
+): ScopedCommissionRule[] {
+  // Filter to only applicable rules
+  const applicable = rules.filter((rule) => ruleApplies(rule, context))
+
+  // Sort by precedence (highest priority first, then newest first)
+  return applicable.sort(compareRulePrecedence)
+}
+
+/**
+ * Calculate commission with precedence hierarchy
+ * Applies the highest-priority matching rule only
+ */
+export function calculateCommissionWithPrecedence(
+  context: CalculationContext,
+  rules: ScopedCommissionRule[]
+): PrecedenceCalculationResult {
+  // Get all applicable rules sorted by precedence
+  const applicableRules = getApplicableRules(rules, context)
+
+  // Track which rules matched
+  const matchedRules = applicableRules.map((rule, index) => ({
+    id: rule.id,
+    scope: rule.scope,
+    priority: rule.priority,
+    selected: index === 0, // Only first rule is selected
+  }))
+
+  // Use highest priority rule (first in sorted list)
+  const selectedRule = applicableRules[0]
+
+  // If no rules apply, return zero commission
+  if (!selectedRule) {
+    return {
+      baseAmount: 0,
+      cappedAmount: 0,
+      appliedRules: [],
+      finalAmount: 0,
+      basis: context.commissionBasis,
+      basisAmount:
+        context.commissionBasis === 'NET_SALES'
+          ? context.netAmount
+          : context.grossAmount,
+      context: {
+        customerTier: context.customerTier,
+        productCategory: context.productCategoryId,
+        territory: context.territoryId,
+      },
+      matchedRules,
+    }
+  }
+
+  // Calculate using only the selected rule
+  const basisAmount =
+    context.commissionBasis === 'NET_SALES'
+      ? context.netAmount
+      : context.grossAmount
+
+  const calculationResult = calculateCommission(basisAmount, [selectedRule])
+
+  // Build scope description
+  let scopeDescription = ''
+  switch (selectedRule.scope) {
+    case 'CUSTOMER_SPECIFIC':
+      scopeDescription = 'Customer-specific rule'
+      break
+    case 'PRODUCT_CATEGORY':
+      scopeDescription = 'Product category rule'
+      break
+    case 'TERRITORY':
+      scopeDescription = 'Territory rule'
+      break
+    case 'CUSTOMER_TIER':
+      scopeDescription = `${selectedRule.customerTier} tier rule`
+      break
+    case 'GLOBAL':
+      scopeDescription = 'Global default rule'
+      break
+  }
+
+  return {
+    ...calculationResult,
+    basis: context.commissionBasis,
+    basisAmount,
+    context: {
+      customerTier: context.customerTier,
+      productCategory: context.productCategoryId,
+      territory: context.territoryId,
+    },
+    selectedRule: {
+      id: selectedRule.id,
+      scope: selectedRule.scope,
+      priority: selectedRule.priority,
+      description: scopeDescription,
+    },
+    matchedRules,
   }
 }

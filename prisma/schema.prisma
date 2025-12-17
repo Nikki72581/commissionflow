@@ -63,6 +63,23 @@ enum CustomerTier {
   ENTERPRISE     // Large enterprise deals
 }
 
+enum RuleScope {
+  GLOBAL              // Apply to all transactions (default)
+  CUSTOMER_TIER       // Apply to specific customer tier
+  PRODUCT_CATEGORY    // Apply to specific product category
+  TERRITORY           // Apply to specific territory
+  CUSTOMER_SPECIFIC   // Apply to specific customer
+}
+
+enum RulePriority {
+  PROJECT_SPECIFIC    // Highest - 100
+  CUSTOMER_SPECIFIC   // 90
+  PRODUCT_CATEGORY    // 80
+  TERRITORY           // 70
+  CUSTOMER_TIER       // 60
+  DEFAULT             // Lowest - 50
+}
+
 // ============================================
 // CORE MODELS
 // ============================================
@@ -130,9 +147,10 @@ model Client {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  territory    Territory?    @relation(fields: [territoryId], references: [id], onDelete: SetNull)
-  projects     Project[]
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  territory       Territory?       @relation(fields: [territoryId], references: [id], onDelete: SetNull)
+  projects        Project[]
+  commissionRules CommissionRule[]
 
   @@index([organizationId])
   @@index([territoryId])
@@ -172,6 +190,7 @@ model ProductCategory {
 
   organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   salesTransactions SalesTransaction[]
+  commissionRules   CommissionRule[]
 
   @@index([organizationId])
   @@map("product_categories")
@@ -185,8 +204,9 @@ model Territory {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  clients      Client[]
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clients         Client[]
+  commissionRules CommissionRule[]
 
   @@index([organizationId])
   @@map("territories")
@@ -222,6 +242,8 @@ model CommissionRule {
   id               String              @id @default(cuid())
   commissionPlanId String
   ruleType         CommissionRuleType
+
+  // Existing fields
   percentage       Float?              // For PERCENTAGE type
   flatAmount       Float?              // For FLAT_AMOUNT type
   tierThreshold    Float?              // For TIERED type - revenue threshold
@@ -229,12 +251,32 @@ model CommissionRule {
   minAmount        Float?              // Minimum commission
   maxAmount        Float?              // Maximum commission (cap)
   description      String?
+
+  // NEW: Scoping fields
+  scope            RuleScope           @default(GLOBAL)
+  priority         RulePriority        @default(DEFAULT)
+
+  // NEW: Applicability filters (nullable for backward compatibility)
+  customerTier     CustomerTier?
+  productCategoryId String?
+  territoryId      String?
+  clientId         String?             // For customer-specific rules
+
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  commissionPlan CommissionPlan @relation(fields: [commissionPlanId], references: [id], onDelete: Cascade)
+  commissionPlan   CommissionPlan      @relation(fields: [commissionPlanId], references: [id], onDelete: Cascade)
+  productCategory  ProductCategory?    @relation(fields: [productCategoryId], references: [id], onDelete: SetNull)
+  territory        Territory?          @relation(fields: [territoryId], references: [id], onDelete: SetNull)
+  client           Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
 
   @@index([commissionPlanId])
+  @@index([scope])
+  @@index([priority])
+  @@index([productCategoryId])
+  @@index([territoryId])
+  @@index([clientId])
+  @@index([customerTier])
   @@map("commission_rules")
 }
 
@@ -282,6 +324,7 @@ model CommissionCalculation {
   organizationId     String
   amount             Float            // Calculated commission amount
   status             CommissionStatus @default(PENDING)
+  metadata           Json?            // NEW: Store calculation details (applied rules, basis, context)
   calculatedAt       DateTime         @default(now())
   approvedAt         DateTime?        // When the commission was approved
   paidAt             DateTime?        // When the commission was paid

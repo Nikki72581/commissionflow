@@ -16,20 +16,37 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { createClient, updateClient } from '@/app/actions/clients'
 import type { Client } from '@/lib/types'
 
+interface Territory {
+  id: string
+  name: string
+}
+
 interface ClientFormDialogProps {
   client?: Client
+  territories?: Territory[]
   trigger?: React.ReactNode
 }
 
-export function ClientFormDialog({ client, trigger }: ClientFormDialogProps) {
+export function ClientFormDialog({ client, territories = [], trigger }: ClientFormDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [tier, setTier] = useState<'STANDARD' | 'VIP' | 'NEW' | 'ENTERPRISE'>(
+    (client as any)?.tier || 'STANDARD'
+  )
+  const [territoryId, setTerritoryId] = useState((client as any)?.territoryId || '')
 
   const isEdit = !!client
 
@@ -45,6 +62,8 @@ export function ClientFormDialog({ client, trigger }: ClientFormDialogProps) {
       phone: formData.get('phone') as string,
       address: formData.get('address') as string,
       notes: formData.get('notes') as string,
+      tier,
+      territoryId: territoryId || undefined,
     }
 
     try {
@@ -159,6 +178,43 @@ export function ClientFormDialog({ client, trigger }: ClientFormDialogProps) {
                 placeholder="123 Main St, City, State 12345"
               />
             </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="tier">Customer Tier</Label>
+              <Select value={tier} onValueChange={(value: 'STANDARD' | 'VIP' | 'NEW' | 'ENTERPRISE') => setTier(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="STANDARD">Standard</SelectItem>
+                  <SelectItem value="VIP">VIP</SelectItem>
+                  <SelectItem value="NEW">New Customer</SelectItem>
+                  <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Customer tier for tier-based commission rules
+              </p>
+            </div>
+
+            {territories.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="territoryId">Territory (Optional)</Label>
+                <Select value={territoryId || 'none'} onValueChange={(value) => setTerritoryId(value === 'none' ? '' : value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select territory" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No territory</SelectItem>
+                    {territories.map((territory) => (
+                      <SelectItem key={territory.id} value={territory.id}>
+                        {territory.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid gap-2">
               <Label htmlFor="notes">Notes</Label>

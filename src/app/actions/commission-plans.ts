@@ -15,6 +15,11 @@ import type {
   CreateCommissionRuleInput,
   UpdateCommissionRuleInput,
 } from '@/lib/validations/commission-plan'
+import {
+  validateScopedRule,
+  assignPriorityFromScope,
+  detectRuleConflicts,
+} from '@/lib/rule-precedence-validator'
 
 /**
  * Get organization ID for current user
@@ -319,7 +324,7 @@ export async function deleteCommissionPlan(planId: string) {
 export async function createCommissionRule(data: CreateCommissionRuleInput) {
   try {
     const organizationId = await getOrganizationId()
-    
+
     // Validate input
     const validatedData = createCommissionRuleSchema.parse(data)
 
@@ -329,23 +334,72 @@ export async function createCommissionRule(data: CreateCommissionRuleInput) {
         id: validatedData.commissionPlanId,
         organizationId,
       },
+      include: {
+        rules: {
+          select: {
+            id: true,
+            scope: true,
+            priority: true,
+            customerTier: true,
+            productCategoryId: true,
+            territoryId: true,
+            clientId: true,
+            description: true,
+          },
+        },
+      },
     })
 
     if (!plan) {
       throw new Error('Commission plan not found')
     }
 
-    // Create rule
+    // Validate scoped rule configuration
+    const scopeValidation = validateScopedRule({
+      scope: validatedData.scope || 'GLOBAL',
+      customerTier: validatedData.customerTier,
+      productCategoryId: validatedData.productCategoryId,
+      territoryId: validatedData.territoryId,
+      clientId: validatedData.clientId,
+    })
+
+    if (!scopeValidation.valid) {
+      const errorMessages = scopeValidation.errors.map((e) => e.message).join(', ')
+      throw new Error(`Invalid rule configuration: ${errorMessages}`)
+    }
+
+    // Auto-assign priority if not set
+    const priority =
+      validatedData.priority || assignPriorityFromScope(validatedData.scope || 'GLOBAL')
+
+    // Detect potential conflicts with existing rules
+    const conflicts = detectRuleConflicts(
+      {
+        scope: validatedData.scope || 'GLOBAL',
+        customerTier: validatedData.customerTier,
+        productCategoryId: validatedData.productCategoryId,
+        territoryId: validatedData.territoryId,
+        clientId: validatedData.clientId,
+      },
+      plan.rules.map((r) => ({ ...r, name: r.description || undefined }))
+    )
+
+    // Create rule with auto-assigned priority
     const rule = await prisma.commissionRule.create({
-      data: validatedData,
+      data: {
+        ...validatedData,
+        priority,
+      },
     })
 
     revalidatePath('/dashboard/plans')
     revalidatePath(`/dashboard/plans/${validatedData.commissionPlanId}`)
-    
+
+    // Return with warnings if conflicts detected
     return {
       success: true,
       data: rule,
+      warnings: conflicts.length > 0 ? conflicts.map((c) => c.reason) : undefined,
     }
   } catch (error) {
     console.error('Error creating commission rule:', error)
@@ -365,7 +419,7 @@ export async function updateCommissionRule(
 ) {
   try {
     const organizationId = await getOrganizationId()
-    
+
     // Validate input
     const validatedData = updateCommissionRuleSchema.parse(data)
 
@@ -378,7 +432,27 @@ export async function updateCommissionRule(
         },
       },
       include: {
-        commissionPlan: true,
+        commissionPlan: {
+          include: {
+            rules: {
+              where: {
+                id: {
+                  not: ruleId, // Exclude current rule from conflict check
+                },
+              },
+              select: {
+                id: true,
+                scope: true,
+                priority: true,
+                customerTier: true,
+                productCategoryId: true,
+                territoryId: true,
+                clientId: true,
+                description: true,
+              },
+            },
+          },
+        },
       },
     })
 
@@ -386,7 +460,61 @@ export async function updateCommissionRule(
       throw new Error('Commission rule not found')
     }
 
-    // Update rule
+    // If scope fields are being updated, validate
+    if (
+      validatedData.scope !== undefined ||
+      validatedData.customerTier !== undefined ||
+      validatedData.productCategoryId !== undefined ||
+      validatedData.territoryId !== undefined ||
+      validatedData.clientId !== undefined
+    ) {
+      const scopeValidation = validateScopedRule({
+        scope: validatedData.scope ?? existingRule.scope,
+        customerTier: validatedData.customerTier ?? existingRule.customerTier,
+        productCategoryId: validatedData.productCategoryId ?? existingRule.productCategoryId,
+        territoryId: validatedData.territoryId ?? existingRule.territoryId,
+        clientId: validatedData.clientId ?? existingRule.clientId,
+      })
+
+      if (!scopeValidation.valid) {
+        const errorMessages = scopeValidation.errors.map((e) => e.message).join(', ')
+        throw new Error(`Invalid rule configuration: ${errorMessages}`)
+      }
+
+      // Auto-reassign priority if scope changed and priority not explicitly set
+      if (validatedData.scope && !validatedData.priority) {
+        validatedData.priority = assignPriorityFromScope(validatedData.scope)
+      }
+
+      // Detect conflicts
+      const conflicts = detectRuleConflicts(
+        {
+          scope: validatedData.scope ?? existingRule.scope,
+          customerTier: validatedData.customerTier ?? existingRule.customerTier,
+          productCategoryId: validatedData.productCategoryId ?? existingRule.productCategoryId,
+          territoryId: validatedData.territoryId ?? existingRule.territoryId,
+          clientId: validatedData.clientId ?? existingRule.clientId,
+        },
+        existingRule.commissionPlan.rules.map((r) => ({ ...r, name: r.description || undefined }))
+      )
+
+      // Update rule
+      const rule = await prisma.commissionRule.update({
+        where: { id: ruleId },
+        data: validatedData,
+      })
+
+      revalidatePath('/dashboard/plans')
+      revalidatePath(`/dashboard/plans/${existingRule.commissionPlanId}`)
+
+      return {
+        success: true,
+        data: rule,
+        warnings: conflicts.length > 0 ? conflicts.map((c) => c.reason) : undefined,
+      }
+    }
+
+    // No scope changes - simple update
     const rule = await prisma.commissionRule.update({
       where: { id: ruleId },
       data: validatedData,
@@ -394,7 +522,7 @@ export async function updateCommissionRule(
 
     revalidatePath('/dashboard/plans')
     revalidatePath(`/dashboard/plans/${existingRule.commissionPlanId}`)
-    
+
     return {
       success: true,
       data: rule,

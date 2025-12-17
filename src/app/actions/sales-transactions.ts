@@ -3,7 +3,12 @@
 import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
-import { calculateCommission, calculateCommissionWithContext, type CalculationContext } from '@/lib/commission-calculator'
+import {
+  calculateCommission,
+  calculateCommissionWithPrecedence,
+  type CalculationContext,
+  type ScopedCommissionRule,
+} from '@/lib/commission-calculator'
 import { calculateNetSalesAmount } from '@/lib/net-sales-calculator'
 import {
   createSalesTransactionSchema,
@@ -160,8 +165,31 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         commissionBasis: commissionPlan.commissionBasis,
       }
 
-      // Use context-aware calculator
-      const result = calculateCommissionWithContext(context, commissionPlan.rules)
+      // Use precedence-aware calculator
+      const result = calculateCommissionWithPrecedence(
+        context,
+        commissionPlan.rules as ScopedCommissionRule[]
+      )
+
+      // Build metadata for audit trail
+      const metadata = {
+        basis: result.basis,
+        basisAmount: result.basisAmount,
+        grossAmount: validatedData.amount,
+        netAmount,
+        context: {
+          customerTier: project.client.tier,
+          customerId: project.client.id,
+          customerName: project.client.name,
+          productCategoryId: validatedData.productCategoryId,
+          territoryId: project.client.territoryId,
+          territoryName: project.client.territory?.name,
+        },
+        selectedRule: result.selectedRule,
+        matchedRules: result.matchedRules,
+        appliedRules: result.appliedRules,
+        calculatedAt: new Date().toISOString(),
+      }
 
       calculation = await prisma.commissionCalculation.create({
         data: {
@@ -169,6 +197,7 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
           userId: validatedData.userId,
           commissionPlanId: commissionPlan.id,
           amount: result.finalAmount,
+          metadata,
           calculatedAt: new Date(),
           status: 'PENDING',
           organizationId,
@@ -432,11 +461,23 @@ export async function recalculateCommission(transactionId: string, planId: strin
   try {
     const organizationId = await getOrganizationId()
 
-    // Get transaction
+    // Get transaction with full context
     const transaction = await prisma.salesTransaction.findFirst({
       where: {
         id: transactionId,
         organizationId,
+      },
+      include: {
+        project: {
+          include: {
+            client: {
+              include: {
+                territory: true,
+              },
+            },
+          },
+        },
+        productCategory: true,
       },
     })
 
@@ -459,8 +500,48 @@ export async function recalculateCommission(transactionId: string, planId: strin
       throw new Error('Commission plan not found')
     }
 
-    // Calculate commission
-    const result = calculateCommission(transaction.amount, plan.rules)
+    // Calculate net sales amount
+    const netAmount = await calculateNetSalesAmount(transaction.id)
+
+    // Build calculation context
+    const context: CalculationContext = {
+      grossAmount: transaction.amount,
+      netAmount,
+      transactionDate: transaction.transactionDate,
+      customerId: transaction.project.client.id,
+      customerTier: transaction.project.client.tier,
+      projectId: transaction.projectId,
+      productCategoryId: transaction.productCategoryId || undefined,
+      territoryId: transaction.project.client.territoryId || undefined,
+      commissionBasis: plan.commissionBasis,
+    }
+
+    // Use precedence-aware calculator
+    const result = calculateCommissionWithPrecedence(
+      context,
+      plan.rules as ScopedCommissionRule[]
+    )
+
+    // Build metadata
+    const metadata = {
+      basis: result.basis,
+      basisAmount: result.basisAmount,
+      grossAmount: transaction.amount,
+      netAmount,
+      context: {
+        customerTier: transaction.project.client.tier,
+        customerId: transaction.project.client.id,
+        customerName: transaction.project.client.name,
+        productCategoryId: transaction.productCategoryId,
+        territoryId: transaction.project.client.territoryId,
+        territoryName: transaction.project.client.territory?.name,
+      },
+      selectedRule: result.selectedRule,
+      matchedRules: result.matchedRules,
+      appliedRules: result.appliedRules,
+      calculatedAt: new Date().toISOString(),
+      recalculated: true,
+    }
 
     // Delete existing calculations for this transaction that aren't paid
     await prisma.commissionCalculation.deleteMany({
@@ -477,6 +558,7 @@ export async function recalculateCommission(transactionId: string, planId: strin
         userId: transaction.userId,
         commissionPlanId: plan.id,
         amount: result.finalAmount,
+        metadata,
         calculatedAt: new Date(),
         status: 'PENDING',
         organizationId,
@@ -489,7 +571,7 @@ export async function recalculateCommission(transactionId: string, planId: strin
     revalidatePath('/dashboard/sales')
     revalidatePath('/dashboard/commissions')
     revalidatePath(`/dashboard/sales/${transactionId}`)
-    
+
     return {
       success: true,
       data: calculation,
