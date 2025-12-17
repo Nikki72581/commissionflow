@@ -150,11 +150,13 @@ export async function GET(request: NextRequest) {
 
     sales.forEach(sale => {
       const salespersonName = `${sale.user.firstName} ${sale.user.lastName}`
+      const clientName = sale.project?.client.name || 'No Client'
+      const projectName = sale.project?.name || 'No Project'
       results.push({
         type: 'sale',
         id: sale.id,
         title: sale.description || `Sale #${sale.invoiceNumber || sale.id.slice(0, 8)}`,
-        subtitle: `${sale.project.client.name} - ${sale.project.name}`,
+        subtitle: `${clientName} - ${projectName}`,
         metadata: {
           amount: `$${sale.amount.toLocaleString()}`,
           salesperson: salespersonName,
@@ -261,11 +263,13 @@ export async function GET(request: NextRequest) {
 
     commissions.forEach(commission => {
       const salespersonName = `${commission.user.firstName} ${commission.user.lastName}`
+      const clientName = commission.salesTransaction.project?.client.name || 'No Client'
+      const projectName = commission.salesTransaction.project?.name || 'No Project'
       results.push({
         type: 'commission',
         id: commission.id,
         title: `${salespersonName} - $${commission.amount.toLocaleString()}`,
-        subtitle: `${commission.salesTransaction.project.client.name} - ${commission.salesTransaction.project.name}`,
+        subtitle: `${clientName} - ${projectName}`,
         metadata: {
           plan: commission.commissionPlan.name,
           status: commission.status.toLowerCase()

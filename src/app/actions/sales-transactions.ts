@@ -573,6 +573,11 @@ export async function recalculateCommission(transactionId: string, planId: strin
       throw new Error('Commission plan not found')
     }
 
+    // Check if transaction has a project with client
+    if (!transaction.project?.client) {
+      throw new Error('Transaction must have a project with a client to calculate commission')
+    }
+
     // Calculate net sales amount
     const netAmount = await calculateNetSalesAmount(transaction.id)
 
@@ -583,7 +588,7 @@ export async function recalculateCommission(transactionId: string, planId: strin
       transactionDate: transaction.transactionDate,
       customerId: transaction.project.client.id,
       customerTier: transaction.project.client.tier,
-      projectId: transaction.projectId,
+      projectId: transaction.projectId || undefined,
       productCategoryId: transaction.productCategoryId || undefined,
       territoryId: transaction.project.client.territoryId || undefined,
       commissionBasis: plan.commissionBasis,

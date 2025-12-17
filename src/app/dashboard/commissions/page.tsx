@@ -62,8 +62,8 @@ async function CommissionsTable({
     calculations = calculations.filter(
       (calc) =>
         `${calc.user.firstName} ${calc.user.lastName}`.toLowerCase().includes(query) ||
-        calc.salesTransaction.project.name.toLowerCase().includes(query) ||
-        calc.salesTransaction.project.client.name.toLowerCase().includes(query) ||
+        calc.salesTransaction.project?.name.toLowerCase().includes(query) ||
+        calc.salesTransaction.project?.client.name.toLowerCase().includes(query) ||
         calc.commissionPlan.name.toLowerCase().includes(query)
     )
   }
@@ -181,15 +181,21 @@ async function CommissionsTable({
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Link
-                    href={`/dashboard/projects/${calc.salesTransaction.project.id}`}
-                    className="text-sm hover:underline"
-                  >
-                    {calc.salesTransaction.project.name}
-                  </Link>
-                  <div className="text-xs text-muted-foreground">
-                    {calc.salesTransaction.project.client.name}
-                  </div>
+                  {calc.salesTransaction.project ? (
+                    <>
+                      <Link
+                        href={`/dashboard/projects/${calc.salesTransaction.project.id}`}
+                        className="text-sm hover:underline"
+                      >
+                        {calc.salesTransaction.project.name}
+                      </Link>
+                      <div className="text-xs text-muted-foreground">
+                        {calc.salesTransaction.project.client.name}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No Project</div>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge
