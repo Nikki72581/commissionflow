@@ -47,13 +47,18 @@ export default function DemoDataGeneratorPage() {
         body: JSON.stringify({ count }),
       })
 
-      if (!response.ok) throw new Error('Failed to generate clients')
-
       const data = await response.json()
+
+      if (!response.ok) {
+        const errorMsg = data.error || 'Failed to generate clients'
+        throw new Error(errorMsg)
+      }
+
       setStats(prev => ({ ...prev!, clients: (prev?.clients || 0) + data.count }))
       setProgress(100)
       setStatus(`✅ Generated ${data.count} clients`)
     } catch (err: any) {
+      console.error('Error generating clients:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -73,13 +78,18 @@ export default function DemoDataGeneratorPage() {
         body: JSON.stringify({ count }),
       })
 
-      if (!response.ok) throw new Error('Failed to generate projects')
-
       const data = await response.json()
+
+      if (!response.ok) {
+        const errorMsg = data.error || 'Failed to generate projects'
+        throw new Error(errorMsg)
+      }
+
       setStats(prev => ({ ...prev!, projects: (prev?.projects || 0) + data.count }))
       setProgress(100)
       setStatus(`✅ Generated ${data.count} projects`)
     } catch (err: any) {
+      console.error('Error generating projects:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -100,17 +110,24 @@ export default function DemoDataGeneratorPage() {
         body: JSON.stringify({ count }),
       })
 
-      if (!response.ok) throw new Error('Failed to generate sales')
-
       const data = await response.json()
-      setStats(prev => ({ 
-        ...prev!, 
+
+      if (!response.ok) {
+        // Show detailed error message from API
+        const errorMsg = data.error || 'Failed to generate sales'
+        const errorDetails = data.details ? `\n\nDetails: ${data.details}` : ''
+        throw new Error(errorMsg + errorDetails)
+      }
+
+      setStats(prev => ({
+        ...prev!,
         sales: (prev?.sales || 0) + data.salesCount,
         commissions: (prev?.commissions || 0) + data.commissionsCount
       }))
       setProgress(100)
       setStatus(`✅ Generated ${data.salesCount} sales and ${data.commissionsCount} commissions`)
     } catch (err: any) {
+      console.error('Error generating sales:', err)
       setError(err.message)
     } finally {
       setLoading(false)

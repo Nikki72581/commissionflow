@@ -192,20 +192,26 @@ export async function POST(req: NextRequest) {
       let project = null
       let client = null
 
-      if (organization?.requireProjects || (projects.length > 0 && Math.random() > 0.3)) {
-        // Use a project (either required or 70% of the time when available)
+      // Logic to determine what to use
+      const shouldUseProject = organization?.requireProjects || (projects.length > 0 && clients.length === 0) || (projects.length > 0 && Math.random() > 0.3)
+
+      if (shouldUseProject && projects.length > 0) {
+        // Use a project
         project = randomItem(projects)
         console.log(`\n💼 Sale ${i + 1}/${count}:`)
         console.log(`   Project: ${project.name}`)
         console.log(`   Amount: $${amount.toLocaleString()}`)
         console.log(`   Salesperson: ${salesperson.firstName} ${salesperson.lastName}`)
-      } else {
+      } else if (clients.length > 0) {
         // Use a client directly (no project)
         client = randomItem(clients)
         console.log(`\n💼 Sale ${i + 1}/${count}:`)
         console.log(`   Client: ${client.name} (no project)`)
         console.log(`   Amount: $${amount.toLocaleString()}`)
         console.log(`   Salesperson: ${salesperson.firstName} ${salesperson.lastName}`)
+      } else {
+        console.log(`\n⚠️  Sale ${i + 1}/${count}: Skipping - no projects or clients available`)
+        continue
       }
 
       // Create sale
@@ -322,8 +328,13 @@ export async function POST(req: NextRequest) {
     
   } catch (error: any) {
     console.error('❌ Error in sales route:', error)
-    return NextResponse.json({ 
-      error: error.message || 'Internal server error'
+    console.error('Error stack:', error.stack)
+
+    // Return detailed error information
+    return NextResponse.json({
+      error: error.message || 'Internal server error',
+      details: error.stack,
+      type: error.constructor.name
     }, { status: 500 })
   }
 }
