@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { updateUserProfile, getUserProfile, updateNotificationPreferences } from '@/app/actions/settings'
-import { User, Bell, Shield, Loader2, ShoppingCart, MapPin, Award, ChevronRight, Settings } from 'lucide-react'
+import { updateUserProfile, getUserProfile, updateNotificationPreferences, getOrganizationSettings, updateOrganizationSettings } from '@/app/actions/settings'
+import { User, Bell, Shield, Loader2, ShoppingCart, MapPin, Award, ChevronRight, Settings, FolderKanban } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 import Link from 'next/link'
 
 interface UserProfile {
@@ -43,24 +44,36 @@ export default function SettingsPage() {
   const [commissionAlerts, setCommissionAlerts] = useState(true)
   const [weeklyReports, setWeeklyReports] = useState(false)
 
+  // Organization settings
+  const [requireProjects, setRequireProjects] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+
   // Load user profile
   useEffect(() => {
     async function loadProfile() {
       try {
         setLoading(true)
-        const result = await getUserProfile()
+        const [profileResult, orgResult] = await Promise.all([
+          getUserProfile(),
+          getOrganizationSettings()
+        ])
 
-        if (result.success && result.data) {
-          setProfile(result.data)
-          setFirstName(result.data.firstName || '')
-          setLastName(result.data.lastName || '')
-          setEmail(result.data.email)
-          setEmailNotifications(result.data.emailNotifications)
-          setSalesAlerts(result.data.salesAlerts)
-          setCommissionAlerts(result.data.commissionAlerts)
-          setWeeklyReports(result.data.weeklyReports)
+        if (profileResult.success && profileResult.data) {
+          setProfile(profileResult.data)
+          setFirstName(profileResult.data.firstName || '')
+          setLastName(profileResult.data.lastName || '')
+          setEmail(profileResult.data.email)
+          setEmailNotifications(profileResult.data.emailNotifications)
+          setSalesAlerts(profileResult.data.salesAlerts)
+          setCommissionAlerts(profileResult.data.commissionAlerts)
+          setWeeklyReports(profileResult.data.weeklyReports)
+          setIsAdmin(profileResult.data.role === 'ADMIN')
         } else {
-          setError(result.error || 'Failed to load profile')
+          setError(profileResult.error || 'Failed to load profile')
+        }
+
+        if (orgResult.success && orgResult.data) {
+          setRequireProjects(orgResult.data.requireProjects)
         }
       } catch (err) {
         setError('An unexpected error occurred')
@@ -124,6 +137,30 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleOrganizationSettingsUpdate(newRequireProjects: boolean) {
+    setError(null)
+    setSuccess(null)
+    setSaving(true)
+
+    try {
+      const result = await updateOrganizationSettings({
+        requireProjects: newRequireProjects,
+      })
+
+      if (result.success) {
+        setRequireProjects(newRequireProjects)
+        setSuccess('Organization settings updated successfully')
+        router.refresh()
+      } else {
+        setError(result.error || 'Failed to update organization settings')
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -154,7 +191,35 @@ export default function SettingsPage() {
             Configure product categories, territories, and customer tier definitions
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
+          {/* Project Settings - Admin Only */}
+          {isAdmin && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-1 flex-1">
+                  <div className="flex items-center gap-2">
+                    <FolderKanban className="h-5 w-5 text-orange-600" />
+                    <Label htmlFor="requireProjects" className="font-semibold">Require Projects for Sales</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    When enabled, all sales transactions must be associated with a project. When disabled, sales can be created without selecting a project.
+                  </p>
+                </div>
+                <Switch
+                  id="requireProjects"
+                  checked={requireProjects}
+                  onCheckedChange={handleOrganizationSettingsUpdate}
+                  disabled={saving}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground px-1">
+                This setting only affects new sales transactions. Existing sales will retain their project associations.
+              </p>
+            </div>
+          )}
+
+          <Separator />
+
           <div className="grid gap-4 md:grid-cols-3">
             {/* Product Categories */}
             <Link href="/dashboard/settings/product-categories">

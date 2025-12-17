@@ -34,7 +34,7 @@ interface SalesTransaction {
   productCategoryId?: string | null
   invoiceNumber?: string | null
   description?: string | null
-  projectId: string
+  projectId: string | null
   userId: string
 }
 
@@ -42,8 +42,14 @@ interface Project {
   id: string
   name: string
   client: {
+    id: string
     name: string
   }
+}
+
+interface Client {
+  id: string
+  name: string
 }
 
 interface User {
@@ -61,16 +67,20 @@ interface ProductCategory {
 interface SalesTransactionFormDialogProps {
   transaction?: SalesTransaction
   projects: Project[]
+  clients?: Client[]
   users: User[]
   productCategories?: ProductCategory[]
+  requireProjects?: boolean
   trigger?: React.ReactNode
 }
 
 export function SalesTransactionFormDialog({
   transaction,
   projects,
+  clients = [],
   users,
   productCategories = [],
+  requireProjects = true,
   trigger,
 }: SalesTransactionFormDialogProps) {
   const router = useRouter()
@@ -78,6 +88,7 @@ export function SalesTransactionFormDialog({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState(transaction?.projectId || '')
+  const [selectedClientId, setSelectedClientId] = useState('')
   const [selectedUserId, setSelectedUserId] = useState(transaction?.userId || '')
   const [transactionType, setTransactionType] = useState<'SALE' | 'RETURN' | 'ADJUSTMENT'>(
     transaction?.transactionType || 'SALE'
@@ -99,13 +110,20 @@ export function SalesTransactionFormDialog({
       productCategoryId: productCategoryId || undefined,
       invoiceNumber: formData.get('invoiceNumber') as string || undefined,
       description: formData.get('description') as string,
-      projectId: selectedProjectId,
+      projectId: selectedProjectId || undefined,
+      clientId: selectedClientId || undefined,
       userId: selectedUserId,
     }
 
     // Validate required fields
-    if (!data.projectId) {
+    if (requireProjects && !data.projectId) {
       setError('Please select a project')
+      setLoading(false)
+      return
+    }
+
+    if (!requireProjects && !data.projectId && !data.clientId) {
+      setError('Please select either a project or a client')
       setLoading(false)
       return
     }
@@ -254,23 +272,57 @@ export function SalesTransactionFormDialog({
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="projectId">
-                Project <span className="text-destructive">*</span>
-              </Label>
-              <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name} ({project.client.name})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Project Selector - Conditionally Required */}
+            {projects.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="projectId">
+                  Project {requireProjects && <span className="text-destructive">*</span>}
+                  {!requireProjects && <span className="text-muted-foreground text-xs">(Optional)</span>}
+                </Label>
+                <Select value={selectedProjectId} onValueChange={(value) => {
+                  setSelectedProjectId(value)
+                  // Auto-select client from project if available
+                  if (value && projects.length > 0) {
+                    const project = projects.find(p => p.id === value)
+                    if (project) {
+                      setSelectedClientId(project.client.id)
+                    }
+                  }
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name} ({project.client.name})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Client Selector - Only show when projects are optional and no project selected */}
+            {!requireProjects && clients.length > 0 && !selectedProjectId && (
+              <div className="grid gap-2">
+                <Label htmlFor="clientId">
+                  Client <span className="text-destructive">*</span>
+                </Label>
+                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid gap-2">
               <Label htmlFor="userId">
@@ -305,8 +357,9 @@ export function SalesTransactionFormDialog({
               <div className="rounded-lg bg-muted p-3 text-sm">
                 <p className="font-medium">💡 Automatic Commission Calculation</p>
                 <p className="text-muted-foreground mt-1">
-                  If the selected project has an active commission plan, we'll calculate the
-                  commission automatically.
+                  {requireProjects
+                    ? "If the selected project has an active commission plan, we'll calculate the commission automatically."
+                    : "We'll find the best matching commission plan (project-level, client-level, or organization-wide) and calculate the commission automatically."}
                 </p>
               </div>
             )}

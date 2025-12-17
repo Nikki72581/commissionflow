@@ -51,31 +51,67 @@ async function getOrganizationId(): Promise<string> {
 export async function createSalesTransaction(data: CreateSalesTransactionInput) {
   try {
     const organizationId = await getOrganizationId()
-    
+
     // Validate input
     const validatedData = createSalesTransactionSchema.parse(data)
 
-    // Verify project belongs to organization
-    const project = await prisma.project.findFirst({
-      where: {
-        id: validatedData.projectId,
-        organizationId,
-      },
-      include: {
-        client: {
-          include: {
-            territory: true,
-          },
-        },
-        commissionPlans: {
-          where: { isActive: true },
-          include: { rules: true },
-        },
-      },
+    // Get organization settings to check if projects are required
+    const organization = await prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { requireProjects: true },
     })
 
-    if (!project) {
-      throw new Error('Project not found')
+    if (!organization) {
+      throw new Error('Organization not found')
+    }
+
+    // Enforce project requirement if enabled
+    if (organization.requireProjects && !validatedData.projectId) {
+      throw new Error('Project is required for sales transactions in this organization')
+    }
+
+    // Verify project belongs to organization (if project is provided)
+    let project = null
+    let client = null
+
+    if (validatedData.projectId) {
+      project = await prisma.project.findFirst({
+        where: {
+          id: validatedData.projectId,
+          organizationId,
+        },
+        include: {
+          client: {
+            include: {
+              territory: true,
+            },
+          },
+          commissionPlans: {
+            where: { isActive: true },
+            include: { rules: true },
+          },
+        },
+      })
+
+      if (!project) {
+        throw new Error('Project not found')
+      }
+      client = project.client
+    } else if (validatedData.clientId) {
+      // If no project but client is provided, fetch client directly
+      client = await prisma.client.findFirst({
+        where: {
+          id: validatedData.clientId,
+          organizationId,
+        },
+        include: {
+          territory: true,
+        },
+      })
+
+      if (!client) {
+        throw new Error('Client not found')
+      }
     }
 
     // Verify user belongs to organization
@@ -92,11 +128,43 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
 
     // Determine which commission plan to use
     let commissionPlanId = validatedData.commissionPlanId
-    
+
     if (!commissionPlanId) {
-      // Use project's first active plan if no specific plan provided
-      if (project.commissionPlans.length > 0) {
+      if (project && project.commissionPlans.length > 0) {
+        // Use project's first active plan if no specific plan provided
         commissionPlanId = project.commissionPlans[0].id
+      } else if (client) {
+        // Look for client-level plans (plans associated with client's projects)
+        const clientPlans = await prisma.commissionPlan.findMany({
+          where: {
+            organizationId,
+            isActive: true,
+            project: {
+              clientId: client.id,
+            },
+          },
+          include: { rules: true },
+          take: 1,
+        })
+
+        if (clientPlans.length > 0) {
+          commissionPlanId = clientPlans[0].id
+        } else {
+          // Fall back to organization-wide plans (plans with no project)
+          const orgPlans = await prisma.commissionPlan.findMany({
+            where: {
+              organizationId,
+              isActive: true,
+              projectId: null,
+            },
+            include: { rules: true },
+            take: 1,
+          })
+
+          if (orgPlans.length > 0) {
+            commissionPlanId = orgPlans[0].id
+          }
+        }
       }
     }
 
@@ -149,7 +217,7 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
 
     // Calculate commission if plan exists
     let calculation = null
-    if (commissionPlan && commissionPlan.rules.length > 0) {
+    if (commissionPlan && commissionPlan.rules.length > 0 && client) {
       // Calculate net sales amount
       const netAmount = await calculateNetSalesAmount(transaction.id)
 
@@ -158,11 +226,11 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         grossAmount: validatedData.amount,
         netAmount,
         transactionDate,
-        customerId: project.client.id,
-        customerTier: project.client.tier,
-        projectId: validatedData.projectId,
+        customerId: client.id,
+        customerTier: client.tier,
+        projectId: validatedData.projectId || undefined,
         productCategoryId: validatedData.productCategoryId,
-        territoryId: project.client.territoryId || undefined,
+        territoryId: client.territoryId || undefined,
         commissionBasis: commissionPlan.commissionBasis,
       }
 
@@ -179,12 +247,13 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         grossAmount: validatedData.amount,
         netAmount,
         context: {
-          customerTier: project.client.tier,
-          customerId: project.client.id,
-          customerName: project.client.name,
+          customerTier: client.tier,
+          customerId: client.id,
+          customerName: client.name,
           productCategoryId: validatedData.productCategoryId,
-          territoryId: project.client.territoryId,
-          territoryName: project.client.territory?.name,
+          territoryId: client.territoryId,
+          territoryName: client.territory?.name,
+          projectId: validatedData.projectId,
         },
         selectedRule: result.selectedRule,
         matchedRules: result.matchedRules,
@@ -208,8 +277,10 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
 
     revalidatePath('/dashboard/sales')
     revalidatePath('/dashboard/commissions')
-    revalidatePath(`/dashboard/projects/${validatedData.projectId}`)
-    
+    if (validatedData.projectId) {
+      revalidatePath(`/dashboard/projects/${validatedData.projectId}`)
+    }
+
     return {
       success: true,
       data: {

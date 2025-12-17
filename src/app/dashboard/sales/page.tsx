@@ -14,8 +14,10 @@ import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getSalesTransactions } from '@/app/actions/sales-transactions'
 import { getProjects } from '@/app/actions/projects'
+import { getClients } from '@/app/actions/clients'
 import { getUsers } from '@/app/actions/users'
 import { getProductCategories } from '@/app/actions/product-categories'
+import { getOrganizationSettings } from '@/app/actions/settings'
 import { SalesTransactionFormDialog } from '@/components/sales/sales-transaction-form-dialog'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { SalesTransactionWithRelations } from '@/lib/types'
@@ -58,8 +60,8 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
     sales = sales.filter(
       (sale) =>
         sale.description?.toLowerCase().includes(query) ||
-        sale.project.name.toLowerCase().includes(query) ||
-        sale.project.client.name.toLowerCase().includes(query) ||
+        sale.project?.name.toLowerCase().includes(query) ||
+        sale.project?.client.name.toLowerCase().includes(query) ||
         (sale.user.firstName && sale.user.lastName &&
           `${sale.user.firstName} ${sale.user.lastName}`.toLowerCase().includes(query))
     )
@@ -130,15 +132,19 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
                   {sale.productCategory?.name || '—'}
                 </TableCell>
                 <TableCell>
-                  <Link
-                    href={`/dashboard/projects/${sale.project.id}`}
-                    className="hover:underline"
-                  >
-                    {sale.project.name}
-                  </Link>
+                  {sale.project ? (
+                    <Link
+                      href={`/dashboard/projects/${sale.project.id}`}
+                      className="hover:underline"
+                    >
+                      {sale.project.name}
+                    </Link>
+                  ) : (
+                    <span className="text-muted-foreground">No project</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  {sale.project.client.name}
+                  {sale.project?.client.name || '—'}
                 </TableCell>
                 <TableCell>
                   {sale.user.firstName} {sale.user.lastName}
@@ -192,13 +198,16 @@ export default async function SalesPage({
 }: {
   searchParams: { search?: string }
 }) {
-  const [projectsResult, usersResult, productCategoriesResult] = await Promise.all([
+  const [projectsResult, clientsResult, usersResult, productCategoriesResult, orgSettingsResult] = await Promise.all([
     getProjects(),
+    getClients(),
     getUsers(),
     getProductCategories(),
+    getOrganizationSettings(),
   ])
 
 const projects = projectsResult.success ? (projectsResult.data || []) : []
+const clients = clientsResult.success ? (clientsResult.data || []) : []
 const users = (usersResult.success ? (usersResult.data || []) : [])
   .filter(user => user.firstName && user.lastName) as Array<{
     id: string
@@ -207,6 +216,7 @@ const users = (usersResult.success ? (usersResult.data || []) : [])
     email: string
   }>
 const productCategories = productCategoriesResult.success ? (productCategoriesResult.data || []) : []
+const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.requireProjects ?? true) : true
 
   return (
     <div className="space-y-6">
@@ -217,7 +227,13 @@ const productCategories = productCategoriesResult.success ? (productCategoriesRe
             Track all sales and their commission calculations
           </p>
         </div>
-        <SalesTransactionFormDialog projects={projects} users={users} productCategories={productCategories} />
+        <SalesTransactionFormDialog
+          projects={projects}
+          clients={clients}
+          users={users}
+          productCategories={productCategories}
+          requireProjects={requireProjects}
+        />
       </div>
 
       <div className="flex items-center gap-4">

@@ -9,6 +9,13 @@ import {
   type UpdateUserProfileInput,
   type UpdateNotificationPreferencesInput
 } from '@/lib/validations/user'
+import { z } from 'zod'
+
+const updateOrganizationSettingsSchema = z.object({
+  requireProjects: z.boolean(),
+})
+
+type UpdateOrganizationSettingsInput = z.infer<typeof updateOrganizationSettingsSchema>
 
 /**
  * Get current user for settings
@@ -148,6 +155,92 @@ export async function updateNotificationPreferences(data: UpdateNotificationPref
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to update preferences',
+    }
+  }
+}
+
+/**
+ * Get organization settings
+ */
+export async function getOrganizationSettings() {
+  try {
+    const user = await getCurrentUser()
+
+    const organization = await prisma.organization.findUnique({
+      where: { id: user.organizationId },
+      select: {
+        id: true,
+        name: true,
+        requireProjects: true,
+      },
+    })
+
+    if (!organization) {
+      throw new Error('Organization not found')
+    }
+
+    return {
+      success: true,
+      data: organization,
+    }
+  } catch (error) {
+    console.error('Error fetching organization settings:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch organization settings',
+    }
+  }
+}
+
+/**
+ * Update organization settings (admin only)
+ */
+export async function updateOrganizationSettings(data: UpdateOrganizationSettingsInput) {
+  try {
+    const user = await getCurrentUser()
+
+    // Verify user is admin
+    if (user.role !== 'ADMIN') {
+      throw new Error('Only administrators can update organization settings')
+    }
+
+    const validatedData = updateOrganizationSettingsSchema.parse(data)
+
+    const updatedOrganization = await prisma.organization.update({
+      where: { id: user.organizationId },
+      data: {
+        ...validatedData,
+        updatedAt: new Date(),
+      },
+    })
+
+    // Create audit log for organization settings update
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        organizationId: user.organizationId,
+        action: 'organization_settings_updated',
+        entityType: 'organization',
+        entityId: user.organizationId,
+        description: `Updated organization settings: requireProjects=${validatedData.requireProjects}`,
+        metadata: validatedData,
+      },
+    })
+
+    revalidatePath('/dashboard/settings')
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/sales')
+
+    return {
+      success: true,
+      data: updatedOrganization,
+      message: 'Organization settings updated successfully',
+    }
+  } catch (error) {
+    console.error('Error updating organization settings:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update organization settings',
     }
   }
 }

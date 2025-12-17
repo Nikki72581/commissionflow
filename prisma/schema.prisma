@@ -85,12 +85,13 @@ enum RulePriority {
 // ============================================
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  planTier  PlanTier @default(STARTER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  planTier        PlanTier @default(STARTER)
+  requireProjects Boolean  @default(true) // Whether projects are required for sales transactions
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   users                  User[]
   clients                Client[]
@@ -289,7 +290,7 @@ model SalesTransaction {
   amount              Float
   transactionType     TransactionType  @default(SALE)
   parentTransactionId String?
-  projectId           String
+  projectId           String?          // Optional - depends on organization.requireProjects setting
   userId              String           // Salesperson who made the sale
   productCategoryId   String?
   organizationId      String
@@ -300,7 +301,7 @@ model SalesTransaction {
   updatedAt           DateTime         @updatedAt
 
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  project                Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project                Project?                @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   productCategory        ProductCategory?        @relation(fields: [productCategoryId], references: [id], onDelete: SetNull)
   parentTransaction      SalesTransaction?       @relation("Returns", fields: [parentTransactionId], references: [id])
