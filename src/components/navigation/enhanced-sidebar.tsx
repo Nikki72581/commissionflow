@@ -130,6 +130,31 @@ const navigation: NavItem[] = [
     ],
   },
   {
+    title: 'Setup',
+    icon: Settings,
+    adminOnly: true,
+    children: [
+      {
+        title: 'Product Categories',
+        href: '/dashboard/settings/product-categories',
+        icon: ShoppingCart,
+        adminOnly: true,
+      },
+      {
+        title: 'Territories',
+        href: '/dashboard/settings/territories',
+        icon: Shield,
+        adminOnly: true,
+      },
+      {
+        title: 'Customer Tiers',
+        href: '/dashboard/settings/customer-tiers',
+        icon: User,
+        adminOnly: true,
+      },
+    ],
+  },
+  {
     title: 'Help & Support',
     icon: HelpCircle,
     children: [

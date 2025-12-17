@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { updateUserProfile, getUserProfile, updateNotificationPreferences } from '@/app/actions/settings'
-import { User, Bell, Shield, Loader2 } from 'lucide-react'
+import { User, Bell, Shield, Loader2, ShoppingCart, MapPin, Award, ChevronRight, Settings } from 'lucide-react'
+import Link from 'next/link'
 
 interface UserProfile {
   id: string
@@ -139,6 +140,84 @@ export default function SettingsPage() {
           Manage your account settings and preferences
         </p>
       </div>
+
+      <Separator />
+
+      {/* Commission Setup Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            <CardTitle>Commission Setup</CardTitle>
+          </div>
+          <CardDescription>
+            Configure product categories, territories, and customer tier definitions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            {/* Product Categories */}
+            <Link href="/dashboard/settings/product-categories">
+              <Card className="cursor-pointer transition-all hover:shadow-md border-2 hover:border-primary/50">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <ShoppingCart className="h-5 w-5 text-blue-600" />
+                        <h3 className="font-semibold">Product Categories</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Organize products into categories for targeted commission rules
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Territories */}
+            <Link href="/dashboard/settings/territories">
+              <Card className="cursor-pointer transition-all hover:shadow-md border-2 hover:border-primary/50">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-green-600" />
+                        <h3 className="font-semibold">Territories</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Define sales territories and assign clients for regional rules
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+
+            {/* Customer Tiers */}
+            <Link href="/dashboard/settings/customer-tiers">
+              <Card className="cursor-pointer transition-all hover:shadow-md border-2 hover:border-primary/50">
+                <CardContent className="pt-6">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <Award className="h-5 w-5 text-purple-600" />
+                        <h3 className="font-semibold">Customer Tiers</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        View tier definitions: STANDARD, VIP, NEW, and ENTERPRISE
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
       <Separator />
 
