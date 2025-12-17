@@ -7,6 +7,7 @@ export const createCommissionPlanSchema = z.object({
   name: z.string().min(1, 'Plan name is required').max(100, 'Name too long'),
   description: z.string().optional(),
   projectId: z.string().optional(),
+  commissionBasis: z.enum(['GROSS_REVENUE', 'NET_SALES']).default('GROSS_REVENUE'),
   isActive: z.boolean().default(true),
 })
 
@@ -17,6 +18,7 @@ export const updateCommissionPlanSchema = z.object({
   name: z.string().min(1, 'Plan name is required').max(100, 'Name too long').optional(),
   description: z.string().optional(),
   projectId: z.string().optional(),
+  commissionBasis: z.enum(['GROSS_REVENUE', 'NET_SALES']).optional(),
   isActive: z.boolean().optional(),
 })
 

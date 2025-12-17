@@ -45,6 +45,24 @@ enum CommissionRuleType {
   TIERED        // Different rates at different thresholds
 }
 
+enum CommissionBasis {
+  GROSS_REVENUE  // Full invoice amount (default)
+  NET_SALES      // Invoice minus returns/credits
+}
+
+enum TransactionType {
+  SALE           // Regular sale
+  RETURN         // Return/credit
+  ADJUSTMENT     // Manual adjustment
+}
+
+enum CustomerTier {
+  STANDARD       // Default tier
+  VIP            // High-value customers
+  NEW            // New customers
+  ENTERPRISE     // Large enterprise deals
+}
+
 // ============================================
 // CORE MODELS
 // ============================================
@@ -64,7 +82,9 @@ model Organization {
   salesTransactions      SalesTransaction[]
   commissionCalculations CommissionCalculation[]
   payouts                Payout[]
-  auditLogs      AuditLog[] 
+  auditLogs              AuditLog[]
+  productCategories      ProductCategory[]
+  territories            Territory[]
 
   @@map("organizations")
 }
@@ -98,20 +118,25 @@ model User {
 }
 
 model Client {
-  id             String   @id @default(cuid())
+  id             String        @id @default(cuid())
   name           String
   email          String?
   phone          String?
   address        String?
   notes          String?
+  tier           CustomerTier  @default(STANDARD)
+  territoryId    String?
   organizationId String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  territory    Territory?    @relation(fields: [territoryId], references: [id], onDelete: SetNull)
   projects     Project[]
 
   @@index([organizationId])
+  @@index([territoryId])
+  @@index([tier])
   @@map("clients")
 }
 
@@ -137,19 +162,50 @@ model Project {
   @@map("projects")
 }
 
+model ProductCategory {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesTransactions SalesTransaction[]
+
+  @@index([organizationId])
+  @@map("product_categories")
+}
+
+model Territory {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clients      Client[]
+
+  @@index([organizationId])
+  @@map("territories")
+}
+
 // ============================================
 // COMMISSION PLANNING MODELS
 // ============================================
 
 model CommissionPlan {
-  id             String   @id @default(cuid())
-  name           String
-  description    String?
-  projectId      String?
-  organizationId String
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  projectId       String?
+  commissionBasis CommissionBasis  @default(GROSS_REVENUE)
+  organizationId  String
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   project                Project?                @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -158,6 +214,7 @@ model CommissionPlan {
 
   @@index([organizationId])
   @@index([projectId])
+  @@index([commissionBasis])
   @@map("commission_plans")
 }
 
@@ -186,25 +243,33 @@ model CommissionRule {
 // ============================================
 
 model SalesTransaction {
-  id             String    @id @default(cuid())
-  amount         Float
-  projectId      String
-  userId         String    // Salesperson who made the sale
-  organizationId String
-  transactionDate DateTime @default(now())
-  description    String?
-  invoiceNumber  String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id                  String           @id @default(cuid())
+  amount              Float
+  transactionType     TransactionType  @default(SALE)
+  parentTransactionId String?
+  projectId           String
+  userId              String           // Salesperson who made the sale
+  productCategoryId   String?
+  organizationId      String
+  transactionDate     DateTime         @default(now())
+  description         String?
+  invoiceNumber       String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   project                Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productCategory        ProductCategory?        @relation(fields: [productCategoryId], references: [id], onDelete: SetNull)
+  parentTransaction      SalesTransaction?       @relation("Returns", fields: [parentTransactionId], references: [id])
+  returns                SalesTransaction[]      @relation("Returns")
   commissionCalculations CommissionCalculation[]
 
   @@index([organizationId])
   @@index([projectId])
   @@index([userId])
+  @@index([productCategoryId])
+  @@index([transactionType])
   @@index([transactionDate])
   @@map("sales_transactions")
 }

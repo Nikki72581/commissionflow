@@ -6,6 +6,9 @@ import { z } from 'zod'
 export const createSalesTransactionSchema = z.object({
   amount: z.number().min(0.01, 'Amount must be greater than 0'),
   transactionDate: z.string().min(1, 'Transaction date is required'),
+  transactionType: z.enum(['SALE', 'RETURN', 'ADJUSTMENT']).default('SALE'),
+  parentTransactionId: z.string().optional(),
+  productCategoryId: z.string().optional(),
   description: z.string().optional(),
   projectId: z.string().min(1, 'Project is required'),
   userId: z.string().min(1, 'Salesperson is required'),

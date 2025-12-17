@@ -3,7 +3,8 @@
 import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
-import { calculateCommission } from '@/lib/commission-calculator'
+import { calculateCommission, calculateCommissionWithContext, type CalculationContext } from '@/lib/commission-calculator'
+import { calculateNetSalesAmount } from '@/lib/net-sales-calculator'
 import {
   createSalesTransactionSchema,
   updateSalesTransactionSchema,
@@ -56,6 +57,11 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         organizationId,
       },
       include: {
+        client: {
+          include: {
+            territory: true,
+          },
+        },
         commissionPlans: {
           where: { isActive: true },
           include: { rules: true },
@@ -114,6 +120,9 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
       data: {
         amount: validatedData.amount,
         transactionDate,
+        transactionType: validatedData.transactionType || 'SALE',
+        parentTransactionId: validatedData.parentTransactionId,
+        productCategoryId: validatedData.productCategoryId,
         description: validatedData.description,
         projectId: validatedData.projectId,
         userId: validatedData.userId,
@@ -121,16 +130,38 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
       },
       include: {
         project: {
-          include: { client: true },
+          include: {
+            client: {
+              include: { territory: true }
+            }
+          },
         },
         user: true,
+        productCategory: true,
       },
     })
 
     // Calculate commission if plan exists
     let calculation = null
     if (commissionPlan && commissionPlan.rules.length > 0) {
-      const result = calculateCommission(validatedData.amount, commissionPlan.rules)
+      // Calculate net sales amount
+      const netAmount = await calculateNetSalesAmount(transaction.id)
+
+      // Build calculation context
+      const context: CalculationContext = {
+        grossAmount: validatedData.amount,
+        netAmount,
+        transactionDate,
+        customerId: project.client.id,
+        customerTier: project.client.tier,
+        projectId: validatedData.projectId,
+        productCategoryId: validatedData.productCategoryId,
+        territoryId: project.client.territoryId || undefined,
+        commissionBasis: commissionPlan.commissionBasis,
+      }
+
+      // Use context-aware calculator
+      const result = calculateCommissionWithContext(context, commissionPlan.rules)
 
       calculation = await prisma.commissionCalculation.create({
         data: {

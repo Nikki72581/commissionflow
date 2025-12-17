@@ -29,6 +29,9 @@ interface SalesTransaction {
   id: string
   amount: number
   transactionDate: Date
+  transactionType?: 'SALE' | 'RETURN' | 'ADJUSTMENT'
+  parentTransactionId?: string | null
+  productCategoryId?: string | null
   description?: string | null
   projectId: string
   userId: string
@@ -49,10 +52,16 @@ interface User {
   email: string
 }
 
+interface ProductCategory {
+  id: string
+  name: string
+}
+
 interface SalesTransactionFormDialogProps {
   transaction?: SalesTransaction
   projects: Project[]
   users: User[]
+  productCategories?: ProductCategory[]
   trigger?: React.ReactNode
 }
 
@@ -60,6 +69,7 @@ export function SalesTransactionFormDialog({
   transaction,
   projects,
   users,
+  productCategories = [],
   trigger,
 }: SalesTransactionFormDialogProps) {
   const router = useRouter()
@@ -68,6 +78,10 @@ export function SalesTransactionFormDialog({
   const [error, setError] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState(transaction?.projectId || '')
   const [selectedUserId, setSelectedUserId] = useState(transaction?.userId || '')
+  const [transactionType, setTransactionType] = useState<'SALE' | 'RETURN' | 'ADJUSTMENT'>(
+    transaction?.transactionType || 'SALE'
+  )
+  const [productCategoryId, setProductCategoryId] = useState(transaction?.productCategoryId || '')
 
   const isEdit = !!transaction
 
@@ -80,6 +94,8 @@ export function SalesTransactionFormDialog({
     const data = {
       amount: parseFloat(formData.get('amount') as string),
       transactionDate: formData.get('transactionDate') as string,
+      transactionType,
+      productCategoryId: productCategoryId || undefined,
       description: formData.get('description') as string,
       projectId: selectedProjectId,
       userId: selectedUserId,
@@ -189,6 +205,41 @@ export function SalesTransactionFormDialog({
                 required
               />
             </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="transactionType">
+                Transaction Type <span className="text-destructive">*</span>
+              </Label>
+              <Select value={transactionType} onValueChange={(value: 'SALE' | 'RETURN' | 'ADJUSTMENT') => setTransactionType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SALE">Sale</SelectItem>
+                  <SelectItem value="RETURN">Return/Credit</SelectItem>
+                  <SelectItem value="ADJUSTMENT">Adjustment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {productCategories.length > 0 && (
+              <div className="grid gap-2">
+                <Label htmlFor="productCategoryId">Product Category (Optional)</Label>
+                <Select value={productCategoryId || 'none'} onValueChange={(value) => setProductCategoryId(value === 'none' ? '' : value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No category</SelectItem>
+                    {productCategories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="grid gap-2">
               <Label htmlFor="projectId">

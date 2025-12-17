@@ -1,4 +1,4 @@
-import type { CommissionRule } from '@prisma/client'
+import type { CommissionRule, CommissionBasis, CustomerTier } from '@prisma/client'
 
 export interface CalculationResult {
   baseAmount: number
@@ -10,6 +10,33 @@ export interface CalculationResult {
     description: string
   }[]
   finalAmount: number
+}
+
+export interface CalculationContext {
+  // Transaction details
+  grossAmount: number
+  netAmount: number // After returns/credits
+  transactionDate: Date
+
+  // Contextual information
+  customerId?: string
+  customerTier?: CustomerTier
+  projectId?: string
+  productCategoryId?: string
+  territoryId?: string
+
+  // Basis selection
+  commissionBasis: CommissionBasis
+}
+
+export interface EnhancedCalculationResult extends CalculationResult {
+  basis: CommissionBasis
+  basisAmount: number
+  context: {
+    customerTier?: CustomerTier
+    productCategory?: string
+    territory?: string
+  }
 }
 
 /**
@@ -167,5 +194,34 @@ export function getRuleTypeLabel(ruleType: string): string {
       return 'Tiered'
     default:
       return ruleType
+  }
+}
+
+/**
+ * Calculate commission with context (enhanced version)
+ */
+export function calculateCommissionWithContext(
+  context: CalculationContext,
+  rules: CommissionRule[]
+): EnhancedCalculationResult {
+  // Determine basis amount
+  const basisAmount =
+    context.commissionBasis === 'NET_SALES'
+      ? context.netAmount
+      : context.grossAmount
+
+  // Use existing calculation logic
+  const baseResult = calculateCommission(basisAmount, rules)
+
+  // Return enhanced result
+  return {
+    ...baseResult,
+    basis: context.commissionBasis,
+    basisAmount,
+    context: {
+      customerTier: context.customerTier,
+      productCategory: context.productCategoryId,
+      territory: context.territoryId,
+    },
   }
 }

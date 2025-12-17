@@ -30,6 +30,7 @@ interface CommissionPlan {
   name: string
   description?: string | null
   projectId?: string | null
+  commissionBasis?: 'GROSS_REVENUE' | 'NET_SALES'
   isActive: boolean
 }
 
@@ -57,6 +58,9 @@ export function CommissionPlanFormDialog({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState(plan?.projectId || '')
+  const [commissionBasis, setCommissionBasis] = useState<'GROSS_REVENUE' | 'NET_SALES'>(
+    plan?.commissionBasis || 'GROSS_REVENUE'
+  )
   const [isActive, setIsActive] = useState(plan?.isActive ?? true)
 
   const isEdit = !!plan
@@ -71,6 +75,7 @@ export function CommissionPlanFormDialog({
       name: formData.get('name') as string,
       description: formData.get('description') as string,
       projectId: selectedProjectId || undefined,
+      commissionBasis,
       isActive,
     }
 
@@ -147,6 +152,28 @@ export function CommissionPlanFormDialog({
                 placeholder="Describe when this plan applies..."
                 rows={3}
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="commissionBasis">
+                Commission Basis <span className="text-destructive">*</span>
+              </Label>
+              <Select value={commissionBasis} onValueChange={(value: 'GROSS_REVENUE' | 'NET_SALES') => setCommissionBasis(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="GROSS_REVENUE">
+                    Gross Revenue (Full Invoice Amount)
+                  </SelectItem>
+                  <SelectItem value="NET_SALES">
+                    Net Sales (After Returns/Credits)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose what amount to calculate commission on
+              </p>
             </div>
 
             <div className="grid gap-2">
