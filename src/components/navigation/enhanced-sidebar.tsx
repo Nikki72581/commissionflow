@@ -115,26 +115,7 @@ const navigation: NavItem[] = [
         icon: Users,
         adminOnly: true,
       },
-      {
-        title: 'Audit Logs',
-        href: '/dashboard/audit-logs',
-        icon: FileSearch,
-        adminOnly: true,
-      },
-      {
-        title: 'Settings',
-        href: '/dashboard/settings',
-        icon: Settings,
-        adminOnly: true,
-      },
-    ],
-  },
-  {
-    title: 'Setup',
-    icon: Settings,
-    adminOnly: true,
-    children: [
-      {
+       {
         title: 'Product Categories',
         href: '/dashboard/settings/product-categories',
         icon: ShoppingCart,
@@ -152,8 +133,21 @@ const navigation: NavItem[] = [
         icon: User,
         adminOnly: true,
       },
+      {
+        title: 'Audit Logs',
+        href: '/dashboard/audit-logs',
+        icon: FileSearch,
+        adminOnly: true,
+      },
+      {
+        title: 'Settings',
+        href: '/dashboard/settings',
+        icon: Settings,
+        adminOnly: true,
+      },
     ],
   },
+ 
   {
     title: 'Help & Support',
     icon: HelpCircle,
