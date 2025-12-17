@@ -56,13 +56,16 @@ export async function sendCommissionApprovedNotification(calculationId: string) 
     }
 
     // Generate email HTML
+    const clientName = calculation.salesTransaction.project?.client.name || 'No Client'
+    const projectName = calculation.salesTransaction.project?.name || 'No Project'
+
     const emailHtml = getCommissionApprovedEmail({
       salespersonName: `${calculation.user.firstName} ${calculation.user.lastName}`,
       commissionAmount: calculation.amount,
       saleAmount: calculation.salesTransaction.amount,
       commissionRate: (calculation.amount / calculation.salesTransaction.amount) * 100,
-      clientName: calculation.salesTransaction.project.client.name,
-      projectName: calculation.salesTransaction.project.name,
+      clientName,
+      projectName,
       saleDate: calculation.salesTransaction.transactionDate,
       approvedDate: calculation.approvedAt,
       dashboardUrl: `${APP_URL}/dashboard/my-commissions`,
@@ -71,7 +74,7 @@ export async function sendCommissionApprovedNotification(calculationId: string) 
     // Send email
     const result = await sendEmail({
       to: calculation.user.email,
-      subject: `Commission Approved - ${calculation.salesTransaction.project.client.name}`,
+      subject: `Commission Approved - ${clientName}`,
       html: emailHtml,
     })
 
@@ -131,12 +134,15 @@ export async function sendCommissionPaidNotification(calculationId: string) {
     }
 
     // Generate email HTML
+    const clientName = calculation.salesTransaction.project?.client.name || 'No Client'
+    const projectName = calculation.salesTransaction.project?.name || 'No Project'
+
     const emailHtml = getCommissionPaidEmail({
       salespersonName: `${calculation.user.firstName} ${calculation.user.lastName}`,
       commissionAmount: calculation.amount,
       saleAmount: calculation.salesTransaction.amount,
-      clientName: calculation.salesTransaction.project.client.name,
-      projectName: calculation.salesTransaction.project.name,
+      clientName,
+      projectName,
       saleDate: calculation.salesTransaction.transactionDate,
       paidDate: paidAt,
       dashboardUrl: `${APP_URL}/dashboard/my-commissions`,
@@ -145,7 +151,7 @@ export async function sendCommissionPaidNotification(calculationId: string) {
     // Send email
     const result = await sendEmail({
       to: calculation.user.email,
-      subject: `Commission Payment Processed - ${calculation.salesTransaction.project.client.name}`,
+      subject: `Commission Payment Processed - ${clientName}`,
       html: emailHtml,
     })
 
@@ -226,8 +232,8 @@ export async function sendBulkPayoutNotifications(calculationIds: string[]) {
           paidDate: userData.paidDate,
           commissions: userData.commissions.map((c: any) => ({
             amount: c.amount,
-            clientName: c.salesTransaction.project.client.name,
-            projectName: c.salesTransaction.project.name,
+            clientName: c.salesTransaction.project?.client.name || 'No Client',
+            projectName: c.salesTransaction.project?.name || 'No Project',
           })),
           dashboardUrl: `${APP_URL}/dashboard/my-commissions`,
         })
