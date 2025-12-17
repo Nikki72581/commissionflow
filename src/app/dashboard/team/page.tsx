@@ -16,6 +16,8 @@ import { getUsers } from '@/app/actions/users'
 import { db } from '@/lib/db'
 import { formatDate } from '@/lib/utils'
 import { getCurrentUserWithOrg } from '@/lib/auth'
+import { InviteMembersDialog } from '@/components/team/invite-members-dialog'
+import { PendingInvitations } from '@/components/team/pending-invitations'
 
 export const dynamic = 'force-dynamic'
 
@@ -204,6 +206,7 @@ export default async function TeamPage({
 }) {
   const user = await getCurrentUserWithOrg()
   const stats = await getTeamStats(user.organizationId)
+  const isAdmin = user.role === 'ADMIN'
 
   const teamMetrics = [
     {
@@ -237,11 +240,14 @@ export default async function TeamPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Team</h1>
-        <p className="text-muted-foreground">
-          View and manage your team members
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Team</h1>
+          <p className="text-muted-foreground">
+            View and manage your team members
+          </p>
+        </div>
+        {isAdmin && <InviteMembersDialog />}
       </div>
 
       {/* Team Metrics */}
@@ -265,6 +271,9 @@ export default async function TeamPage({
           </Card>
         ))}
       </div>
+
+      {/* Pending Invitations - Admin Only */}
+      {isAdmin && <PendingInvitations />}
 
       {/* Search Bar */}
       <div className="flex items-center gap-4">

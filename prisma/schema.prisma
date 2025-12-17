@@ -88,6 +88,7 @@ model Organization {
   id              String   @id @default(cuid())
   name            String
   slug            String   @unique
+  clerkOrgId      String?  @unique // Clerk organization ID for team invitations
   planTier        PlanTier @default(STARTER)
   requireProjects Boolean  @default(true) // Whether projects are required for sales transactions
   createdAt       DateTime @default(now())
