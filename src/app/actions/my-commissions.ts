@@ -297,10 +297,10 @@ const exportData = calculations.map(calc => ({
   saleDate: calc.salesTransaction.transactionDate,
   saleAmount: calc.salesTransaction.amount,
   commissionAmount: calc.amount,
-  commissionPercentage: (calc.amount / calc.salesTransaction.amount) * 100,  // ✅ Fixed
-  projectName: calc.salesTransaction.project.name,  // ✅ Fixed
-  clientName: calc.salesTransaction.project.client.name,  // ✅ Fixed
-  commissionPlan: calc.commissionPlan.name,  // ✅ Fixed
+  commissionPercentage: (calc.amount / calc.salesTransaction.amount) * 100,
+  projectName: calc.salesTransaction.project?.name || 'No Project',
+  clientName: calc.salesTransaction.project?.client.name || 'No Client',
+  commissionPlan: calc.commissionPlan.name,
   status: calc.status,
   approvedDate: calc.approvedAt,
   paidDate: calc.paidAt,
