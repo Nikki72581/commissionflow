@@ -9,6 +9,7 @@ export const createSalesTransactionSchema = z.object({
   transactionType: z.enum(['SALE', 'RETURN', 'ADJUSTMENT']).default('SALE'),
   parentTransactionId: z.string().optional(),
   productCategoryId: z.string().optional(),
+  invoiceNumber: z.string().optional(),
   description: z.string().optional(),
   projectId: z.string().min(1, 'Project is required'),
   userId: z.string().min(1, 'Salesperson is required'),
@@ -21,6 +22,9 @@ export const createSalesTransactionSchema = z.object({
 export const updateSalesTransactionSchema = z.object({
   amount: z.number().min(0.01, 'Amount must be greater than 0').optional(),
   transactionDate: z.string().optional(),
+  transactionType: z.enum(['SALE', 'RETURN', 'ADJUSTMENT']).optional(),
+  productCategoryId: z.string().optional(),
+  invoiceNumber: z.string().optional(),
   description: z.string().optional(),
   projectId: z.string().optional(),
   userId: z.string().optional(),

@@ -32,6 +32,7 @@ interface SalesTransaction {
   transactionType?: 'SALE' | 'RETURN' | 'ADJUSTMENT'
   parentTransactionId?: string | null
   productCategoryId?: string | null
+  invoiceNumber?: string | null
   description?: string | null
   projectId: string
   userId: string
@@ -96,6 +97,7 @@ export function SalesTransactionFormDialog({
       transactionDate: formData.get('transactionDate') as string,
       transactionType,
       productCategoryId: productCategoryId || undefined,
+      invoiceNumber: formData.get('invoiceNumber') as string || undefined,
       description: formData.get('description') as string,
       projectId: selectedProjectId,
       userId: selectedUserId,
@@ -240,6 +242,17 @@ export function SalesTransactionFormDialog({
                 </Select>
               </div>
             )}
+
+            <div className="grid gap-2">
+              <Label htmlFor="invoiceNumber">Invoice Number (Optional)</Label>
+              <Input
+                id="invoiceNumber"
+                name="invoiceNumber"
+                type="text"
+                defaultValue={transaction?.invoiceNumber || ''}
+                placeholder="INV-12345"
+              />
+            </div>
 
             <div className="grid gap-2">
               <Label htmlFor="projectId">

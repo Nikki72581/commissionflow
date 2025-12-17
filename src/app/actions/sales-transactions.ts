@@ -128,6 +128,7 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         transactionType: validatedData.transactionType || 'SALE',
         parentTransactionId: validatedData.parentTransactionId,
         productCategoryId: validatedData.productCategoryId,
+        invoiceNumber: validatedData.invoiceNumber,
         description: validatedData.description,
         projectId: validatedData.projectId,
         userId: validatedData.userId,
@@ -243,6 +244,7 @@ export async function getSalesTransactions() {
           },
         },
         user: true,
+        productCategory: true,
         commissionCalculations: {
           include: {
             commissionPlan: true,

@@ -15,8 +15,10 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { getSalesTransactions } from '@/app/actions/sales-transactions'
 import { getProjects } from '@/app/actions/projects'
 import { getUsers } from '@/app/actions/users'
+import { getProductCategories } from '@/app/actions/product-categories'
 import { SalesTransactionFormDialog } from '@/components/sales/sales-transaction-form-dialog'
 import { formatDate, formatCurrency } from '@/lib/utils'
+import type { SalesTransactionWithRelations } from '@/lib/types'
 export const dynamic = 'force-dynamic'
 export const metadata = {
   title: 'Sales | CommissionFlow',
@@ -46,7 +48,7 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
     )
   }
 
-  let sales = salesResult.data || []
+  let sales = (salesResult.data || []) as SalesTransactionWithRelations[]
   const projects = projectsResult.data || []
   const users = usersResult.success ? usersResult.data || [] : []
 
@@ -58,7 +60,8 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
         sale.description?.toLowerCase().includes(query) ||
         sale.project.name.toLowerCase().includes(query) ||
         sale.project.client.name.toLowerCase().includes(query) ||
-        `${sale.user.firstName} ${sale.user.lastName}`.toLowerCase().includes(query)
+        (sale.user.firstName && sale.user.lastName &&
+          `${sale.user.firstName} ${sale.user.lastName}`.toLowerCase().includes(query))
     )
   }
 
@@ -89,6 +92,9 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
           <TableRow>
             <TableHead>Date</TableHead>
             <TableHead>Amount</TableHead>
+            <TableHead>Type</TableHead>
+            <TableHead>Invoice #</TableHead>
+            <TableHead>Product Category</TableHead>
             <TableHead>Project</TableHead>
             <TableHead>Client</TableHead>
             <TableHead>Salesperson</TableHead>
@@ -101,6 +107,9 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
             const hasCommission = sale.commissionCalculations.length > 0
             const commission = hasCommission ? sale.commissionCalculations[0] : null
 
+            const transactionTypeLabel = sale.transactionType === 'RETURN' ? 'Return' : sale.transactionType === 'ADJUSTMENT' ? 'Adjustment' : 'Sale'
+            const transactionTypeVariant = sale.transactionType === 'RETURN' ? 'destructive' : sale.transactionType === 'ADJUSTMENT' ? 'secondary' : 'default'
+
             return (
               <TableRow key={sale.id}>
                 <TableCell className="text-muted-foreground">
@@ -108,6 +117,17 @@ async function SalesTable({ searchQuery }: { searchQuery?: string }) {
                 </TableCell>
                 <TableCell className="font-semibold">
                   {formatCurrency(sale.amount)}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={transactionTypeVariant as 'default' | 'destructive' | 'secondary'}>
+                    {transactionTypeLabel}
+                  </Badge>
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {sale.invoiceNumber || '—'}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {sale.productCategory?.name || '—'}
                 </TableCell>
                 <TableCell>
                   <Link
@@ -172,11 +192,12 @@ export default async function SalesPage({
 }: {
   searchParams: { search?: string }
 }) {
-  const [projectsResult, usersResult] = await Promise.all([
+  const [projectsResult, usersResult, productCategoriesResult] = await Promise.all([
     getProjects(),
     getUsers(),
+    getProductCategories(),
   ])
-  
+
 const projects = projectsResult.success ? (projectsResult.data || []) : []
 const users = (usersResult.success ? (usersResult.data || []) : [])
   .filter(user => user.firstName && user.lastName) as Array<{
@@ -185,6 +206,8 @@ const users = (usersResult.success ? (usersResult.data || []) : [])
     lastName: string
     email: string
   }>
+const productCategories = productCategoriesResult.success ? (productCategoriesResult.data || []) : []
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -194,7 +217,7 @@ const users = (usersResult.success ? (usersResult.data || []) : [])
             Track all sales and their commission calculations
           </p>
         </div>
-        <SalesTransactionFormDialog projects={projects} users={users} />
+        <SalesTransactionFormDialog projects={projects} users={users} productCategories={productCategories} />
       </div>
 
       <div className="flex items-center gap-4">
