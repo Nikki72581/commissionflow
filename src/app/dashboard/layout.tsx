@@ -2,7 +2,7 @@
 import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar'
 import { EnhancedHeader } from '@/components/navigation/enhanced-header'
 import { MobileBottomNav } from '@/components/navigation/mobile-navigation'
-import { auth } from '@clerk/nextjs/server'
+import { getCurrentUserWithOrg } from '@/lib/auth'
 
 import { prisma } from '@/lib/db'
 
@@ -11,40 +11,22 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { userId } = await auth()
-  
-  // Get user info with organization
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId! },
-    select: {
-      firstName: true,
-      lastName: true,
-      email: true,
-      role: true,
-      organization: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          planTier: true,
-        },
-      },
-    },
-  })
+  // Use auth helper that ensures user has completed onboarding
+  const user = await getCurrentUserWithOrg()
 
   // Get pending count for badges
   const pendingCount = await prisma.commissionCalculation.count({
     where: {
       status: 'PENDING',
-      user: { clerkId: userId! },
+      user: { clerkId: user.clerkId },
     },
   })
 
-  const userName = `${user?.firstName} ${user?.lastName}`
-  const userEmail = user?.email || ''
-  const userRole = user?.role || 'SALESPERSON'
-  const organizationName = user?.organization?.name || 'Unknown Organization'
-  const organizationSlug = user?.organization?.slug || ''
+  const userName = `${user.firstName} ${user.lastName}`
+  const userEmail = user.email
+  const userRole = user.role
+  const organizationName = user.organization.name
+  const organizationSlug = user.organization.slug
 
   return (
     <div className="flex min-h-screen flex-col">
