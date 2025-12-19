@@ -126,6 +126,9 @@ model User {
   commissionAlerts   Boolean  @default(true)
   weeklyReports      Boolean  @default(false)
 
+  // Theme preference
+  themePreference    String   @default("system") // "light" | "dark" | "system"
+
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   salesTransactions      SalesTransaction[]
   commissionCalculations CommissionCalculation[]

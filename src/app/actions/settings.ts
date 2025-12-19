@@ -11,6 +11,12 @@ import {
 } from '@/lib/validations/user'
 import { z } from 'zod'
 
+const updateThemePreferenceSchema = z.object({
+  themePreference: z.enum(['light', 'dark', 'system']),
+})
+
+type UpdateThemePreferenceInput = z.infer<typeof updateThemePreferenceSchema>
+
 const updateOrganizationSettingsSchema = z.object({
   requireProjects: z.boolean(),
 })
@@ -103,6 +109,7 @@ export async function getUserProfile() {
         salesAlerts: user.salesAlerts,
         commissionAlerts: user.commissionAlerts,
         weeklyReports: user.weeklyReports,
+        themePreference: user.themePreference,
       },
     }
   } catch (error) {
@@ -110,6 +117,39 @@ export async function getUserProfile() {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch profile',
+    }
+  }
+}
+
+/**
+ * Update user theme preference
+ */
+export async function updateThemePreference(data: UpdateThemePreferenceInput) {
+  try {
+    const user = await getCurrentUser()
+    const validatedData = updateThemePreferenceSchema.parse(data)
+
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        themePreference: validatedData.themePreference,
+        updatedAt: new Date(),
+      },
+    })
+
+    revalidatePath('/dashboard/settings')
+    revalidatePath('/dashboard')
+
+    return {
+      success: true,
+      data: updatedUser,
+      message: 'Theme preference updated successfully',
+    }
+  } catch (error) {
+    console.error('Error updating theme preference:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update theme preference',
     }
   }
 }

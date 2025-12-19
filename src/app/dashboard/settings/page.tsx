@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { updateUserProfile, getUserProfile, updateNotificationPreferences, getOrganizationSettings, updateOrganizationSettings } from '@/app/actions/settings'
-import { User, Bell, Shield, Loader2, ShoppingCart, MapPin, Award, ChevronRight, Settings, FolderKanban } from 'lucide-react'
+import { updateUserProfile, getUserProfile, updateNotificationPreferences, getOrganizationSettings, updateOrganizationSettings, updateThemePreference } from '@/app/actions/settings'
+import { User, Bell, Shield, Loader2, ShoppingCart, MapPin, Award, ChevronRight, Settings, FolderKanban, Palette, Sun, Moon, Monitor } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
+import { useTheme } from '@/components/providers/theme-provider'
 import Link from 'next/link'
 
 interface UserProfile {
@@ -23,6 +24,7 @@ interface UserProfile {
   salesAlerts: boolean
   commissionAlerts: boolean
   weeklyReports: boolean
+  themePreference: string
 }
 
 export default function SettingsPage() {
@@ -32,6 +34,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const { theme, setTheme } = useTheme()
 
   // Form state
   const [firstName, setFirstName] = useState('')
@@ -158,6 +161,30 @@ export default function SettingsPage() {
       setError('An unexpected error occurred')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleThemeChange(newTheme: 'light' | 'dark' | 'system') {
+    setError(null)
+    setSuccess(null)
+    setTheme(newTheme)
+
+    try {
+      const result = await updateThemePreference({ themePreference: newTheme })
+
+      if (result.success) {
+        setSuccess('Theme preference updated successfully')
+        // Clear success message after 2 seconds
+        setTimeout(() => setSuccess(null), 2000)
+      } else {
+        setError(result.error || 'Failed to update theme preference')
+        // Revert theme on error
+        setTheme(profile?.themePreference as 'light' | 'dark' | 'system' || 'system')
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+      // Revert theme on error
+      setTheme(profile?.themePreference as 'light' | 'dark' | 'system' || 'system')
     }
   }
 
@@ -374,6 +401,91 @@ export default function SettingsPage() {
               </Button>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Theme Preferences */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Palette className="h-5 w-5" />
+            <CardTitle>Appearance</CardTitle>
+          </div>
+          <CardDescription>
+            Customize how CommissionFlow looks on your device
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <Label>Theme Mode</Label>
+            <div className="grid gap-3">
+              <button
+                onClick={() => handleThemeChange('light')}
+                className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                  theme === 'light'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <Sun className="h-5 w-5" />
+                <div className="flex-1 text-left">
+                  <div className="font-medium">Light</div>
+                  <div className="text-sm text-muted-foreground">
+                    Use light theme
+                  </div>
+                </div>
+                {theme === 'light' && (
+                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-primary-foreground" />
+                  </div>
+                )}
+              </button>
+
+              <button
+                onClick={() => handleThemeChange('dark')}
+                className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                  theme === 'dark'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <Moon className="h-5 w-5" />
+                <div className="flex-1 text-left">
+                  <div className="font-medium">Dark</div>
+                  <div className="text-sm text-muted-foreground">
+                    Use dark theme
+                  </div>
+                </div>
+                {theme === 'dark' && (
+                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-primary-foreground" />
+                  </div>
+                )}
+              </button>
+
+              <button
+                onClick={() => handleThemeChange('system')}
+                className={`flex items-center gap-3 p-4 rounded-lg border-2 transition-all ${
+                  theme === 'system'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border hover:border-primary/50'
+                }`}
+              >
+                <Monitor className="h-5 w-5" />
+                <div className="flex-1 text-left">
+                  <div className="font-medium">System</div>
+                  <div className="text-sm text-muted-foreground">
+                    Follow your system preferences
+                  </div>
+                </div>
+                {theme === 'system' && (
+                  <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                    <div className="h-2 w-2 rounded-full bg-primary-foreground" />
+                  </div>
+                )}
+              </button>
+            </div>
+          </div>
         </CardContent>
       </Card>
 

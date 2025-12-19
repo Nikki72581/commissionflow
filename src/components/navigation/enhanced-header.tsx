@@ -3,6 +3,9 @@ import { useClerk } from '@clerk/nextjs'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTheme } from '@/components/providers/theme-provider'
+import { updateThemePreference } from '@/app/actions/settings'
+import { useToast } from '@/hooks/use-toast'
 import {
   Search,
   Plus,
@@ -17,6 +20,9 @@ import {
   DollarSign,
   Command,
   Building2,
+  Moon,
+  Sun,
+  Monitor,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -53,9 +59,35 @@ export function EnhancedHeader({
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchFocused, setSearchFocused] = useState(false)
+  const { theme, setTheme } = useTheme()
+  const { toast } = useToast()
 
   const handleSignOut = async () => {
     await signOut({ redirectUrl: '/' })
+  }
+
+  const handleThemeChange = async (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme)
+    const result = await updateThemePreference({ themePreference: newTheme })
+
+    if (!result.success) {
+      toast({
+        title: 'Error',
+        description: result.error || 'Failed to save theme preference',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'light':
+        return <Sun className="mr-2 h-4 w-4" />
+      case 'dark':
+        return <Moon className="mr-2 h-4 w-4" />
+      case 'system':
+        return <Monitor className="mr-2 h-4 w-4" />
+    }
   }
 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -299,6 +331,23 @@ export function EnhancedHeader({
                   <span>Keyboard Shortcuts</span>
                   <DropdownMenuShortcut>?</DropdownMenuShortcut>
                 </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Theme</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleThemeChange('light')}>
+                <Sun className="mr-2 h-4 w-4" />
+                <span>Light</span>
+                {theme === 'light' && <DropdownMenuShortcut>✓</DropdownMenuShortcut>}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleThemeChange('dark')}>
+                <Moon className="mr-2 h-4 w-4" />
+                <span>Dark</span>
+                {theme === 'dark' && <DropdownMenuShortcut>✓</DropdownMenuShortcut>}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleThemeChange('system')}>
+                <Monitor className="mr-2 h-4 w-4" />
+                <span>System</span>
+                {theme === 'system' && <DropdownMenuShortcut>✓</DropdownMenuShortcut>}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
