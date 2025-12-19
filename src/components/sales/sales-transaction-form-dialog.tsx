@@ -170,9 +170,9 @@ export function SalesTransactionFormDialog({
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : (
         <DialogTrigger asChild>
-          <Button>
+          <Button size="sm">
             <Plus className="mr-2 h-4 w-4" />
-            New Sale
+            {isEdit ? 'Edit Sale' : 'New Sale'}
           </Button>
         </DialogTrigger>
       )}

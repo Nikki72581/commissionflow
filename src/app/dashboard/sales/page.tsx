@@ -161,8 +161,8 @@ async function SalesTable({
                 </TableCell>
                 <TableCell>
                   {commission ? (
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-2">
                         <span className="font-medium">
                           {formatCurrency(commission.amount)}
                         </span>
@@ -174,7 +174,7 @@ async function SalesTable({
                               ? 'secondary'
                               : 'outline'
                           }
-                          className="w-fit"
+                          className="text-xs"
                         >
                           {commission.status}
                         </Badge>
@@ -187,8 +187,8 @@ async function SalesTable({
                         salesInvoice={sale.invoiceNumber}
                         salespersonName={`${sale.user.firstName} ${sale.user.lastName}`}
                         trigger={
-                          <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs underline">
-                            Details
+                          <button className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-7 px-3 text-blue-600 dark:text-blue-400">
+                            View Details
                           </button>
                         }
                       />
@@ -201,14 +201,16 @@ async function SalesTable({
                   {sale.description || '—'}
                 </TableCell>
                 <TableCell>
-                  <SalesTransactionActions
-                    transaction={sale}
-                    projects={projects}
-                    clients={clients}
-                    users={users}
-                    productCategories={productCategories}
-                    requireProjects={requireProjects}
-                  />
+                  <div className="flex items-center gap-1">
+                    <SalesTransactionActions
+                      transaction={sale}
+                      projects={projects}
+                      clients={clients}
+                      users={users}
+                      productCategories={productCategories}
+                      requireProjects={requireProjects}
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             )
