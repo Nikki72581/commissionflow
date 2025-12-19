@@ -177,14 +177,14 @@ export function SalesTransactionFormDialog({
         </DialogTrigger>
       )}
 
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{isEdit ? 'Edit Sale' : 'Record New Sale'}</DialogTitle>
             <DialogDescription>
               {isEdit
-                ? 'Update the sale details.'
-                : 'Enter sale details. Commission will be calculated automatically if a plan exists.'}
+                ? 'Update the sale details below. Any changes will trigger commission recalculation.'
+                : 'Enter sale details. Commission will be calculated automatically based on matching commission plans.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -195,65 +195,80 @@ export function SalesTransactionFormDialog({
               </div>
             )}
 
-            <div className="grid gap-2">
-              <Label htmlFor="amount">
-                Sale Amount <span className="text-destructive">*</span>
-              </Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  $
-                </span>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="amount">
+                  Sale Amount <span className="text-destructive">*</span>
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    $
+                  </span>
+                  <Input
+                    id="amount"
+                    name="amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    defaultValue={transaction?.amount}
+                    placeholder="10000.00"
+                    className="pl-7"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="transactionDate">
+                  Sale Date <span className="text-destructive">*</span>
+                </Label>
                 <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  defaultValue={transaction?.amount}
-                  placeholder="10000.00"
-                  className="pl-7"
+                  id="transactionDate"
+                  name="transactionDate"
+                  type="date"
+                  defaultValue={
+                    transaction ? formatDateForInput(transaction.transactionDate) : ''
+                  }
                   required
                 />
               </div>
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="transactionDate">
-                Sale Date <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="transactionDate"
-                name="transactionDate"
-                type="date"
-                defaultValue={
-                  transaction ? formatDateForInput(transaction.transactionDate) : ''
-                }
-                required
-              />
-            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="transactionType">
+                  Transaction Type <span className="text-destructive">*</span>
+                </Label>
+                <Select value={transactionType} onValueChange={(value: 'SALE' | 'RETURN' | 'ADJUSTMENT') => setTransactionType(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SALE">Sale</SelectItem>
+                    <SelectItem value="RETURN">Return/Credit</SelectItem>
+                    <SelectItem value="ADJUSTMENT">Adjustment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="transactionType">
-                Transaction Type <span className="text-destructive">*</span>
-              </Label>
-              <Select value={transactionType} onValueChange={(value: 'SALE' | 'RETURN' | 'ADJUSTMENT') => setTransactionType(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="SALE">Sale</SelectItem>
-                  <SelectItem value="RETURN">Return/Credit</SelectItem>
-                  <SelectItem value="ADJUSTMENT">Adjustment</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid gap-2">
+                <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                <Input
+                  id="invoiceNumber"
+                  name="invoiceNumber"
+                  type="text"
+                  defaultValue={transaction?.invoiceNumber || ''}
+                  placeholder="INV-12345"
+                />
+              </div>
             </div>
 
             {productCategories.length > 0 && (
               <div className="grid gap-2">
-                <Label htmlFor="productCategoryId">Product Category (Optional)</Label>
+                <Label htmlFor="productCategoryId">Product Category</Label>
                 <Select value={productCategoryId || 'none'} onValueChange={(value) => setProductCategoryId(value === 'none' ? '' : value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder="Select category (optional)" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No category</SelectItem>
@@ -266,17 +281,6 @@ export function SalesTransactionFormDialog({
                 </Select>
               </div>
             )}
-
-            <div className="grid gap-2">
-              <Label htmlFor="invoiceNumber">Invoice Number (Optional)</Label>
-              <Input
-                id="invoiceNumber"
-                name="invoiceNumber"
-                type="text"
-                defaultValue={transaction?.invoiceNumber || ''}
-                placeholder="INV-12345"
-              />
-            </div>
 
             {/* Project Selector - Conditionally Required */}
             {projects.length > 0 && (
@@ -360,12 +364,12 @@ export function SalesTransactionFormDialog({
             </div>
 
             {!isEdit && (
-              <div className="rounded-lg bg-muted p-3 text-sm">
-                <p className="font-medium">💡 Automatic Commission Calculation</p>
-                <p className="text-muted-foreground mt-1">
+              <div className="rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-3 text-sm">
+                <p className="font-medium text-blue-900 dark:text-blue-100">Automatic Commission Calculation</p>
+                <p className="text-blue-700 dark:text-blue-300 mt-1">
                   {requireProjects
-                    ? "If the selected project has an active commission plan, we'll calculate the commission automatically."
-                    : "We'll find the best matching commission plan (project-level, client-level, or organization-wide) and calculate the commission automatically."}
+                    ? "Commission will be calculated automatically using the project's commission plan."
+                    : "The system will automatically find and apply the best matching commission plan (project, client, or organization-wide)."}
                 </p>
               </div>
             )}

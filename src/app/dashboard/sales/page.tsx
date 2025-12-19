@@ -20,6 +20,8 @@ import { getProductCategories } from '@/app/actions/product-categories'
 import { getOrganizationSettings } from '@/app/actions/settings'
 import { SalesTransactionFormDialog } from '@/components/sales/sales-transaction-form-dialog'
 import { SalesTransactionActions } from '@/components/sales/sales-transaction-actions'
+import { SalesImportDialog } from '@/components/sales/sales-import-dialog'
+import { CommissionDetailDialog } from '@/components/commissions/commission-detail-dialog'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { SalesTransactionWithRelations } from '@/lib/types'
 export const dynamic = 'force-dynamic'
@@ -160,20 +162,36 @@ async function SalesTable({
                 <TableCell>
                   {commission ? (
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {formatCurrency(commission.amount)}
-                      </span>
-                      <Badge
-                        variant={
-                          commission.status === 'PAID'
-                            ? 'default'
-                            : commission.status === 'APPROVED'
-                            ? 'secondary'
-                            : 'outline'
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {formatCurrency(commission.amount)}
+                        </span>
+                        <Badge
+                          variant={
+                            commission.status === 'PAID'
+                              ? 'default'
+                              : commission.status === 'APPROVED'
+                              ? 'secondary'
+                              : 'outline'
+                          }
+                          className="w-fit"
+                        >
+                          {commission.status}
+                        </Badge>
+                      </div>
+                      <CommissionDetailDialog
+                        calculation={commission}
+                        salesAmount={sale.amount}
+                        salesDate={sale.transactionDate}
+                        salesDescription={sale.description}
+                        salesInvoice={sale.invoiceNumber}
+                        salespersonName={`${sale.user.firstName} ${sale.user.lastName}`}
+                        trigger={
+                          <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs underline">
+                            Details
+                          </button>
                         }
-                      >
-                        {commission.status}
-                      </Badge>
+                      />
                     </div>
                   ) : (
                     <span className="text-muted-foreground">No plan</span>
@@ -245,13 +263,21 @@ const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.req
             Track all sales and their commission calculations
           </p>
         </div>
-        <SalesTransactionFormDialog
-          projects={projects}
-          clients={clients}
-          users={users}
-          productCategories={productCategories}
-          requireProjects={requireProjects}
-        />
+        <div className="flex gap-2">
+          <SalesImportDialog
+            projects={projects}
+            clients={clients}
+            users={users}
+            productCategories={productCategories}
+          />
+          <SalesTransactionFormDialog
+            projects={projects}
+            clients={clients}
+            users={users}
+            productCategories={productCategories}
+            requireProjects={requireProjects}
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-4">

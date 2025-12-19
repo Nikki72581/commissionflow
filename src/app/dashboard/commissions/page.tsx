@@ -21,6 +21,7 @@ import {
 import { EmptyState } from '@/components/ui/empty-state'
 import { getCommissionCalculations } from '@/app/actions/commission-calculations'
 import { CommissionActions } from '@/components/commissions/commission-actions'
+import { CommissionDetailDialog } from '@/components/commissions/commission-detail-dialog'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -164,12 +165,21 @@ async function CommissionsTable({
                   {formatCurrency(calc.salesTransaction.amount)}
                 </TableCell>
                 <TableCell>
-                  <div className="font-semibold text-lg">
-                    {formatCurrency(calc.amount)}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {((calc.amount / calc.salesTransaction.amount) * 100).toFixed(1)}% of
-                    sale
+                  <div className="space-y-1">
+                    <div className="font-semibold text-lg">
+                      {formatCurrency(calc.amount)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {((calc.amount / calc.salesTransaction.amount) * 100).toFixed(1)}% of sale
+                    </div>
+                    <CommissionDetailDialog
+                      calculation={calc}
+                      trigger={
+                        <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-xs underline">
+                          View Breakdown
+                        </button>
+                      }
+                    />
                   </div>
                 </TableCell>
                 <TableCell>
