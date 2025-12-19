@@ -1,6 +1,6 @@
 // app/api/onboarding/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { currentUser, clerkClient } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
@@ -49,14 +49,23 @@ export async function POST(req: NextRequest) {
       counter++;
     }
 
+    // Create Clerk organization first
+    const clerk = await clerkClient();
+    const clerkOrg = await clerk.organizations.createOrganization({
+      name: organizationName,
+      slug,
+      createdBy: user.id,
+    });
+
     // Create organization and user in a transaction
     const result = await db.$transaction(async (tx) => {
-      // Create organization
+      // Create organization with Clerk org ID
       const organization = await tx.organization.create({
         data: {
           name: organizationName,
           slug,
           planTier,
+          clerkOrgId: clerkOrg.id,
         },
       });
 
