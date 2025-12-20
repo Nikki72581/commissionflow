@@ -133,16 +133,16 @@ async function TeamTable({ searchQuery }: { searchQuery?: string }) {
   )
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-lg border border-orange-500/20 bg-gradient-to-br from-orange-500/5 via-transparent to-amber-500/5 shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Total Earned</TableHead>
-            <TableHead>Pending</TableHead>
-            <TableHead>Joined</TableHead>
+          <TableRow className="border-b border-orange-500/10 bg-gradient-to-r from-orange-500/5 to-amber-500/5">
+            <TableHead className="font-semibold">Name</TableHead>
+            <TableHead className="font-semibold">Email</TableHead>
+            <TableHead className="font-semibold">Role</TableHead>
+            <TableHead className="font-semibold">Total Earned</TableHead>
+            <TableHead className="font-semibold">Pending</TableHead>
+            <TableHead className="font-semibold">Joined</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -152,21 +152,25 @@ async function TeamTable({ searchQuery }: { searchQuery?: string }) {
               .join(' ') || 'Unnamed User'
 
             return (
-              <TableRow key={user.id}>
+              <TableRow
+                key={user.id}
+                className="hover:bg-orange-500/5 transition-colors border-b border-orange-500/5"
+              >
                 <TableCell>
-                  <div className="font-medium">{fullName}</div>
+                  <div className="font-medium text-orange-700 dark:text-orange-400">{fullName}</div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {user.email}
                 </TableCell>
                 <TableCell>
                   <Badge
-                    variant={user.role === 'ADMIN' ? 'default' : 'secondary'}
+                    variant={user.role === 'ADMIN' ? 'default' : 'info'}
+                    className="font-medium"
                   >
                     {user.role}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-medium">
+                <TableCell className="font-semibold text-emerald-700 dark:text-emerald-400">
                   ${user.totalEarned.toLocaleString('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
@@ -174,7 +178,7 @@ async function TeamTable({ searchQuery }: { searchQuery?: string }) {
                 </TableCell>
                 <TableCell>
                   {user.pendingCount > 0 ? (
-                    <Badge variant="outline">{user.pendingCount}</Badge>
+                    <Badge variant="warning" className="font-semibold">{user.pendingCount}</Badge>
                   ) : (
                     <span className="text-muted-foreground"></span>
                   )}
@@ -242,7 +246,7 @@ export default async function TeamPage({
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Team</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 bg-clip-text text-transparent">Team</h1>
           <p className="text-muted-foreground">
             View and manage your team members
           </p>
@@ -284,7 +288,7 @@ export default async function TeamPage({
               name="search"
               placeholder="Search team members..."
               defaultValue={searchParams.search}
-              className="pl-9"
+              className="pl-9 border-orange-500/20 focus:border-orange-500/40 focus:ring-orange-500/20"
             />
           </div>
         </form>

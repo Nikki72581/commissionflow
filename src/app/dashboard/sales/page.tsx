@@ -97,18 +97,18 @@ async function SalesTable({
   }
 
   return (
-    <div className="rounded-md border overflow-hidden">
+    <div className="rounded-lg border border-blue-500/20 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Date</TableHead>
-              <TableHead className="w-[120px]">Amount</TableHead>
-              <TableHead className="w-[80px]">Type</TableHead>
-              <TableHead className="w-[200px]">Project / Client</TableHead>
-              <TableHead className="w-[150px]">Salesperson</TableHead>
-              <TableHead className="w-[180px]">Commission</TableHead>
-              <TableHead className="min-w-[150px]">Details</TableHead>
+            <TableRow className="border-b border-blue-500/10 bg-gradient-to-r from-blue-500/5 to-purple-500/5">
+              <TableHead className="w-[100px] font-semibold">Date</TableHead>
+              <TableHead className="w-[120px] font-semibold">Amount</TableHead>
+              <TableHead className="w-[80px] font-semibold">Type</TableHead>
+              <TableHead className="w-[200px] font-semibold">Project / Client</TableHead>
+              <TableHead className="w-[150px] font-semibold">Salesperson</TableHead>
+              <TableHead className="w-[180px] font-semibold">Commission</TableHead>
+              <TableHead className="min-w-[150px] font-semibold">Details</TableHead>
               <TableHead className="w-[70px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -118,18 +118,25 @@ async function SalesTable({
             const commission = hasCommission ? sale.commissionCalculations[0] : null
 
             const transactionTypeLabel = sale.transactionType === 'RETURN' ? 'Return' : sale.transactionType === 'ADJUSTMENT' ? 'Adjustment' : 'Sale'
-            const transactionTypeVariant = sale.transactionType === 'RETURN' ? 'destructive' : sale.transactionType === 'ADJUSTMENT' ? 'secondary' : 'default'
+            const transactionTypeVariant = sale.transactionType === 'RETURN' ? 'destructive' : sale.transactionType === 'ADJUSTMENT' ? 'warning' : 'success'
+
+            // Get row background based on transaction type
+            const rowBgClass = sale.transactionType === 'RETURN'
+              ? 'hover:bg-red-500/5'
+              : sale.transactionType === 'ADJUSTMENT'
+              ? 'hover:bg-amber-500/5'
+              : 'hover:bg-emerald-500/5'
 
             return (
-              <TableRow key={sale.id}>
-                <TableCell className="text-muted-foreground whitespace-nowrap">
+              <TableRow key={sale.id} className={`transition-colors border-b border-blue-500/5 ${rowBgClass}`}>
+                <TableCell className="text-muted-foreground whitespace-nowrap text-sm">
                   {formatDate(sale.transactionDate)}
                 </TableCell>
-                <TableCell className="font-semibold whitespace-nowrap">
+                <TableCell className="font-semibold whitespace-nowrap text-emerald-700 dark:text-emerald-400">
                   {formatCurrency(sale.amount)}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={transactionTypeVariant as 'default' | 'destructive' | 'secondary'} className="text-xs">
+                  <Badge variant={transactionTypeVariant as 'success' | 'destructive' | 'warning'} className="text-xs">
                     {transactionTypeLabel}
                   </Badge>
                 </TableCell>
@@ -138,7 +145,7 @@ async function SalesTable({
                     {sale.project ? (
                       <Link
                         href={`/dashboard/projects/${sale.project.id}`}
-                        className="hover:underline font-medium text-sm"
+                        className="hover:underline font-medium text-sm text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 transition-colors"
                       >
                         {sale.project.name}
                       </Link>
@@ -150,22 +157,24 @@ async function SalesTable({
                     </span>
                   </div>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
+                <TableCell className="whitespace-nowrap text-sm">
                   {sale.user.firstName} {sale.user.lastName}
                 </TableCell>
                 <TableCell>
                   {commission ? (
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1.5 whitespace-nowrap">
-                        <span className="font-medium text-sm">
+                        <span className="font-semibold text-sm text-emerald-700 dark:text-emerald-400">
                           {formatCurrency(commission.amount)}
                         </span>
                         <Badge
                           variant={
                             commission.status === 'PAID'
-                              ? 'default'
+                              ? 'success'
                               : commission.status === 'APPROVED'
-                              ? 'secondary'
+                              ? 'info'
+                              : commission.status === 'PENDING'
+                              ? 'warning'
                               : 'outline'
                           }
                           className="text-xs"
@@ -181,7 +190,7 @@ async function SalesTable({
                         salesInvoice={sale.invoiceNumber}
                         salespersonName={`${sale.user.firstName} ${sale.user.lastName}`}
                         trigger={
-                          <button className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-6 px-2 text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                          <button className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-blue-500/10 h-6 px-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap">
                             View Details
                           </button>
                         }
@@ -194,14 +203,14 @@ async function SalesTable({
                 <TableCell>
                   <div className="flex flex-col gap-1 max-w-[200px]">
                     {sale.invoiceNumber && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-blue-700 dark:text-blue-400 font-medium">
                         Invoice: {sale.invoiceNumber}
                       </span>
                     )}
                     {sale.productCategory && (
-                      <span className="text-xs text-muted-foreground">
+                      <Badge variant="outline" className="w-fit text-xs border-cyan-500/30 text-cyan-700 dark:text-cyan-400">
                         {sale.productCategory.name}
-                      </span>
+                      </Badge>
                     )}
                     {sale.description && (
                       <span className="text-xs text-muted-foreground truncate" title={sale.description}>
@@ -274,7 +283,7 @@ const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.req
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Sales Transactions</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">Sales Transactions</h1>
           <p className="text-muted-foreground">
             Track all sales and their commission calculations
           </p>
@@ -304,7 +313,7 @@ const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.req
               name="search"
               placeholder="Search sales..."
               defaultValue={searchParams.search}
-              className="pl-9"
+              className="pl-9 border-blue-500/20 focus:border-blue-500/40 focus:ring-blue-500/20"
             />
           </div>
         </form>

@@ -80,32 +80,55 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
     )
   }
 
+  // Helper function to get badge variant for rule type
+  const getRuleBadgeVariant = (ruleType: string) => {
+    switch (ruleType) {
+      case 'FLAT_RATE':
+        return 'info'
+      case 'PERCENTAGE':
+        return 'success'
+      case 'TIERED':
+        return 'warning'
+      default:
+        return 'secondary'
+    }
+  }
+
   return (
-    <div className="rounded-md border">
+    <div className="rounded-lg border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-transparent to-blue-500/5 shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Plan Name</TableHead>
-            <TableHead>Project</TableHead>
-            <TableHead>Rules</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Calculations</TableHead>
-            <TableHead>Created</TableHead>
+          <TableRow className="border-b border-emerald-500/10 bg-gradient-to-r from-emerald-500/5 to-blue-500/5">
+            <TableHead className="font-semibold">Plan Name</TableHead>
+            <TableHead className="font-semibold">Project</TableHead>
+            <TableHead className="font-semibold">Rules</TableHead>
+            <TableHead className="font-semibold">Status</TableHead>
+            <TableHead className="font-semibold">Calculations</TableHead>
+            <TableHead className="font-semibold">Created</TableHead>
             <TableHead className="w-[70px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {plans.map((plan) => (
-            <TableRow key={plan.id}>
+            <TableRow
+              key={plan.id}
+              className={`transition-colors border-b border-emerald-500/5 ${
+                plan.isActive ? 'hover:bg-emerald-500/5' : 'hover:bg-slate-500/5 opacity-70'
+              }`}
+            >
               <TableCell>
                 <Link
                   href={`/dashboard/plans/${plan.id}`}
-                  className="font-medium hover:underline"
+                  className={`font-medium hover:underline transition-colors ${
+                    plan.isActive
+                      ? 'text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300'
+                      : 'text-slate-600 dark:text-slate-400'
+                  }`}
                 >
                   {plan.name}
                 </Link>
                 {plan.description && (
-                  <p className="text-sm text-muted-foreground truncate max-w-xs">
+                  <p className="text-sm text-muted-foreground truncate max-w-xs mt-0.5">
                     {plan.description}
                   </p>
                 )}
@@ -114,24 +137,30 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
                 {plan.project ? (
                   <Link
                     href={`/dashboard/projects/${plan.project.id}`}
-                    className="text-sm text-muted-foreground hover:underline"
+                    className="text-sm text-blue-700 dark:text-blue-400 hover:underline hover:text-blue-900 dark:hover:text-blue-300 transition-colors"
                   >
                     {plan.project.name}
                   </Link>
                 ) : (
-                  <span className="text-sm text-muted-foreground">General</span>
+                  <Badge variant="outline" className="border-slate-500/30 text-slate-700 dark:text-slate-400">
+                    General
+                  </Badge>
                 )}
               </TableCell>
               <TableCell>
                 {plan.rules.length > 0 ? (
                   <div className="flex flex-col gap-1">
-                    {plan.rules.slice(0, 2).map((rule, idx) => (
-                      <Badge key={rule.id} variant="secondary" className="w-fit">
+                    {plan.rules.slice(0, 2).map((rule) => (
+                      <Badge
+                        key={rule.id}
+                        variant={getRuleBadgeVariant(rule.ruleType) as 'info' | 'success' | 'warning' | 'secondary'}
+                        className="w-fit text-xs"
+                      >
                         {getRuleTypeLabel(rule.ruleType)}
                       </Badge>
                     ))}
                     {plan.rules.length > 2 && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
                         +{plan.rules.length - 2} more
                       </span>
                     )}
@@ -141,20 +170,20 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
                 )}
               </TableCell>
               <TableCell>
-                <Badge variant={plan.isActive ? 'default' : 'outline'}>
+                <Badge variant={plan.isActive ? 'success' : 'outline'} className="font-medium">
                   {plan.isActive ? 'Active' : 'Inactive'}
                 </Badge>
               </TableCell>
               <TableCell>
                 {plan._count.commissionCalculations > 0 ? (
-                  <Badge variant="secondary">
+                  <Badge variant="info" className="font-semibold">
                     {plan._count.commissionCalculations}
                   </Badge>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="text-muted-foreground text-sm">
                 {formatDate(plan.createdAt)}
               </TableCell>
               <TableCell>
@@ -189,7 +218,7 @@ export default async function PlansPage(props: {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Commission Plans</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 bg-clip-text text-transparent">Commission Plans</h1>
           <p className="text-muted-foreground">
             Define how commissions are calculated
           </p>
@@ -205,7 +234,7 @@ export default async function PlansPage(props: {
               name="search"
               placeholder="Search plans..."
               defaultValue={searchParams.search}
-              className="pl-9"
+              className="pl-9 border-emerald-500/20 focus:border-emerald-500/40 focus:ring-emerald-500/20"
             />
           </div>
         </form>

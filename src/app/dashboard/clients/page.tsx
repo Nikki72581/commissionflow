@@ -72,26 +72,29 @@ if (searchQuery && clients.length > 0) {
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-lg border border-purple-500/20 bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5 shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Phone</TableHead>
-            {territories.length > 0 && <TableHead>Territory</TableHead>}
-            <TableHead>Projects</TableHead>
-            <TableHead>Added</TableHead>
+          <TableRow className="border-b border-purple-500/10 bg-gradient-to-r from-purple-500/5 to-blue-500/5">
+            <TableHead className="font-semibold">Name</TableHead>
+            <TableHead className="font-semibold">Email</TableHead>
+            <TableHead className="font-semibold">Phone</TableHead>
+            {territories.length > 0 && <TableHead className="font-semibold">Territory</TableHead>}
+            <TableHead className="font-semibold">Projects</TableHead>
+            <TableHead className="font-semibold">Added</TableHead>
             <TableHead className="w-[70px]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {clients.map((client) => (
-            <TableRow key={client.id}>
+            <TableRow
+              key={client.id}
+              className="hover:bg-purple-500/5 transition-colors border-b border-purple-500/5"
+            >
               <TableCell>
                 <Link
                   href={`/dashboard/clients/${client.id}`}
-                  className="font-medium hover:underline"
+                  className="font-medium text-purple-700 dark:text-purple-400 hover:underline hover:text-purple-900 dark:hover:text-purple-300 transition-colors"
                 >
                   {client.name}
                 </Link>
@@ -103,18 +106,29 @@ if (searchQuery && clients.length > 0) {
                 {client.phone || '—'}
               </TableCell>
               {territories.length > 0 && (
-                <TableCell className="text-muted-foreground">
-                  {(client as any).territory?.name || '—'}
+                <TableCell>
+                  {(client as any).territory?.name ? (
+                    <Badge variant="outline" className="border-purple-500/30 text-purple-700 dark:text-purple-400">
+                      {(client as any).territory.name}
+                    </Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
               )}
               <TableCell>
                 {client.projects.length > 0 ? (
-                  <Badge variant="secondary">{client.projects.length}</Badge>
+                  <Badge
+                    variant={client.projects.length > 5 ? 'success' : client.projects.length > 2 ? 'info' : 'secondary'}
+                    className="font-semibold"
+                  >
+                    {client.projects.length}
+                  </Badge>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
               </TableCell>
-              <TableCell className="text-muted-foreground">
+              <TableCell className="text-muted-foreground text-sm">
                 {formatDate(client.createdAt)}
               </TableCell>
               <TableCell>
@@ -143,17 +157,62 @@ export default async function ClientsPage({
 }) {
   const territoriesResult = await getTerritories()
   const territories = territoriesResult.success ? territoriesResult.data || [] : []
+  const clientsResult = await getClients()
+  const clients = clientsResult.success ? clientsResult.data || [] : []
+
+  const totalClients = clients.length
+  const clientsWithProjects = clients.filter(c => c.projects.length > 0).length
+  const activeProjects = clients.reduce((sum, c) => sum + c.projects.length, 0)
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Clients</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">Clients</h1>
           <p className="text-muted-foreground">
             Manage your clients and their projects
           </p>
         </div>
         <ClientFormDialog territories={territories} />
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-lg border border-purple-500/20 bg-gradient-to-br from-purple-500/10 to-blue-500/5 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-purple-500/20 p-3">
+              <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Clients</p>
+              <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{totalClients}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-blue-500/20 p-3">
+              <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{clientsWithProjects}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-emerald-500/20 bg-gradient-to-br from-emerald-500/10 to-green-500/5 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-emerald-500/20 p-3">
+              <Plus className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
+              <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{activeProjects}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
@@ -164,7 +223,7 @@ export default async function ClientsPage({
               name="search"
               placeholder="Search clients..."
               defaultValue={searchParams.search}
-              className="pl-9"
+              className="pl-9 border-purple-500/20 focus:border-purple-500/40 focus:ring-purple-500/20"
             />
           </div>
         </form>

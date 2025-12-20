@@ -30,10 +30,12 @@ interface NavItem {
   href?: string
   icon: React.ElementType
   badge?: string | number
-  badgeVariant?: 'default' | 'destructive' | 'secondary'
+  badgeVariant?: 'default' | 'destructive' | 'secondary' | 'success' | 'warning' | 'info'
   children?: NavItem[]
   adminOnly?: boolean
   salesPersonOnly?: boolean
+  iconColor?: string
+  sectionColor?: string
 }
 
 // Navigation structure
@@ -42,55 +44,67 @@ const navigation: NavItem[] = [
     title: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
+    iconColor: 'text-blue-600 dark:text-blue-400',
   },
   {
     title: 'Sales Management',
     icon: ShoppingCart,
+    iconColor: 'text-purple-600 dark:text-purple-400',
+    sectionColor: 'border-purple-500/30',
     children: [
       {
         title: 'Sales',
         href: '/dashboard/sales',
         icon: ShoppingCart,
+        iconColor: 'text-purple-600 dark:text-purple-400',
       },
       {
         title: 'Clients',
         href: '/dashboard/clients',
         icon: Users,
+        iconColor: 'text-purple-600 dark:text-purple-400',
       },
       {
         title: 'Projects',
         href: '/dashboard/projects',
         icon: FolderKanban,
+        iconColor: 'text-purple-600 dark:text-purple-400',
       },
     ],
   },
   {
     title: 'Commissions',
     icon: DollarSign,
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    sectionColor: 'border-emerald-500/30',
     children: [
       {
         title: 'All Commissions',
         href: '/dashboard/commissions',
         icon: DollarSign,
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
       },
       {
         title: 'Pending Approvals',
         href: '/dashboard/commissions?status=PENDING',
         icon: CheckCircle,
+        iconColor: 'text-amber-600 dark:text-amber-400',
         badge: 'pendingCount', // Will be replaced with actual count
-        badgeVariant: 'destructive',
+        badgeVariant: 'warning',
         adminOnly: true,
       },
       {
         title: 'Bulk Payouts',
         href: '/dashboard/commissions/payouts',
         icon: CreditCard,
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
         adminOnly: true,
       },
       {
         title: 'Commission Plans',
         href: '/dashboard/plans',
         icon: FileText,
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
       },
     ],
   },
@@ -98,76 +112,91 @@ const navigation: NavItem[] = [
     title: 'Reports',
     href: '/dashboard/reports',
     icon: BarChart3,
+    iconColor: 'text-cyan-600 dark:text-cyan-400',
   },
   {
     title: 'My Commissions',
     href: '/dashboard/my-commissions',
     icon: User,
+    iconColor: 'text-pink-600 dark:text-pink-400',
     salesPersonOnly: true,
   },
   {
     title: 'Administration',
     icon: Shield,
+    iconColor: 'text-orange-600 dark:text-orange-400',
+    sectionColor: 'border-orange-500/30',
     adminOnly: true,
     children: [
       {
         title: 'Team Members',
         href: '/dashboard/team',
         icon: Users,
+        iconColor: 'text-orange-600 dark:text-orange-400',
         adminOnly: true,
       },
        {
         title: 'Product Categories',
         href: '/dashboard/settings/product-categories',
         icon: ShoppingCart,
+        iconColor: 'text-orange-600 dark:text-orange-400',
         adminOnly: true,
       },
       {
         title: 'Territories',
         href: '/dashboard/settings/territories',
         icon: Shield,
+        iconColor: 'text-orange-600 dark:text-orange-400',
         adminOnly: true,
       },
       {
         title: 'Customer Tiers',
         href: '/dashboard/settings/customer-tiers',
         icon: User,
+        iconColor: 'text-orange-600 dark:text-orange-400',
         adminOnly: true,
       },
       {
         title: 'Audit Logs',
         href: '/dashboard/audit-logs',
         icon: FileSearch,
+        iconColor: 'text-orange-600 dark:text-orange-400',
         adminOnly: true,
       },
       {
         title: 'Settings',
         href: '/dashboard/settings',
         icon: Settings,
+        iconColor: 'text-orange-600 dark:text-orange-400',
         adminOnly: true,
       },
       {
         title: 'Demo Data',
         href: '/dashboard/admin/demo-data',
         icon: Database,
+        iconColor: 'text-orange-600 dark:text-orange-400',
         adminOnly: true,
       },
     ],
   },
- 
+
   {
     title: 'Help & Support',
     icon: HelpCircle,
+    iconColor: 'text-slate-600 dark:text-slate-400',
+    sectionColor: 'border-slate-500/30',
     children: [
       {
         title: 'Documentation',
         href: '/docs',
         icon: FileText,
+        iconColor: 'text-slate-600 dark:text-slate-400',
       },
       {
         title: 'Keyboard Shortcuts',
         href: '/keyboard-shortcuts',
         icon: HelpCircle,
+        iconColor: 'text-slate-600 dark:text-slate-400',
       },
     ],
   },
@@ -241,11 +270,11 @@ export function EnhancedSidebar({
           <button
             onClick={() => toggleSection(item.title)}
             className={cn(
-              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent',
+              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent/50',
               level > 0 && 'pl-9'
             )}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className={cn('h-4 w-4 transition-colors', item.iconColor)} />
             <span className="flex-1 text-left font-medium">{item.title}</span>
             {badgeValue && (
               <Badge variant={item.badgeVariant || 'default'} className="ml-auto">
@@ -253,13 +282,16 @@ export function EnhancedSidebar({
               </Badge>
             )}
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
           </button>
           {isExpanded && (
-            <div className="ml-3 mt-1 space-y-1 border-l border-border pl-3">
+            <div className={cn(
+              'ml-3 mt-1 space-y-1 border-l pl-3',
+              item.sectionColor || 'border-border'
+            )}>
               {item.children?.map((child) => renderNavItem(child, level + 1))}
             </div>
           )}
@@ -273,12 +305,12 @@ export function EnhancedSidebar({
         key={item.title}
         href={item.href!}
         className={cn(
-          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent',
-          active && 'bg-accent font-medium text-accent-foreground',
+          'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent/50',
+          active && 'bg-gradient-to-r from-accent to-accent/50 font-medium text-accent-foreground shadow-sm',
           level > 0 && 'pl-9'
         )}
       >
-        <Icon className="h-4 w-4" />
+        <Icon className={cn('h-4 w-4 transition-colors', item.iconColor, active && 'scale-110')} />
         <span className="flex-1">{item.title}</span>
         {badgeValue && (
           <Badge variant={item.badgeVariant || 'default'}>
@@ -293,15 +325,18 @@ export function EnhancedSidebar({
     <div className="flex h-full flex-col gap-2">
       {/* Organization & User Info Header */}
       {(organizationName || userName) && (
-        <div className="border-b border-border p-4">
-          <div className="space-y-1">
+        <div className="border-b border-border/50 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/5 p-4">
+          <div className="space-y-2">
             {organizationName && (
-              <p className="text-sm font-semibold truncate">{organizationName}</p>
+              <p className="text-sm font-semibold truncate bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">{organizationName}</p>
             )}
             {userName && (
               <p className="text-xs text-muted-foreground truncate">{userName}</p>
             )}
-            <Badge variant="outline" className="w-fit text-xs">
+            <Badge
+              variant={userRole === 'ADMIN' ? 'default' : 'info'}
+              className="w-fit text-xs"
+            >
               {userRole}
             </Badge>
           </div>
@@ -316,18 +351,19 @@ export function EnhancedSidebar({
 
       {/* Quick Stats */}
       {userRole === 'ADMIN' && (pendingCount > 0 || unpaidCount > 0) && (
-        <div className="border-t border-border p-4">
+        <div className="border-t border-border/50 bg-gradient-to-br from-amber-500/5 via-transparent to-red-500/5 p-4">
+          <p className="text-xs font-semibold text-muted-foreground mb-3">Action Required</p>
           <div className="space-y-2 text-sm">
             {pendingCount > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Pending Approval</span>
-                <Badge variant="destructive">{pendingCount}</Badge>
+              <div className="flex items-center justify-between rounded-lg bg-amber-500/10 px-3 py-2 hover:bg-amber-500/20 transition-colors">
+                <span className="text-amber-900 dark:text-amber-100 font-medium">Pending Approval</span>
+                <Badge variant="warning">{pendingCount}</Badge>
               </div>
             )}
             {unpaidCount > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Unpaid</span>
-                <Badge variant="secondary">{unpaidCount}</Badge>
+              <div className="flex items-center justify-between rounded-lg bg-blue-500/10 px-3 py-2 hover:bg-blue-500/20 transition-colors">
+                <span className="text-blue-900 dark:text-blue-100 font-medium">Unpaid</span>
+                <Badge variant="info">{unpaidCount}</Badge>
               </div>
             )}
           </div>
