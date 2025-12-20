@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,310 +9,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model AuditLog {
-  id             String        @id
-  createdAt      DateTime      @default(now())
-  userId         String?
-  userName       String?
-  userEmail      String?
-  action         String
-  entityType     String
-  entityId       String?
-  description    String
-  metadata       Json?
-  organizationId String
-  ipAddress      String?
-  userAgent      String?
-  organizations  organizations @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  users          users?        @relation(fields: [userId], references: [id])
+// ============================================
+// ENUMS
+// ============================================
 
-  @@index([action])
-  @@index([createdAt])
-  @@index([entityType, entityId])
-  @@index([organizationId])
-  @@index([userId])
-}
-
-model clients {
-  id                 String               @id
-  name               String
-  email              String?
-  phone              String?
-  address            String?
-  notes              String?
-  organizationId     String
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime
-  territoryId        String?
-  tier               CustomerTier         @default(STANDARD)
-  organizations      organizations        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  territories        territories?         @relation(fields: [territoryId], references: [id])
-  commission_rules   commission_rules[]
-  projects           projects[]
-  sales_transactions sales_transactions[]
-
-  @@index([organizationId])
-  @@index([territoryId])
-  @@index([tier])
-}
-
-model commission_calculations {
-  id                 String             @id
-  salesTransactionId String
-  commissionPlanId   String
-  userId             String
-  organizationId     String
-  amount             Float
-  status             CommissionStatus   @default(PENDING)
-  calculatedAt       DateTime           @default(now())
-  approvedAt         DateTime?
-  paidAt             DateTime?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime
-  payoutId           String?
-  metadata           Json?
-  commission_plans   commission_plans   @relation(fields: [commissionPlanId], references: [id], onDelete: Cascade)
-  organizations      organizations      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  payouts            payouts?           @relation(fields: [payoutId], references: [id])
-  sales_transactions sales_transactions @relation(fields: [salesTransactionId], references: [id], onDelete: Cascade)
-  users              users              @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([salesTransactionId])
-  @@index([status])
-  @@index([userId])
-}
-
-model commission_plans {
-  id                      String                    @id
-  name                    String
-  description             String?
-  projectId               String?
-  organizationId          String
-  isActive                Boolean                   @default(true)
-  createdAt               DateTime                  @default(now())
-  updatedAt               DateTime
-  commissionBasis         CommissionBasis           @default(GROSS_REVENUE)
-  commission_calculations commission_calculations[]
-  organizations           organizations             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  projects                projects?                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  commission_rules        commission_rules[]
-
-  @@index([commissionBasis])
-  @@index([organizationId])
-  @@index([projectId])
-}
-
-model commission_rules {
-  id                 String              @id
-  commissionPlanId   String
-  ruleType           CommissionRuleType
-  percentage         Float?
-  flatAmount         Float?
-  tierThreshold      Float?
-  tierPercentage     Float?
-  minAmount          Float?
-  maxAmount          Float?
-  description        String?
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime
-  clientId           String?
-  customerTier       CustomerTier?
-  priority           RulePriority        @default(DEFAULT)
-  productCategoryId  String?
-  scope              RuleScope           @default(GLOBAL)
-  territoryId        String?
-  clients            clients?            @relation(fields: [clientId], references: [id])
-  commission_plans   commission_plans    @relation(fields: [commissionPlanId], references: [id], onDelete: Cascade)
-  product_categories product_categories? @relation(fields: [productCategoryId], references: [id])
-  territories        territories?        @relation(fields: [territoryId], references: [id])
-
-  @@index([clientId])
-  @@index([commissionPlanId])
-  @@index([customerTier])
-  @@index([priority])
-  @@index([productCategoryId])
-  @@index([scope])
-  @@index([territoryId])
-}
-
-model organizations {
-  id                      String                    @id
-  name                    String
-  slug                    String                    @unique
-  planTier                PlanTier                  @default(STARTER)
-  createdAt               DateTime                  @default(now())
-  updatedAt               DateTime
-  clerkOrgId              String?                   @unique
-  requireProjects         Boolean                   @default(true)
-  AuditLog                AuditLog[]
-  clients                 clients[]
-  commission_calculations commission_calculations[]
-  commission_plans        commission_plans[]
-  payouts                 payouts[]
-  product_categories      product_categories[]
-  projects                projects[]
-  sales_transactions      sales_transactions[]
-  territories             territories[]
-  users                   users[]
-}
-
-model payouts {
-  id                      String                    @id
-  userId                  String
-  organizationId          String
-  amount                  Float
-  status                  PayoutStatus              @default(PENDING)
-  paymentMethod           String?
-  paymentDate             DateTime?
-  notes                   String?
-  createdAt               DateTime                  @default(now())
-  updatedAt               DateTime
-  commission_calculations commission_calculations[]
-  organizations           organizations             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  users                   users                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-  @@index([status])
-  @@index([userId])
-}
-
-model product_categories {
-  id                 String               @id
-  name               String
-  description        String?
-  organizationId     String
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime
-  commission_rules   commission_rules[]
-  organizations      organizations        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  sales_transactions sales_transactions[]
-
-  @@index([organizationId])
-}
-
-model projects {
-  id                 String               @id
-  name               String
-  description        String?
-  clientId           String
-  organizationId     String
-  startDate          DateTime?
-  endDate            DateTime?
-  status             String               @default("active")
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime
-  commission_plans   commission_plans[]
-  clients            clients              @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  organizations      organizations        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  sales_transactions sales_transactions[]
-
-  @@index([clientId])
-  @@index([organizationId])
-}
-
-model sales_transactions {
-  id                       String                    @id
-  amount                   Float
-  projectId                String?
-  userId                   String
-  organizationId           String
-  transactionDate          DateTime                  @default(now())
-  description              String?
-  invoiceNumber            String?
-  createdAt                DateTime                  @default(now())
-  updatedAt                DateTime
-  parentTransactionId      String?
-  productCategoryId        String?
-  transactionType          TransactionType           @default(SALE)
-  clientId                 String?
-  commission_calculations  commission_calculations[]
-  clients                  clients?                  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  organizations            organizations             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  sales_transactions       sales_transactions?       @relation("sales_transactionsTosales_transactions", fields: [parentTransactionId], references: [id])
-  other_sales_transactions sales_transactions[]      @relation("sales_transactionsTosales_transactions")
-  product_categories       product_categories?       @relation(fields: [productCategoryId], references: [id])
-  projects                 projects?                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  users                    users                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([clientId])
-  @@index([organizationId])
-  @@index([productCategoryId])
-  @@index([projectId])
-  @@index([transactionDate])
-  @@index([transactionType])
-  @@index([userId])
-}
-
-model territories {
-  id               String             @id
-  name             String
-  description      String?
-  organizationId   String
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime
-  clients          clients[]
-  commission_rules commission_rules[]
-  organizations    organizations      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([organizationId])
-}
-
-model users {
-  id                      String                    @id
-  clerkId                 String                    @unique
-  email                   String
-  firstName               String?
-  lastName                String?
-  role                    UserRole                  @default(SALESPERSON)
-  organizationId          String
-  createdAt               DateTime                  @default(now())
-  updatedAt               DateTime
-  commissionAlerts        Boolean                   @default(true)
-  emailNotifications      Boolean                   @default(true)
-  salesAlerts             Boolean                   @default(true)
-  weeklyReports           Boolean                   @default(false)
-  themePreference         String                    @default("system")
-  AuditLog                AuditLog[]
-  commission_calculations commission_calculations[]
-  payouts                 payouts[]
-  sales_transactions      sales_transactions[]
-  organizations           organizations             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  @@index([clerkId])
-  @@index([organizationId])
-}
-
-enum CommissionBasis {
-  GROSS_REVENUE
-  NET_SALES
-}
-
-enum CommissionRuleType {
-  PERCENTAGE
-  FLAT_AMOUNT
-  TIERED
-}
-
-enum CommissionStatus {
-  PENDING
-  CALCULATED
-  APPROVED
-  PAID
-}
-
-enum CustomerTier {
-  STANDARD
-  VIP
-  NEW
-  ENTERPRISE
-}
-
-enum PayoutStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
+enum UserRole {
+  ADMIN
+  SALESPERSON
 }
 
 enum PlanTier {
@@ -320,30 +25,389 @@ enum PlanTier {
   ENTERPRISE
 }
 
-enum RulePriority {
-  PROJECT_SPECIFIC
-  CUSTOMER_SPECIFIC
-  PRODUCT_CATEGORY
-  TERRITORY
-  CUSTOMER_TIER
-  DEFAULT
+enum CommissionStatus {
+  PENDING
+  CALCULATED
+  APPROVED
+  PAID
 }
 
-enum RuleScope {
-  GLOBAL
-  CUSTOMER_TIER
-  PRODUCT_CATEGORY
-  TERRITORY
-  CUSTOMER_SPECIFIC
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum CommissionRuleType {
+  PERCENTAGE    // % of revenue
+  FLAT_AMOUNT   // Fixed amount per sale
+  TIERED        // Different rates at different thresholds
+}
+
+enum CommissionBasis {
+  GROSS_REVENUE  // Full invoice amount (default)
+  NET_SALES      // Invoice minus returns/credits
 }
 
 enum TransactionType {
-  SALE
-  RETURN
-  ADJUSTMENT
+  SALE           // Regular sale
+  RETURN         // Return/credit
+  ADJUSTMENT     // Manual adjustment
 }
 
-enum UserRole {
-  ADMIN
-  SALESPERSON
+enum CustomerTier {
+  STANDARD       // Default tier
+  VIP            // High-value customers
+  NEW            // New customers
+  ENTERPRISE     // Large enterprise deals
 }
+
+enum RuleScope {
+  GLOBAL              // Apply to all transactions (default)
+  CUSTOMER_TIER       // Apply to specific customer tier
+  PRODUCT_CATEGORY    // Apply to specific product category
+  TERRITORY           // Apply to specific territory
+  CUSTOMER_SPECIFIC   // Apply to specific customer
+}
+
+enum RulePriority {
+  PROJECT_SPECIFIC    // Highest - 100
+  CUSTOMER_SPECIFIC   // 90
+  PRODUCT_CATEGORY    // 80
+  TERRITORY           // 70
+  CUSTOMER_TIER       // 60
+  DEFAULT             // Lowest - 50
+}
+
+// ============================================
+// CORE MODELS
+// ============================================
+
+model Organization {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  clerkOrgId      String?  @unique // Clerk organization ID for team invitations
+  planTier        PlanTier @default(STARTER)
+  requireProjects Boolean  @default(true) // Whether projects are required for sales transactions
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  users                  User[]
+  clients                Client[]
+  projects               Project[]
+  commissionPlans        CommissionPlan[]
+  salesTransactions      SalesTransaction[]
+  commissionCalculations CommissionCalculation[]
+  payouts                Payout[]
+  auditLogs              AuditLog[]
+  productCategories      ProductCategory[]
+  territories            Territory[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  clerkId        String   @unique
+  email          String
+  firstName      String?
+  lastName       String?
+  role           UserRole @default(SALESPERSON)
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  auditLogs      AuditLog[]
+
+  // Notification preferences
+  emailNotifications Boolean  @default(true)
+  salesAlerts        Boolean  @default(true)
+  commissionAlerts   Boolean  @default(true)
+  weeklyReports      Boolean  @default(false)
+
+  // Theme preference
+  themePreference    String   @default("system") // "light" | "dark" | "system"
+
+  organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesTransactions      SalesTransaction[]
+  commissionCalculations CommissionCalculation[]
+  payouts                Payout[]
+
+  @@index([organizationId])
+  @@index([clerkId])
+  @@map("users")
+}
+
+model Client {
+  id             String        @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
+  tier           CustomerTier  @default(STANDARD)
+  territoryId    String?
+  organizationId String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  territory         Territory?         @relation(fields: [territoryId], references: [id], onDelete: SetNull)
+  projects          Project[]
+  salesTransactions SalesTransaction[]
+  commissionRules   CommissionRule[]
+
+  @@index([organizationId])
+  @@index([territoryId])
+  @@index([tier])
+  @@map("clients")
+}
+
+model Project {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  clientId       String
+  organizationId String
+  startDate      DateTime?
+  endDate        DateTime?
+  status         String   @default("active") // active, completed, cancelled
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization      Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client            Client              @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  commissionPlans   CommissionPlan[]
+  salesTransactions SalesTransaction[]
+
+  @@index([organizationId])
+  @@index([clientId])
+  @@map("projects")
+}
+
+model ProductCategory {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesTransactions SalesTransaction[]
+  commissionRules   CommissionRule[]
+
+  @@index([organizationId])
+  @@map("product_categories")
+}
+
+model Territory {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  clients         Client[]
+  commissionRules CommissionRule[]
+
+  @@index([organizationId])
+  @@map("territories")
+}
+
+// ============================================
+// COMMISSION PLANNING MODELS
+// ============================================
+
+model CommissionPlan {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  projectId       String?
+  commissionBasis CommissionBasis  @default(GROSS_REVENUE)
+  organizationId  String
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project                Project?                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  rules                  CommissionRule[]
+  commissionCalculations CommissionCalculation[]
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([commissionBasis])
+  @@map("commission_plans")
+}
+
+model CommissionRule {
+  id               String              @id @default(cuid())
+  commissionPlanId String
+  ruleType         CommissionRuleType
+
+  // Existing fields
+  percentage       Float?              // For PERCENTAGE type
+  flatAmount       Float?              // For FLAT_AMOUNT type
+  tierThreshold    Float?              // For TIERED type - revenue threshold
+  tierPercentage   Float?              // For TIERED type - rate above threshold
+  minAmount        Float?              // Minimum commission
+  maxAmount        Float?              // Maximum commission (cap)
+  description      String?
+
+  // NEW: Scoping fields
+  scope            RuleScope           @default(GLOBAL)
+  priority         RulePriority        @default(DEFAULT)
+
+  // NEW: Applicability filters (nullable for backward compatibility)
+  customerTier     CustomerTier?
+  productCategoryId String?
+  territoryId      String?
+  clientId         String?             // For customer-specific rules
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  commissionPlan   CommissionPlan      @relation(fields: [commissionPlanId], references: [id], onDelete: Cascade)
+  productCategory  ProductCategory?    @relation(fields: [productCategoryId], references: [id], onDelete: SetNull)
+  territory        Territory?          @relation(fields: [territoryId], references: [id], onDelete: SetNull)
+  client           Client?             @relation(fields: [clientId], references: [id], onDelete: SetNull)
+
+  @@index([commissionPlanId])
+  @@index([scope])
+  @@index([priority])
+  @@index([productCategoryId])
+  @@index([territoryId])
+  @@index([clientId])
+  @@index([customerTier])
+  @@map("commission_rules")
+}
+
+// ============================================
+// TRANSACTION & CALCULATION MODELS
+// ============================================
+
+model SalesTransaction {
+  id                  String           @id @default(cuid())
+  amount              Float
+  transactionType     TransactionType  @default(SALE)
+  parentTransactionId String?
+  projectId           String?          // Optional - depends on organization.requireProjects setting
+  clientId            String?          // Direct client reference (for when no project is assigned)
+  userId              String           // Salesperson who made the sale
+  productCategoryId   String?
+  organizationId      String
+  transactionDate     DateTime         @default(now())
+  description         String?
+  invoiceNumber       String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project                Project?                @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client                 Client?                 @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productCategory        ProductCategory?        @relation(fields: [productCategoryId], references: [id], onDelete: SetNull)
+  parentTransaction      SalesTransaction?       @relation("Returns", fields: [parentTransactionId], references: [id])
+  returns                SalesTransaction[]      @relation("Returns")
+  commissionCalculations CommissionCalculation[]
+
+  @@index([organizationId])
+  @@index([projectId])
+  @@index([clientId])
+  @@index([userId])
+  @@index([productCategoryId])
+  @@index([transactionType])
+  @@index([transactionDate])
+  @@map("sales_transactions")
+}
+
+model CommissionCalculation {
+  id                 String           @id @default(cuid())
+  salesTransactionId String
+  commissionPlanId   String
+  userId             String           // Salesperson earning the commission
+  organizationId     String
+  amount             Float            // Calculated commission amount
+  status             CommissionStatus @default(PENDING)
+  metadata           Json?            // NEW: Store calculation details (applied rules, basis, context)
+  calculatedAt       DateTime         @default(now())
+  approvedAt         DateTime?        // When the commission was approved
+  paidAt             DateTime?        // When the commission was paid
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  organization     Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  salesTransaction SalesTransaction @relation(fields: [salesTransactionId], references: [id], onDelete: Cascade)
+  commissionPlan   CommissionPlan   @relation(fields: [commissionPlanId], references: [id], onDelete: Cascade)
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payout           Payout?          @relation(fields: [payoutId], references: [id])
+  payoutId         String?
+
+  @@index([organizationId])
+  @@index([salesTransactionId])
+  @@index([userId])
+  @@index([status])
+  @@map("commission_calculations")
+}
+
+model Payout {
+  id             String        @id @default(cuid())
+  userId         String        // Salesperson receiving payout
+  organizationId String
+  amount         Float
+  status         PayoutStatus  @default(PENDING)
+  paymentMethod  String?
+  paymentDate    DateTime?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commissions  CommissionCalculation[]
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([status])
+  @@map("payouts")
+}
+
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  
+  // Who performed the action
+  userId         String?
+  userName       String?  // Cached for display
+  userEmail      String?  // Cached for display
+  
+  // What action was performed
+  action         String   // e.g. "commission_approved", "commission_paid", "bulk_payout"
+  entityType     String   // e.g. "commission", "sale", "plan"
+  entityId       String?  // ID of the entity affected
+  
+  // Details
+  description    String   // Human-readable description
+  metadata       Json?    // Additional structured data
+  
+  // Context
+  organizationId String
+  ipAddress      String?
+  userAgent      String?
+  
+  // Relations
+  user           User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
