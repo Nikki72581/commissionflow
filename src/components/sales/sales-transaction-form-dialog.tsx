@@ -166,9 +166,10 @@ export function SalesTransactionFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {trigger ? (
+      {trigger && (
         <DialogTrigger asChild>{trigger}</DialogTrigger>
-      ) : (
+      )}
+      {!trigger && controlledOpen === undefined && (
         <DialogTrigger asChild>
           <Button size="sm">
             <Plus className="mr-2 h-4 w-4" />
