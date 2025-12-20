@@ -9,6 +9,8 @@ export const createClientSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  tier: z.enum(['STANDARD', 'VIP', 'NEW', 'ENTERPRISE']).optional(),
+  territoryId: z.string().optional(),
 })
 
 /**
@@ -20,6 +22,8 @@ export const updateClientSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  tier: z.enum(['STANDARD', 'VIP', 'NEW', 'ENTERPRISE']).optional(),
+  territoryId: z.string().optional(),
 })
 
 /**
