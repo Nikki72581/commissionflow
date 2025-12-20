@@ -158,7 +158,6 @@ export function CommissionsTableWithBulk({
               <th className="h-12 px-4 text-right align-middle font-medium">Sale Amount</th>
               <th className="h-12 px-4 text-right align-middle font-medium">Commission</th>
               <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
-              <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -229,9 +228,6 @@ export function CommissionsTableWithBulk({
                         {formatDate(commission.approvedAt)}
                       </div>
                     )}
-                  </td>
-                  <td className="p-4">
-                    {/* Individual actions can go here if needed */}
                   </td>
                 </tr>
               )

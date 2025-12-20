@@ -1,10 +1,12 @@
 // src/app/dashboard/commissions/payouts/page.tsx
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { PageHeader } from '@/components/navigation/breadcrumbs'
 import { getCommissionCalculations } from '@/app/actions/commission-calculations'
 import { BulkPayoutsContent } from '@/components/commissions/bulk-payouts-content'
 import { EmptyState } from '@/components/ui/empty-state'
-import { DollarSign } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { DollarSign, History } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -62,14 +64,22 @@ function BulkPayoutsTableSkeleton() {
 export default function BulkPayoutsPage() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Bulk Payouts"
-        description="Process multiple commission payments at once"
-        breadcrumbs={[
-          { title: 'Commissions', href: '/dashboard/commissions' },
-          { title: 'Bulk Payouts' }
-        ]}
-      />
+      <div className="flex items-center justify-between">
+        <PageHeader
+          title="Bulk Payouts"
+          description="Process multiple commission payments at once"
+          breadcrumbs={[
+            { title: 'Commissions', href: '/dashboard/commissions' },
+            { title: 'Bulk Payouts' }
+          ]}
+        />
+        <Link href="/dashboard/commissions/payout-history">
+          <Button variant="outline">
+            <History className="h-4 w-4 mr-2" />
+            View History
+          </Button>
+        </Link>
+      </div>
 
       <Suspense fallback={<BulkPayoutsTableSkeleton />}>
         <BulkPayoutsTable />

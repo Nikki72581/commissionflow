@@ -21,6 +21,7 @@ import {
   ChevronDown,
   ChevronRight,
   Database,
+  Receipt,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
@@ -97,6 +98,13 @@ const navigation: NavItem[] = [
         title: 'Bulk Payouts',
         href: '/dashboard/commissions/payouts',
         icon: CreditCard,
+        iconColor: 'text-emerald-600 dark:text-emerald-400',
+        adminOnly: true,
+      },
+      {
+        title: 'Payout History',
+        href: '/dashboard/commissions/payout-history',
+        icon: Receipt,
         iconColor: 'text-emerald-600 dark:text-emerald-400',
         adminOnly: true,
       },
