@@ -129,6 +129,12 @@ export async function getClient(clientId: string) {
             createdAt: 'desc',
           },
         },
+        territory: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     })
 

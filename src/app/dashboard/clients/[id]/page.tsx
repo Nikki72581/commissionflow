@@ -1,25 +1,31 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Briefcase, Calendar, Mail, Phone, MapPin } from 'lucide-react'
+import { ArrowLeft, Briefcase, Calendar, Mail, Phone, MapPin, Building2, Crown, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getClient } from '@/app/actions/clients'
+import { getTerritories } from '@/app/actions/territories'
 import { ProjectFormDialog } from '@/components/projects/project-form-dialog'
 import { ProjectActions } from '@/components/projects/project-actions'
+import { ClientFormDialog } from '@/components/clients/client-form-dialog'
 import { formatDate } from '@/lib/utils'
 export const dynamic = 'force-dynamic'
 async function ClientDetails({ clientId }: { clientId: string }) {
-  const result = await getClient(clientId)
+  const [result, territoriesResult] = await Promise.all([
+    getClient(clientId),
+    getTerritories()
+  ])
 
   if (!result.success || !result.data) {
     notFound()
   }
 
   const client = result.data
+  const territories = territoriesResult.success ? territoriesResult.data : []
 
   return (
     <div className="space-y-6">
@@ -40,6 +46,16 @@ async function ClientDetails({ clientId }: { clientId: string }) {
             </div>
           </div>
         </div>
+        <ClientFormDialog
+          client={client}
+          territories={territories}
+          trigger={
+            <Button variant="outline">
+              <Pencil className="mr-2 h-4 w-4" />
+              Edit Client
+            </Button>
+          }
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
@@ -49,19 +65,53 @@ async function ClientDetails({ clientId }: { clientId: string }) {
             <CardTitle>Client Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {client.email && (
+            <div className="flex items-start gap-3">
+              <Crown className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Customer Tier</p>
+                <Badge
+                  variant={
+                    client.tier === 'ENTERPRISE' ? 'default' :
+                    client.tier === 'VIP' ? 'secondary' :
+                    client.tier === 'NEW' ? 'outline' :
+                    'outline'
+                  }
+                >
+                  {client.tier === 'STANDARD' ? 'Standard' :
+                   client.tier === 'VIP' ? 'VIP' :
+                   client.tier === 'NEW' ? 'New Customer' :
+                   client.tier === 'ENTERPRISE' ? 'Enterprise' :
+                   client.tier}
+                </Badge>
+              </div>
+            </div>
+
+            {client.territory && (
               <div className="flex items-start gap-3">
-                <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <Building2 className="h-4 w-4 text-muted-foreground mt-0.5" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium">Email</p>
-                  <a
-                    href={`mailto:${client.email}`}
-                    className="text-sm text-muted-foreground hover:underline"
-                  >
-                    {client.email}
-                  </a>
+                  <p className="text-sm font-medium">Territory</p>
+                  <p className="text-sm text-muted-foreground">{client.territory.name}</p>
                 </div>
               </div>
+            )}
+
+            {client.email && (
+              <>
+                <Separator />
+                <div className="flex items-start gap-3">
+                  <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Email</p>
+                    <a
+                      href={`mailto:${client.email}`}
+                      className="text-sm text-muted-foreground hover:underline"
+                    >
+                      {client.email}
+                    </a>
+                  </div>
+                </div>
+              </>
             )}
 
             {client.phone && (
@@ -94,7 +144,7 @@ async function ClientDetails({ clientId }: { clientId: string }) {
                 <Separator />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Notes</p>
-                  <p className="text-sm text-muted-foreground">{client.notes}</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{client.notes}</p>
                 </div>
               </>
             )}
