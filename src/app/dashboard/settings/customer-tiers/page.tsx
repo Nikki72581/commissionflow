@@ -11,9 +11,9 @@ const customerTiers = [
   {
     name: 'STANDARD',
     icon: Users,
-    color: 'text-gray-600',
-    bgColor: 'bg-gray-100',
-    borderColor: 'border-gray-300',
+    color: 'text-gray-600 dark:text-gray-400',
+    bgColor: 'bg-gray-100 dark:bg-gray-800',
+    borderColor: 'border-gray-300 dark:border-gray-600',
     description: 'Default tier for regular customers',
     details: [
       'Applies to most customers by default',
@@ -25,9 +25,9 @@ const customerTiers = [
   {
     name: 'VIP',
     icon: Star,
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-300',
+    color: 'text-yellow-600 dark:text-yellow-500',
+    bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
+    borderColor: 'border-yellow-300 dark:border-yellow-700',
     description: 'High-value customers with premium status',
     details: [
       'For top-performing or high-revenue clients',
@@ -39,9 +39,9 @@ const customerTiers = [
   {
     name: 'NEW',
     icon: CheckCircle,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-300',
+    color: 'text-green-600 dark:text-green-500',
+    bgColor: 'bg-green-50 dark:bg-green-900/20',
+    borderColor: 'border-green-300 dark:border-green-700',
     description: 'Newly acquired customers',
     details: [
       'Identifies recent client acquisitions',
@@ -53,9 +53,9 @@ const customerTiers = [
   {
     name: 'ENTERPRISE',
     icon: Building2,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-300',
+    color: 'text-purple-600 dark:text-purple-400',
+    bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+    borderColor: 'border-purple-300 dark:border-purple-700',
     description: 'Large enterprise deals and organizations',
     details: [
       'For major corporate accounts',
@@ -82,20 +82,20 @@ export default function CustomerTiersPage() {
       <Separator />
 
       {/* Info Card */}
-      <Card className="border-blue-200 bg-blue-50/50">
+      <Card className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30">
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="space-y-2">
-              <p className="text-sm font-medium text-blue-900">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
                 Customer tiers are system-defined classifications
               </p>
-              <p className="text-sm text-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
                 These tier values are defined in the database schema and cannot be modified. You can assign these tiers to clients when creating or editing them. Use commission rules to create tier-specific commission rates.
               </p>
               <div className="pt-2">
                 <Link href="/dashboard/clients">
-                  <Button variant="outline" size="sm" className="bg-white">
+                  <Button variant="outline" size="sm" className="bg-white dark:bg-gray-900">
                     Manage Clients
                   </Button>
                 </Link>
@@ -137,7 +137,7 @@ export default function CustomerTiersPage() {
                   <ul className="space-y-2">
                     {tier.details.map((detail, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
+                        <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500 shrink-0 mt-0.5" />
                         <span>{detail}</span>
                       </li>
                     ))}
@@ -165,7 +165,7 @@ export default function CustomerTiersPage() {
         <CardContent className="space-y-4">
           <div className="space-y-3">
             <div className="flex gap-3">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-sm font-semibold flex-shrink-0">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-semibold shrink-0">
                 1
               </div>
               <div>
@@ -179,7 +179,7 @@ export default function CustomerTiersPage() {
             <Separator />
 
             <div className="flex gap-3">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-sm font-semibold flex-shrink-0">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-semibold shrink-0">
                 2
               </div>
               <div>
@@ -193,7 +193,7 @@ export default function CustomerTiersPage() {
             <Separator />
 
             <div className="flex gap-3">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600 text-sm font-semibold flex-shrink-0">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-sm font-semibold shrink-0">
                 3
               </div>
               <div>

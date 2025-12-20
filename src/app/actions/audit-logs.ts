@@ -319,3 +319,64 @@ export async function exportAuditLogsToCsv(filters: AuditLogFilters = {}) {
     }
   }
 }
+
+/**
+ * Purge audit logs based on date range
+ */
+export async function purgeAuditLogs(params: {
+  startDate?: Date
+  endDate?: Date
+}) {
+  try {
+    const organizationId = await getOrganizationId()
+
+    // Build where clause
+    const whereClause: any = {
+      organizationId,
+    }
+
+    if (params.startDate || params.endDate) {
+      whereClause.createdAt = {}
+      if (params.startDate) {
+        whereClause.createdAt.gte = params.startDate
+      }
+      if (params.endDate) {
+        whereClause.createdAt.lte = params.endDate
+      }
+    } else {
+      // Safety check: require at least one date filter to prevent accidental full deletion
+      return {
+        success: false,
+        error: 'Please specify a date range for purging audit logs',
+      }
+    }
+
+    // Count logs to be deleted
+    const count = await prisma.auditLog.count({
+      where: whereClause,
+    })
+
+    if (count === 0) {
+      return {
+        success: true,
+        data: { deletedCount: 0 },
+      }
+    }
+
+    // Delete the logs
+    const result = await prisma.auditLog.deleteMany({
+      where: whereClause,
+    })
+
+    return {
+      success: true,
+      data: { deletedCount: result.count },
+    }
+  } catch (error) {
+    console.error('Error purging audit logs:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to purge audit logs',
+    }
+  }
+}
