@@ -14,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getClients } from '@/app/actions/clients'
+import { getTerritories } from '@/app/actions/territories'
 import { ClientFormDialog } from '@/components/clients/client-form-dialog'
 import { ClientActions } from '@/components/clients/client-actions'
 import { formatDate } from '@/lib/utils'
@@ -24,17 +25,21 @@ export const metadata = {
 }
 
 async function ClientsTable({ searchQuery }: { searchQuery?: string }) {
-  const result = await getClients()
+  const [clientsResult, territoriesResult] = await Promise.all([
+    getClients(),
+    getTerritories(),
+  ])
 
-  if (!result.success) {
+  if (!clientsResult.success) {
     return (
       <div className="rounded-md bg-destructive/15 p-4 text-sm text-destructive">
-        {result.error}
+        {clientsResult.error}
       </div>
     )
   }
 
-  let clients = result.data || []
+  let clients = clientsResult.data || []
+  const territories = territoriesResult.success ? territoriesResult.data || [] : []
 
 // Filter by search query
 if (searchQuery && clients.length > 0) {
@@ -74,6 +79,7 @@ if (searchQuery && clients.length > 0) {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Phone</TableHead>
+            {territories.length > 0 && <TableHead>Territory</TableHead>}
             <TableHead>Projects</TableHead>
             <TableHead>Added</TableHead>
             <TableHead className="w-[70px]"></TableHead>
@@ -96,6 +102,11 @@ if (searchQuery && clients.length > 0) {
               <TableCell className="text-muted-foreground">
                 {client.phone || '—'}
               </TableCell>
+              {territories.length > 0 && (
+                <TableCell className="text-muted-foreground">
+                  {(client as any).territory?.name || '—'}
+                </TableCell>
+              )}
               <TableCell>
                 {client.projects.length > 0 ? (
                   <Badge variant="secondary">{client.projects.length}</Badge>
@@ -107,7 +118,7 @@ if (searchQuery && clients.length > 0) {
                 {formatDate(client.createdAt)}
               </TableCell>
               <TableCell>
-                <ClientActions client={client} />
+                <ClientActions client={client} territories={territories} />
               </TableCell>
             </TableRow>
           ))}
@@ -125,11 +136,14 @@ function ClientsTableSkeleton() {
   )
 }
 
-export default function ClientsPage({
+export default async function ClientsPage({
   searchParams,
 }: {
   searchParams: { search?: string }
 }) {
+  const territoriesResult = await getTerritories()
+  const territories = territoriesResult.success ? territoriesResult.data || [] : []
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -139,7 +153,7 @@ export default function ClientsPage({
             Manage your clients and their projects
           </p>
         </div>
-        <ClientFormDialog />
+        <ClientFormDialog territories={territories} />
       </div>
 
       <div className="flex items-center gap-4">

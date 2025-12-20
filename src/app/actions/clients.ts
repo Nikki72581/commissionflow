@@ -78,6 +78,12 @@ export async function getClients() {
             id: true,
           },
         },
+        territory: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',

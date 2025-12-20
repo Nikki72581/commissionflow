@@ -24,11 +24,17 @@ import { ClientFormDialog } from './client-form-dialog'
 import { deleteClient } from '@/app/actions/clients'
 import type { Client } from '@/lib/types'
 
-interface ClientActionsProps {
-  client: Client
+interface Territory {
+  id: string
+  name: string
 }
 
-export function ClientActions({ client }: ClientActionsProps) {
+interface ClientActionsProps {
+  client: Client
+  territories?: Territory[]
+}
+
+export function ClientActions({ client, territories = [] }: ClientActionsProps) {
   const router = useRouter()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -58,6 +64,7 @@ export function ClientActions({ client }: ClientActionsProps) {
         <DropdownMenuContent align="end">
           <ClientFormDialog
             client={client}
+            territories={territories}
             trigger={
               <button className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
                 <Pencil className="mr-2 h-4 w-4" />
