@@ -59,6 +59,7 @@ export function CommissionFilters() {
         <SelectContent>
           <SelectItem value="all">All Statuses</SelectItem>
           <SelectItem value="pending">Pending</SelectItem>
+          <SelectItem value="calculated">Calculated</SelectItem>
           <SelectItem value="approved">Approved</SelectItem>
           <SelectItem value="paid">Paid</SelectItem>
         </SelectContent>

@@ -251,11 +251,10 @@ function CommissionsTableSkeleton() {
   )
 }
 
-export default async function CommissionsPage({
-  searchParams,
-}: {
-  searchParams: { search?: string; status?: string }
+export default async function CommissionsPage(props: {
+  searchParams: Promise<{ search?: string; status?: string }>
 }) {
+  const searchParams = await props.searchParams
   const statusFilter = searchParams.status || 'all'
 
   return (
