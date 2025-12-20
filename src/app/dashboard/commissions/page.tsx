@@ -1,7 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { TrendingUp, Search } from 'lucide-react'
-import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -11,17 +10,11 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getCommissionCalculations } from '@/app/actions/commission-calculations'
 import { CommissionActions } from '@/components/commissions/commission-actions'
 import { CommissionDetailDialog } from '@/components/commissions/commission-detail-dialog'
+import { CommissionFilters } from '@/components/commissions/commission-filters'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -276,40 +269,7 @@ export default async function CommissionsPage({
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
-        <form className="flex-1" action="/dashboard/commissions" method="GET">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              name="search"
-              placeholder="Search commissions..."
-              defaultValue={searchParams.search}
-              className="pl-9"
-            />
-          </div>
-          <input type="hidden" name="status" value={statusFilter} />
-        </form>
-
-        <Select value={statusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">
-              <a href="/dashboard/commissions?status=all">All Statuses</a>
-            </SelectItem>
-            <SelectItem value="pending">
-              <a href="/dashboard/commissions?status=pending">Pending</a>
-            </SelectItem>
-            <SelectItem value="approved">
-              <a href="/dashboard/commissions?status=approved">Approved</a>
-            </SelectItem>
-            <SelectItem value="paid">
-              <a href="/dashboard/commissions?status=paid">Paid</a>
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <CommissionFilters />
 
       <Suspense fallback={<CommissionsTableSkeleton />}>
         <CommissionsTable
