@@ -25,7 +25,7 @@ interface Commission {
       client: {
         name: string
       }
-    }
+    } | null
   }
   user: {
     firstName: string
@@ -196,10 +196,10 @@ export function CommissionsTableWithBulk({
                     </div>
                   </td>
                   <td className="p-4">
-                    {commission.salesTransaction.project.client.name}
+                    {commission.salesTransaction.project?.client?.name || 'N/A'}
                   </td>
                   <td className="p-4">
-                    {commission.salesTransaction.project.name}
+                    {commission.salesTransaction.project?.name || 'N/A'}
                   </td>
                   <td className="p-4 text-right">
                     {formatCurrency(commission.salesTransaction.amount)}
