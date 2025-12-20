@@ -235,9 +235,9 @@ export async function getPayoutHistory() {
     const batches = paidCommissions.reduce((acc, calc) => {
       const paidDate = (calc as any).paidAt
       if (!paidDate) return acc
-      
+
       const dateKey = paidDate.toISOString().split('T')[0] // YYYY-MM-DD
-      
+
       if (!acc[dateKey]) {
         acc[dateKey] = {
           date: paidDate,
@@ -247,7 +247,7 @@ export async function getPayoutHistory() {
           commissions: [],
         }
       }
-      
+
       acc[dateKey].commissionsCount++
       acc[dateKey].totalAmount += calc.amount
       acc[dateKey].salespeopleCount.add(calc.userId)
@@ -257,7 +257,7 @@ export async function getPayoutHistory() {
         salespersonName: `${calc.user.firstName} ${calc.user.lastName}`,
         salespersonEmail: calc.user.email,
       })
-      
+
       return acc
     }, {} as Record<string, any>)
 
@@ -279,6 +279,117 @@ export async function getPayoutHistory() {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get history',
+    }
+  }
+}
+
+/**
+ * Export selected commissions to CSV format
+ */
+export async function exportCommissionsToCSV(calculationIds: string[]) {
+  try {
+    const organizationId = await getOrganizationId()
+
+    const calculations = await prisma.commissionCalculation.findMany({
+      where: {
+        id: { in: calculationIds },
+        organizationId,
+        status: 'APPROVED',
+      },
+      include: {
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        salesTransaction: {
+          select: {
+            amount: true,
+            transactionDate: true,
+            invoiceNumber: true,
+            project: {
+              select: {
+                name: true,
+                client: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        commissionPlan: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        calculatedAt: 'asc',
+      },
+    })
+
+    if (calculations.length === 0) {
+      return {
+        success: false,
+        error: 'No eligible commissions found to export',
+      }
+    }
+
+    // Create CSV headers
+    const headers = [
+      'Salesperson Name',
+      'Email',
+      'Client',
+      'Project',
+      'Sale Date',
+      'Invoice Number',
+      'Sale Amount',
+      'Commission Amount',
+      'Commission Plan',
+      'Status',
+      'Approved Date',
+    ]
+
+    // Create CSV rows
+    const rows = calculations.map((calc) => [
+      `${calc.user.firstName} ${calc.user.lastName}`,
+      calc.user.email,
+      calc.salesTransaction.project?.client.name || 'N/A',
+      calc.salesTransaction.project?.name || 'N/A',
+      calc.salesTransaction.transactionDate.toISOString().split('T')[0],
+      calc.salesTransaction.invoiceNumber || 'N/A',
+      calc.salesTransaction.amount.toFixed(2),
+      calc.amount.toFixed(2),
+      calc.commissionPlan.name,
+      calc.status,
+      calc.approvedAt?.toISOString().split('T')[0] || 'N/A',
+    ])
+
+    // Combine headers and rows into CSV string
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) =>
+        row.map((cell) => `"${cell}"`).join(',')
+      ),
+    ].join('\n')
+
+    return {
+      success: true,
+      data: {
+        csv: csvContent,
+        filename: `commission-payout-${new Date().toISOString().split('T')[0]}.csv`,
+        recordCount: calculations.length,
+      },
+    }
+  } catch (error) {
+    console.error('Error exporting commissions:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to export commissions',
     }
   }
 }

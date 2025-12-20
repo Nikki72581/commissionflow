@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Button } from '@/components/ui/button'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { BulkActionsToolbar } from '@/components/commissions/bulk-actions-toolbar'
 import { BulkPayoutDialog } from '@/components/commissions/bulk-payout-dialog'
+import { exportCommissionsToCSV } from '@/app/actions/bulk-payout'
+import { useToast } from '@/hooks/use-toast'
 
 interface Commission {
   id: string
@@ -47,6 +48,7 @@ export function CommissionsTableWithBulk({
 }: CommissionsTableWithBulkProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
+  const { toast } = useToast()
 
   // Only approved commissions can be selected
   const approvedCommissions = commissions.filter(c => c.status === 'APPROVED')
@@ -84,6 +86,46 @@ export function CommissionsTableWithBulk({
     if (selectedIds.size > 0) {
       setShowPayoutDialog(true)
     }
+  }
+
+  async function handleExport() {
+    if (selectedIds.size === 0) return
+
+    const result = await exportCommissionsToCSV(Array.from(selectedIds))
+
+    if (result.success && result.data) {
+      // Create a download link
+      const blob = new Blob([result.data.csv], { type: 'text/csv' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = result.data.filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+
+      toast({
+        title: 'Export successful',
+        description: `Exported ${result.data.recordCount} commission records`,
+      })
+    } else {
+      toast({
+        title: 'Export failed',
+        description: result.error,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleExportAndPay() {
+    if (selectedIds.size === 0) return
+
+    // First export
+    await handleExport()
+
+    // Then open the payout dialog
+    setShowPayoutDialog(true)
   }
 
   function handlePayoutSuccess() {
@@ -202,6 +244,8 @@ export function CommissionsTableWithBulk({
         selectedCount={selectedIds.size}
         selectedTotal={selectedTotal}
         onMarkAsPaid={handleMarkAsPaid}
+        onExport={handleExport}
+        onExportAndPay={handleExportAndPay}
         onClearSelection={handleClearSelection}
       />
 

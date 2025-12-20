@@ -2,13 +2,15 @@
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { DollarSign, X } from 'lucide-react'
+import { DollarSign, X, Download, CheckCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 interface BulkActionsToolbarProps {
   selectedCount: number
   selectedTotal: number
   onMarkAsPaid: () => void
+  onExport: () => void
+  onExportAndPay: () => void
   onClearSelection: () => void
 }
 
@@ -16,6 +18,8 @@ export function BulkActionsToolbar({
   selectedCount,
   selectedTotal,
   onMarkAsPaid,
+  onExport,
+  onExportAndPay,
   onClearSelection,
 }: BulkActionsToolbarProps) {
   if (selectedCount === 0) return null
@@ -38,10 +42,31 @@ export function BulkActionsToolbar({
         <Button
           size="sm"
           variant="secondary"
+          onClick={onExport}
+          className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+        >
+          <Download className="h-4 w-4 mr-1" />
+          Export CSV
+        </Button>
+
+        <Button
+          size="sm"
+          variant="secondary"
           onClick={onMarkAsPaid}
           className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
         >
+          <CheckCircle className="h-4 w-4 mr-1" />
           Mark as Paid
+        </Button>
+
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={onExportAndPay}
+          className="bg-green-600 text-white hover:bg-green-700"
+        >
+          <Download className="h-4 w-4 mr-1" />
+          Export & Pay
         </Button>
 
         <Button

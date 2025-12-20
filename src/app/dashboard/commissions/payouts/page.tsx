@@ -1,7 +1,63 @@
 // src/app/dashboard/commissions/payouts/page.tsx
+import { Suspense } from 'react'
 import { PageHeader } from '@/components/navigation/breadcrumbs'
-import { BulkPayoutDialog } from '@/components/commissions/bulk-payout-dialog'
-import { BulkActionsToolbar } from '@/components/commissions/bulk-actions-toolbar'
+import { getCommissionCalculations } from '@/app/actions/commission-calculations'
+import { BulkPayoutsContent } from '@/components/commissions/bulk-payouts-content'
+import { EmptyState } from '@/components/ui/empty-state'
+import { DollarSign } from 'lucide-react'
+
+export const dynamic = 'force-dynamic'
+
+export const metadata = {
+  title: 'Bulk Payouts | CommissionFlow',
+  description: 'Process multiple commission payments at once',
+}
+
+async function BulkPayoutsTable() {
+  const result = await getCommissionCalculations()
+
+  if (!result.success) {
+    return (
+      <div className="rounded-md bg-destructive/15 p-4 text-sm text-destructive">
+        {result.error}
+      </div>
+    )
+  }
+
+  // Filter for only APPROVED commissions
+  const approvedCommissions = (result.data || []).filter(
+    (calc) => calc.status === 'APPROVED'
+  )
+
+  if (approvedCommissions.length === 0) {
+    return (
+      <EmptyState
+        icon={DollarSign}
+        title="No approved commissions"
+        description="Approved commissions ready for payout will appear here. Approve commissions from the main commissions page first."
+      />
+    )
+  }
+
+  return <BulkPayoutsContent commissions={approvedCommissions} />
+}
+
+function BulkPayoutsTableSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-3">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="h-24 bg-muted animate-pulse rounded" />
+        ))}
+      </div>
+      <div className="rounded-md border">
+        <div className="p-8 text-center text-muted-foreground">
+          Loading approved commissions...
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function BulkPayoutsPage() {
   return (
@@ -14,7 +70,10 @@ export default function BulkPayoutsPage() {
           { title: 'Bulk Payouts' }
         ]}
       />
-    
+
+      <Suspense fallback={<BulkPayoutsTableSkeleton />}>
+        <BulkPayoutsTable />
+      </Suspense>
     </div>
   )
 }
