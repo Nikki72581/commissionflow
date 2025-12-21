@@ -1,6 +1,6 @@
 // app/api/onboarding/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { currentUser, clerkClient } from '@clerk/nextjs/server';
+import { currentUser } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
@@ -49,23 +49,16 @@ export async function POST(req: NextRequest) {
       counter++;
     }
 
-    // Create Clerk organization first
-    const clerk = await clerkClient();
-    const clerkOrg = await clerk.organizations.createOrganization({
-      name: organizationName,
-      slug,
-      createdBy: user.id,
-    });
-
     // Create organization and user in a transaction
+    // Note: Clerk org creation will be handled separately by an admin script
     const result = await db.$transaction(async (tx) => {
-      // Create organization with Clerk org ID
+      // Create organization without Clerk org ID initially
       const organization = await tx.organization.create({
         data: {
           name: organizationName,
           slug,
           planTier,
-          clerkOrgId: clerkOrg.id,
+          clerkOrgId: null, // Will be linked later via admin script
         },
       });
 
@@ -84,9 +77,12 @@ export async function POST(req: NextRequest) {
       return { organization, user: newUser };
     });
 
-    return NextResponse.json({ 
+    // Note: To enable team invitations, run the link-unlinked-orgs script:
+    // npx tsx --env-file=.env.local scripts/link-unlinked-orgs.ts
+
+    return NextResponse.json({
       success: true,
-      organizationId: result.organization.id 
+      organizationId: result.organization.id
     });
 
   } catch (error) {
