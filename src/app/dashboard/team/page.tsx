@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { Users, Search, Award, DollarSign, TrendingUp } from 'lucide-react'
+import { Users, Search, Award, DollarSign, TrendingUp, Pencil } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -18,6 +18,7 @@ import { formatDate } from '@/lib/utils'
 import { getCurrentUserWithOrg } from '@/lib/auth'
 import { InviteMembersDialog } from '@/components/team/invite-members-dialog'
 import { PendingInvitations } from '@/components/team/pending-invitations'
+import { EditUserDialog } from '@/components/team/edit-user-dialog'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,7 +78,7 @@ async function getUserCommissionStats(userId: string) {
   }
 }
 
-async function TeamTable({ searchQuery }: { searchQuery?: string }) {
+async function TeamTable({ searchQuery, isAdmin }: { searchQuery?: string; isAdmin: boolean }) {
   const result = await getUsers()
 
   if (!result.success) {
@@ -97,7 +98,9 @@ async function TeamTable({ searchQuery }: { searchQuery?: string }) {
       (user) =>
         user.email.toLowerCase().includes(query) ||
         user.firstName?.toLowerCase().includes(query) ||
-        user.lastName?.toLowerCase().includes(query)
+        user.lastName?.toLowerCase().includes(query) ||
+        user.employeeId?.toLowerCase().includes(query) ||
+        user.salespersonId?.toLowerCase().includes(query)
     )
   }
 
@@ -139,10 +142,13 @@ async function TeamTable({ searchQuery }: { searchQuery?: string }) {
           <TableRow className="border-b border-orange-500/10 bg-gradient-to-r from-orange-500/5 to-amber-500/5">
             <TableHead className="font-semibold">Name</TableHead>
             <TableHead className="font-semibold">Email</TableHead>
+            <TableHead className="font-semibold">Employee ID</TableHead>
+            <TableHead className="font-semibold">Salesperson ID</TableHead>
             <TableHead className="font-semibold">Role</TableHead>
             <TableHead className="font-semibold">Total Earned</TableHead>
             <TableHead className="font-semibold">Pending</TableHead>
             <TableHead className="font-semibold">Joined</TableHead>
+            {isAdmin && <TableHead className="font-semibold">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -161,6 +167,12 @@ async function TeamTable({ searchQuery }: { searchQuery?: string }) {
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {user.email}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {user.employeeId || '—'}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {user.salespersonId || '—'}
                 </TableCell>
                 <TableCell>
                   <Badge
@@ -186,6 +198,11 @@ async function TeamTable({ searchQuery }: { searchQuery?: string }) {
                 <TableCell className="text-muted-foreground">
                   {formatDate(user.createdAt)}
                 </TableCell>
+                {isAdmin && (
+                  <TableCell>
+                    <EditUserDialog user={user} />
+                  </TableCell>
+                )}
               </TableRow>
             )
           })}
@@ -296,7 +313,7 @@ export default async function TeamPage({
 
       {/* Team Table */}
       <Suspense fallback={<TeamTableSkeleton />}>
-        <TeamTable searchQuery={searchParams.search} />
+        <TeamTable searchQuery={searchParams.search} isAdmin={isAdmin} />
       </Suspense>
     </div>
   )

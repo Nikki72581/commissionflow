@@ -120,6 +120,10 @@ model User {
   updatedAt      DateTime @updatedAt
   auditLogs      AuditLog[]
 
+  // External system integration IDs
+  employeeId     String?  // Optional Employee ID for external systems
+  salespersonId  String?  // Optional Salesperson ID for external systems
+
   // Notification preferences
   emailNotifications Boolean  @default(true)
   salesAlerts        Boolean  @default(true)

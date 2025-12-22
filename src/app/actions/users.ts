@@ -43,6 +43,8 @@ export async function getUsers() {
         firstName: true,
         lastName: true,
         role: true,
+        employeeId: true,
+        salespersonId: true,
         createdAt: true,
       },
       orderBy: {
@@ -331,6 +333,76 @@ export async function revokeInvitation(invitationId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to revoke invitation',
+    }
+  }
+}
+
+/**
+ * Update user fields (Employee ID and Salesperson ID)
+ */
+export async function updateUserFields(
+  userId: string,
+  data: {
+    employeeId?: string
+    salespersonId?: string
+  }
+) {
+  try {
+    const admin = await requireAdmin()
+
+    // Verify the user belongs to the same organization
+    const targetUser = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId: admin.organizationId,
+      },
+    })
+
+    if (!targetUser) {
+      return {
+        success: false,
+        error: 'User not found',
+      }
+    }
+
+    // Update the user fields
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        employeeId: data.employeeId || null,
+        salespersonId: data.salespersonId || null,
+      },
+    })
+
+    // Log audit trail
+    await prisma.auditLog.create({
+      data: {
+        action: 'user_updated',
+        entityType: 'user',
+        entityId: userId,
+        description: `Updated user fields for ${targetUser.firstName} ${targetUser.lastName}`,
+        userId: admin.id,
+        userName: `${admin.firstName} ${admin.lastName}`,
+        userEmail: admin.email,
+        organizationId: admin.organizationId,
+        metadata: {
+          employeeId: data.employeeId,
+          salespersonId: data.salespersonId,
+        },
+      },
+    })
+
+    revalidatePath('/dashboard/team')
+
+    return {
+      success: true,
+      data: updatedUser,
+    }
+  } catch (error) {
+    console.error('Error updating user fields:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update user',
     }
   }
 }
