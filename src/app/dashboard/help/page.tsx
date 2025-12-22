@@ -1,4 +1,4 @@
-import { requireAuth } from '@/lib/auth'
+import { getCurrentUserWithOrg } from '@/lib/auth'
 import Link from 'next/link'
 import {
   BookOpen,
@@ -207,7 +207,7 @@ const setupSteps: SetupStep[] = [
 ]
 
 export default async function HelpPage() {
-  await requireAuth()
+  await getCurrentUserWithOrg()
 
   return (
     <div className="space-y-8">
