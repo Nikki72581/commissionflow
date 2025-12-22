@@ -118,9 +118,9 @@ export default function AuditLogsClient() {
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedAction, setSelectedAction] = useState<string>('')
-  const [selectedEntityType, setSelectedEntityType] = useState<string>('')
-  const [selectedUser, setSelectedUser] = useState<string>('')
+  const [selectedAction, setSelectedAction] = useState<string>('all')
+  const [selectedEntityType, setSelectedEntityType] = useState<string>('all')
+  const [selectedUser, setSelectedUser] = useState<string>('all')
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
 
@@ -158,9 +158,9 @@ export default function AuditLogsClient() {
         pageSize: 50,
       }
 
-      if (selectedAction) filters.action = selectedAction as AuditAction
-      if (selectedEntityType) filters.entityType = selectedEntityType as EntityType
-      if (selectedUser) filters.userId = selectedUser
+      if (selectedAction && selectedAction !== 'all') filters.action = selectedAction as AuditAction
+      if (selectedEntityType && selectedEntityType !== 'all') filters.entityType = selectedEntityType as EntityType
+      if (selectedUser && selectedUser !== 'all') filters.userId = selectedUser
       if (startDate) filters.startDate = new Date(startDate)
       if (endDate) filters.endDate = new Date(endDate)
 
@@ -194,9 +194,9 @@ export default function AuditLogsClient() {
 
   function handleClearFilters() {
     setSearchQuery('')
-    setSelectedAction('')
-    setSelectedEntityType('')
-    setSelectedUser('')
+    setSelectedAction('all')
+    setSelectedEntityType('all')
+    setSelectedUser('all')
     setStartDate('')
     setEndDate('')
     setCurrentPage(1)
@@ -207,9 +207,9 @@ export default function AuditLogsClient() {
       try {
         const filters: AuditLogFilters = {}
 
-        if (selectedAction) filters.action = selectedAction as AuditAction
-        if (selectedEntityType) filters.entityType = selectedEntityType as EntityType
-        if (selectedUser) filters.userId = selectedUser
+        if (selectedAction && selectedAction !== 'all') filters.action = selectedAction as AuditAction
+        if (selectedEntityType && selectedEntityType !== 'all') filters.entityType = selectedEntityType as EntityType
+        if (selectedUser && selectedUser !== 'all') filters.userId = selectedUser
         if (startDate) filters.startDate = new Date(startDate)
         if (endDate) filters.endDate = new Date(endDate)
 
@@ -337,7 +337,7 @@ export default function AuditLogsClient() {
       )
     : logs
 
-  const hasActiveFilters = selectedAction || selectedEntityType || selectedUser || startDate || endDate
+  const hasActiveFilters = (selectedAction && selectedAction !== 'all') || (selectedEntityType && selectedEntityType !== 'all') || (selectedUser && selectedUser !== 'all') || startDate || endDate
 
   return (
     <div className="space-y-6">
@@ -394,7 +394,7 @@ export default function AuditLogsClient() {
                   <SelectValue placeholder="All actions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All actions</SelectItem>
+                  <SelectItem value="all">All actions</SelectItem>
                   {Object.entries(ACTION_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {label}
@@ -412,7 +412,7 @@ export default function AuditLogsClient() {
                   <SelectValue placeholder="All types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All types</SelectItem>
+                  <SelectItem value="all">All types</SelectItem>
                   {Object.entries(ENTITY_TYPE_LABELS).map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {label}
@@ -430,7 +430,7 @@ export default function AuditLogsClient() {
                   <SelectValue placeholder="All users" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All users</SelectItem>
+                  <SelectItem value="all">All users</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.userId} value={user.userId}>
                       {user.userName || user.userEmail || 'Unknown User'}
