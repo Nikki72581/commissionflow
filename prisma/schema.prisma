@@ -63,6 +63,13 @@ enum CustomerTier {
   ENTERPRISE     // Large enterprise deals
 }
 
+enum ClientStatus {
+  ACTIVE         // Active client
+  INACTIVE       // Inactive client
+  PROSPECTIVE    // Potential client
+  CHURNED        // Lost client
+}
+
 enum RuleScope {
   GLOBAL              // Apply to all transactions (default)
   CUSTOMER_TIER       // Apply to specific customer tier
@@ -151,6 +158,8 @@ model Client {
   address        String?
   notes          String?
   tier           CustomerTier  @default(STANDARD)
+  status         ClientStatus  @default(ACTIVE)
+  clientId       String?       // External client ID for integrations
   territoryId    String?
   organizationId String
   createdAt      DateTime      @default(now())

@@ -76,6 +76,7 @@ export async function getClients() {
         projects: {
           select: {
             id: true,
+            status: true,
           },
         },
         territory: {

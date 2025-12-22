@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Briefcase, Calendar, Mail, Phone, MapPin, Building2, Crown, Pencil } from 'lucide-react'
+import { ArrowLeft, Briefcase, Calendar, Mail, Phone, MapPin, Building2, Crown, Pencil, Activity, Hash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -66,6 +66,27 @@ async function ClientDetails({ clientId }: { clientId: string }) {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-start gap-3">
+              <Activity className="h-4 w-4 text-muted-foreground mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Status</p>
+                <Badge
+                  variant={
+                    (client as any).status === 'ACTIVE' ? 'success' :
+                    (client as any).status === 'PROSPECTIVE' ? 'info' :
+                    (client as any).status === 'INACTIVE' ? 'secondary' :
+                    'outline'
+                  }
+                >
+                  {(client as any).status === 'ACTIVE' ? 'Active' :
+                   (client as any).status === 'INACTIVE' ? 'Inactive' :
+                   (client as any).status === 'PROSPECTIVE' ? 'Prospective' :
+                   (client as any).status === 'CHURNED' ? 'Churned' :
+                   'Active'}
+                </Badge>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3">
               <Crown className="h-4 w-4 text-muted-foreground mt-0.5" />
               <div className="space-y-1">
                 <p className="text-sm font-medium">Customer Tier</p>
@@ -85,6 +106,16 @@ async function ClientDetails({ clientId }: { clientId: string }) {
                 </Badge>
               </div>
             </div>
+
+            {(client as any).clientId && (
+              <div className="flex items-start gap-3">
+                <Hash className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Client ID</p>
+                  <p className="text-sm text-muted-foreground font-mono">{(client as any).clientId}</p>
+                </div>
+              </div>
+            )}
 
             {client.territory && (
               <div className="flex items-start gap-3">

@@ -77,6 +77,7 @@ if (searchQuery && clients.length > 0) {
         <TableHeader>
           <TableRow className="border-b border-purple-500/10 bg-gradient-to-r from-purple-500/5 to-blue-500/5">
             <TableHead className="font-semibold">Name</TableHead>
+            <TableHead className="font-semibold">Status</TableHead>
             <TableHead className="font-semibold">Email</TableHead>
             <TableHead className="font-semibold">Phone</TableHead>
             {territories.length > 0 && <TableHead className="font-semibold">Territory</TableHead>}
@@ -98,6 +99,14 @@ if (searchQuery && clients.length > 0) {
                 >
                   {client.name}
                 </Link>
+              </TableCell>
+              <TableCell>
+                <Badge
+                  variant={(client as any).status === 'ACTIVE' ? 'success' : (client as any).status === 'PROSPECTIVE' ? 'info' : (client as any).status === 'INACTIVE' ? 'secondary' : 'outline'}
+                  className="font-medium"
+                >
+                  {(client as any).status || 'ACTIVE'}
+                </Badge>
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {client.email || '—'}
@@ -161,8 +170,13 @@ export default async function ClientsPage({
   const clients = clientsResult.success ? clientsResult.data || [] : []
 
   const totalClients = clients.length
-  const clientsWithProjects = clients.filter(c => c.projects.length > 0).length
-  const activeProjects = clients.reduce((sum, c) => sum + c.projects.length, 0)
+  // Count clients with active projects
+  const clientsWithActiveProjects = clients.filter(c =>
+    c.projects.some((p: any) => p.status === 'active')
+  ).length
+  const activeProjects = clients.reduce((sum, c) =>
+    sum + c.projects.filter((p: any) => p.status === 'active').length, 0
+  )
 
   return (
     <div className="space-y-6">
@@ -197,7 +211,7 @@ export default async function ClientsPage({
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
-              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{clientsWithProjects}</p>
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{clientsWithActiveProjects}</p>
             </div>
           </div>
         </div>

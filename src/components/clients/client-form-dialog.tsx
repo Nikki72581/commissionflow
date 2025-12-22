@@ -46,6 +46,9 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
   const [tier, setTier] = useState<'STANDARD' | 'VIP' | 'NEW' | 'ENTERPRISE'>(
     (client as any)?.tier || 'STANDARD'
   )
+  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE' | 'PROSPECTIVE' | 'CHURNED'>(
+    (client as any)?.status || 'ACTIVE'
+  )
   const [territoryId, setTerritoryId] = useState((client as any)?.territoryId || '')
 
   const isEdit = !!client
@@ -63,6 +66,8 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
       address: formData.get('address') as string,
       notes: formData.get('notes') as string,
       tier,
+      status,
+      clientId: formData.get('clientId') as string,
       territoryId: territoryId || undefined,
     }
 
@@ -180,6 +185,19 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
             </div>
 
             <div className="grid gap-2">
+              <Label htmlFor="clientId">Client ID</Label>
+              <Input
+                id="clientId"
+                name="clientId"
+                defaultValue={(client as any)?.clientId || ''}
+                placeholder="External system client ID"
+              />
+              <p className="text-xs text-muted-foreground">
+                External client ID for integrations
+              </p>
+            </div>
+
+            <div className="grid gap-2">
               <Label htmlFor="tier">Customer Tier</Label>
               <Select value={tier} onValueChange={(value: 'STANDARD' | 'VIP' | 'NEW' | 'ENTERPRISE') => setTier(value)}>
                 <SelectTrigger>
@@ -194,6 +212,24 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
               </Select>
               <p className="text-xs text-muted-foreground">
                 Customer tier for tier-based commission rules
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={status} onValueChange={(value: 'ACTIVE' | 'INACTIVE' | 'PROSPECTIVE' | 'CHURNED') => setStatus(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                  <SelectItem value="PROSPECTIVE">Prospective</SelectItem>
+                  <SelectItem value="CHURNED">Churned</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Current status of the client relationship
               </p>
             </div>
 
