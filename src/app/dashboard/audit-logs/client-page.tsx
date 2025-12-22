@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition, useCallback } from 'react'
 import { format } from 'date-fns'
 import {
   FileText,
@@ -150,11 +150,7 @@ export default function AuditLogsClient() {
   }, [])
 
   // Load audit logs
-  useEffect(() => {
-    loadAuditLogs()
-  }, [currentPage, selectedAction, selectedEntityType, selectedUser, startDate, endDate])
-
-  async function loadAuditLogs() {
+  const loadAuditLogs = useCallback(async () => {
     setLoading(true)
     try {
       const filters: AuditLogFilters = {
@@ -190,7 +186,11 @@ export default function AuditLogsClient() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, selectedAction, selectedEntityType, selectedUser, startDate, endDate, toast])
+
+  useEffect(() => {
+    loadAuditLogs()
+  }, [loadAuditLogs])
 
   function handleClearFilters() {
     setSearchQuery('')
