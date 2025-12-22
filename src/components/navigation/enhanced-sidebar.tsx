@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Database,
   Receipt,
+  Plug,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useState } from 'react'
@@ -165,6 +166,13 @@ const navigation: NavItem[] = [
         adminOnly: true,
       },
       {
+        title: 'Integrations',
+        href: '/dashboard/integrations',
+        icon: Plug,
+        iconColor: 'text-orange-600 dark:text-orange-400',
+        adminOnly: true,
+      },
+      {
         title: 'Audit Logs',
         href: '/dashboard/audit-logs',
         icon: FileSearch,
@@ -190,23 +198,9 @@ const navigation: NavItem[] = [
 
   {
     title: 'Help & Support',
+    href: '/dashboard/help',
     icon: HelpCircle,
     iconColor: 'text-slate-600 dark:text-slate-400',
-    sectionColor: 'border-slate-500/30',
-    children: [
-      {
-        title: 'Documentation',
-        href: '/docs',
-        icon: FileText,
-        iconColor: 'text-slate-600 dark:text-slate-400',
-      },
-      {
-        title: 'Keyboard Shortcuts',
-        href: '/keyboard-shortcuts',
-        icon: HelpCircle,
-        iconColor: 'text-slate-600 dark:text-slate-400',
-      },
-    ],
   },
 ]
 
