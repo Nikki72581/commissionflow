@@ -93,8 +93,8 @@ export function SalesTransactionFormDialog({
   const setOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [selectedProjectId, setSelectedProjectId] = useState(transaction?.projectId || '')
-  const [selectedClientId, setSelectedClientId] = useState('')
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(transaction?.projectId || null)
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState(transaction?.userId || '')
   const [transactionType, setTransactionType] = useState<'SALE' | 'RETURN' | 'ADJUSTMENT'>(
     transaction?.transactionType || 'SALE'
@@ -116,26 +116,26 @@ export function SalesTransactionFormDialog({
       productCategoryId: productCategoryId || undefined,
       invoiceNumber: formData.get('invoiceNumber') as string || undefined,
       description: formData.get('description') as string,
-      projectId: selectedProjectId || undefined,
-      clientId: selectedClientId || undefined,
+      projectId: selectedProjectId ?? undefined,
+      clientId: selectedClientId ?? undefined,
       userId: selectedUserId,
     }
 
     // Validate required fields
     if (requireProjects && !data.projectId) {
-      setError('Please select a project')
+      setError('Project is required. Please select a project.')
       setLoading(false)
       return
     }
 
     if (!requireProjects && !data.projectId && !data.clientId) {
-      setError('Please select either a project or a client')
+      setError('Please select either a project or a client. If no project is needed, scroll down to select a client.')
       setLoading(false)
       return
     }
 
     if (!data.userId) {
-      setError('Please select a salesperson')
+      setError('Salesperson is required. Please select a salesperson.')
       setLoading(false)
       return
     }
@@ -288,15 +288,21 @@ export function SalesTransactionFormDialog({
               <div className="grid gap-2">
                 <Label htmlFor="projectId">
                   Project {requireProjects && <span className="text-destructive">*</span>}
-                  {!requireProjects && <span className="text-muted-foreground text-xs">(Optional)</span>}
+                  {!requireProjects && <span className="text-muted-foreground text-xs">(Optional - select project or client below)</span>}
                 </Label>
-                <Select value={selectedProjectId} onValueChange={(value) => {
-                  setSelectedProjectId(value)
+                <Select value={selectedProjectId ?? 'none'} onValueChange={(value) => {
+                  const newProjectId = value === 'none' ? null : value
+                  setSelectedProjectId(newProjectId)
                   // Auto-select client from project if available
-                  if (value && projects.length > 0) {
-                    const project = projects.find(p => p.id === value)
+                  if (newProjectId && projects.length > 0) {
+                    const project = projects.find(p => p.id === newProjectId)
                     if (project) {
                       setSelectedClientId(project.client.id)
+                    }
+                  } else if (!newProjectId) {
+                    // Clear client when project is cleared (unless projects are optional)
+                    if (requireProjects) {
+                      setSelectedClientId(null)
                     }
                   }
                 }}>
@@ -304,6 +310,9 @@ export function SalesTransactionFormDialog({
                     <SelectValue placeholder="Select a project" />
                   </SelectTrigger>
                   <SelectContent>
+                    {!requireProjects && (
+                      <SelectItem value="none">No project</SelectItem>
+                    )}
                     {projects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name} ({project.client.name})
@@ -319,12 +328,16 @@ export function SalesTransactionFormDialog({
               <div className="grid gap-2">
                 <Label htmlFor="clientId">
                   Client <span className="text-destructive">*</span>
+                  <span className="text-muted-foreground text-xs ml-1">(required when no project selected)</span>
                 </Label>
-                <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                <Select value={selectedClientId ?? 'none'} onValueChange={(value) => {
+                  setSelectedClientId(value === 'none' ? null : value)
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a client" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="none">Select a client...</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
