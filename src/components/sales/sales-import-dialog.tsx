@@ -236,6 +236,8 @@ export function SalesImportDialog({
         }
       }
 
+      // Note: We don't validate client existence here because clients will be auto-created
+
       if (rowErrors.length > 0) {
         errors.push({ row: row._rowNumber, message: rowErrors.join('; ') })
       } else {
@@ -304,11 +306,18 @@ export function SalesImportDialog({
           if (project) transactionData.projectId = project.id
         }
 
-        // Client - find by name
+        // Client - find by name or pass name for auto-creation
         if (reverseMapping['clientId']) {
           const clientName = row[reverseMapping['clientId']]?.trim()
-          const client = clients.find(c => c.name.toLowerCase() === clientName.toLowerCase())
-          if (client) transactionData.clientId = client.id
+          if (clientName) {
+            const client = clients.find(c => c.name.toLowerCase() === clientName.toLowerCase())
+            if (client) {
+              transactionData.clientId = client.id
+            } else {
+              // Pass client name for automatic creation
+              transactionData.clientName = clientName
+            }
+          }
         }
 
         // Product Category - find by name
@@ -448,6 +457,7 @@ export function SalesImportDialog({
               <AlertDescription className="text-xs">
                 Your CSV should include columns for amount, date, and salesperson email at minimum.
                 The system will auto-detect and suggest field mappings in the next step.
+                <strong className="block mt-1">New clients will be created automatically</strong> if they don't already exist.
               </AlertDescription>
             </Alert>
           </div>

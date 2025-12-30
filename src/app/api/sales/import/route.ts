@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
 import { createSalesTransaction } from '@/app/actions/sales-transactions'
+import { createClient } from '@/app/actions/clients'
+import { prisma } from '@/lib/db'
 
 export async function POST(request: Request) {
   try {
@@ -23,13 +25,61 @@ export async function POST(request: Request) {
       )
     }
 
+    // Get organization ID
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { organizationId: true },
+    })
+
+    if (!user?.organizationId) {
+      return NextResponse.json(
+        { error: 'User not associated with an organization' },
+        { status: 400 }
+      )
+    }
+
+    // Handle automatic client creation if clientName is provided but no clientId
+    let clientId = data.clientId
+    if (data.clientName && !clientId) {
+      // Check if client already exists by name (case-insensitive)
+      const existingClient = await prisma.client.findFirst({
+        where: {
+          organizationId: user.organizationId,
+          name: {
+            equals: data.clientName.trim(),
+            mode: 'insensitive',
+          },
+        },
+      })
+
+      if (existingClient) {
+        clientId = existingClient.id
+      } else {
+        // Create new client automatically
+        const newClientResult = await createClient({
+          name: data.clientName.trim(),
+          status: 'ACTIVE',
+          tier: 'STANDARD',
+        })
+
+        if (newClientResult.success && newClientResult.data) {
+          clientId = newClientResult.data.id
+        } else {
+          return NextResponse.json(
+            { error: `Failed to create client: ${newClientResult.error}` },
+            { status: 400 }
+          )
+        }
+      }
+    }
+
     // Create the sales transaction using the existing action
     const result = await createSalesTransaction({
       amount: parseFloat(data.amount),
       transactionDate: data.transactionDate,
       userId: data.userId,
       projectId: data.projectId || undefined,
-      clientId: data.clientId || undefined,
+      clientId: clientId || undefined,
       productCategoryId: data.productCategoryId || undefined,
       invoiceNumber: data.invoiceNumber || undefined,
       description: data.description || undefined,

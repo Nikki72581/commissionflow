@@ -219,20 +219,21 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
 
     // Calculate commission if plan exists
     let calculation = null
-    if (commissionPlan && commissionPlan.rules.length > 0 && client) {
+    if (commissionPlan && commissionPlan.rules.length > 0) {
       // Calculate net sales amount
       const netAmount = await calculateNetSalesAmount(transaction.id)
 
       // Build calculation context
+      // Note: Client info is optional - sales without clients can still earn commissions
       const context: CalculationContext = {
         grossAmount: validatedData.amount,
         netAmount,
         transactionDate,
-        customerId: client.id,
-        customerTier: client.tier,
+        customerId: client?.id,
+        customerTier: client?.tier,
         projectId: validatedData.projectId || undefined,
         productCategoryId: validatedData.productCategoryId,
-        territoryId: client.territoryId || undefined,
+        territoryId: client?.territoryId || undefined,
         commissionBasis: commissionPlan.commissionBasis,
       }
 
@@ -249,12 +250,12 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         grossAmount: validatedData.amount,
         netAmount,
         context: {
-          customerTier: client.tier,
-          customerId: client.id,
-          customerName: client.name,
+          customerTier: client?.tier,
+          customerId: client?.id,
+          customerName: client?.name,
           productCategoryId: validatedData.productCategoryId,
-          territoryId: client.territoryId,
-          territoryName: client.territory?.name,
+          territoryId: client?.territoryId,
+          territoryName: client?.territory?.name,
           projectId: validatedData.projectId,
         },
         selectedRule: result.selectedRule,
@@ -554,6 +555,11 @@ export async function recalculateCommission(transactionId: string, planId: strin
             },
           },
         },
+        client: {
+          include: {
+            territory: true,
+          },
+        },
         productCategory: true,
       },
     })
@@ -577,24 +583,23 @@ export async function recalculateCommission(transactionId: string, planId: strin
       throw new Error('Commission plan not found')
     }
 
-    // Check if transaction has a project with client
-    if (!transaction.project?.client) {
-      throw new Error('Transaction must have a project with a client to calculate commission')
-    }
+    // Get client from project or direct client relationship
+    const client = transaction.project?.client || transaction.client
 
     // Calculate net sales amount
     const netAmount = await calculateNetSalesAmount(transaction.id)
 
     // Build calculation context
+    // Note: Client info is optional - sales without clients can still earn commissions
     const context: CalculationContext = {
       grossAmount: transaction.amount,
       netAmount,
       transactionDate: transaction.transactionDate,
-      customerId: transaction.project.client.id,
-      customerTier: transaction.project.client.tier,
+      customerId: client?.id,
+      customerTier: client?.tier,
       projectId: transaction.projectId || undefined,
       productCategoryId: transaction.productCategoryId || undefined,
-      territoryId: transaction.project.client.territoryId || undefined,
+      territoryId: client?.territoryId || undefined,
       commissionBasis: plan.commissionBasis,
     }
 
@@ -611,12 +616,12 @@ export async function recalculateCommission(transactionId: string, planId: strin
       grossAmount: transaction.amount,
       netAmount,
       context: {
-        customerTier: transaction.project.client.tier,
-        customerId: transaction.project.client.id,
-        customerName: transaction.project.client.name,
+        customerTier: client?.tier,
+        customerId: client?.id,
+        customerName: client?.name,
         productCategoryId: transaction.productCategoryId,
-        territoryId: transaction.project.client.territoryId,
-        territoryName: transaction.project.client.territory?.name,
+        territoryId: client?.territoryId,
+        territoryName: client?.territory?.name,
       },
       selectedRule: result.selectedRule,
       matchedRules: result.matchedRules,
