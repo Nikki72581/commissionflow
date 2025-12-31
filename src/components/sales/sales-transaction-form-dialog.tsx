@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { createSalesTransaction, updateSalesTransaction } from '@/app/actions/sales-transactions'
+import { QuickClientCreateDialog } from '@/components/clients/quick-client-create-dialog'
 
 interface SalesTransaction {
   id: string
@@ -100,8 +101,18 @@ export function SalesTransactionFormDialog({
     transaction?.transactionType || 'SALE'
   )
   const [productCategoryId, setProductCategoryId] = useState(transaction?.productCategoryId || '')
+  const [dynamicClients, setDynamicClients] = useState<Client[]>([])
 
   const isEdit = !!transaction
+
+  // Combine original clients with dynamically created ones
+  const allClients = [...clients, ...dynamicClients]
+
+  // Handler for when a new client is created
+  const handleClientCreated = (newClient: { id: string; name: string }) => {
+    setDynamicClients(prev => [...prev, newClient])
+    setSelectedClientId(newClient.id)
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -324,12 +335,15 @@ export function SalesTransactionFormDialog({
             )}
 
             {/* Client Selector - Only show when projects are optional and no project selected */}
-            {!requireProjects && clients.length > 0 && !selectedProjectId && (
+            {!requireProjects && !selectedProjectId && (
               <div className="grid gap-2">
-                <Label htmlFor="clientId">
-                  Client <span className="text-destructive">*</span>
-                  <span className="text-muted-foreground text-xs ml-1">(required when no project selected)</span>
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="clientId">
+                    Client <span className="text-destructive">*</span>
+                    <span className="text-muted-foreground text-xs ml-1">(required when no project selected)</span>
+                  </Label>
+                  <QuickClientCreateDialog onClientCreated={handleClientCreated} />
+                </div>
                 <Select value={selectedClientId ?? 'none'} onValueChange={(value) => {
                   setSelectedClientId(value === 'none' ? null : value)
                 }}>
@@ -338,7 +352,7 @@ export function SalesTransactionFormDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Select a client...</SelectItem>
-                    {clients.map((client) => (
+                    {allClients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.name}
                       </SelectItem>
