@@ -46,23 +46,21 @@ export async function listAvailableCompanies(
     username,
   });
 
-  try {
-    const config: AcumaticaConnectionConfig = {
-      instanceUrl,
-      apiVersion,
-      companyId: '', // Not needed for listing companies
-      credentials: {
-        type: 'password',
-        username,
-        password,
-      },
-    };
+  const client = createAcumaticaClient({
+    instanceUrl,
+    apiVersion,
+    companyId: '', // Not needed for listing companies
+    credentials: {
+      type: 'password',
+      username,
+      password,
+    },
+  });
 
-    const client = createAcumaticaClient(config);
+  try {
     console.log('[Auth] Fetching available companies...');
     const companies = await client.listCompanies();
     console.log('[Auth] Companies retrieved:', companies.length);
-    await client.logout();
 
     return { success: true, companies };
   } catch (error) {
@@ -79,6 +77,15 @@ export async function listAvailableCompanies(
       success: false,
       error: error instanceof Error ? error.message : 'Failed to retrieve companies',
     };
+  } finally {
+    // CRITICAL: Always logout to clean up the session, even if there was an error
+    try {
+      console.log('[Auth] Attempting logout to clean up session...');
+      await client.logout();
+      console.log('[Auth] Logged out successfully');
+    } catch (logoutError) {
+      console.error('[Auth] Failed to logout (session may remain open):', logoutError);
+    }
   }
 }
 
@@ -99,24 +106,21 @@ export async function testConnection(
     username,
   });
 
-  try {
-    const config: AcumaticaConnectionConfig = {
-      instanceUrl,
-      apiVersion,
-      companyId,
-      credentials: {
-        type: 'password',
-        username,
-        password,
-      },
-    };
+  const client = createAcumaticaClient({
+    instanceUrl,
+    apiVersion,
+    companyId,
+    credentials: {
+      type: 'password',
+      username,
+      password,
+    },
+  });
 
-    const client = createAcumaticaClient(config);
+  try {
     console.log('[Auth] Testing connection...');
     await client.testConnection();
     console.log('[Auth] Connection test successful');
-    await client.logout();
-    console.log('[Auth] Logged out successfully');
 
     return { success: true };
   } catch (error) {
@@ -145,5 +149,14 @@ export async function testConnection(
       error: error instanceof Error ? error.message : 'Unknown error',
       statusCode: statusCode,
     };
+  } finally {
+    // CRITICAL: Always logout to clean up the session, even if there was an error
+    try {
+      console.log('[Auth] Attempting logout to clean up session...');
+      await client.logout();
+      console.log('[Auth] Logged out successfully');
+    } catch (logoutError) {
+      console.error('[Auth] Failed to logout (session may remain open):', logoutError);
+    }
   }
 }
