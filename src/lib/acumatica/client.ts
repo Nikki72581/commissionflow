@@ -243,22 +243,47 @@ export class AcumaticaClient {
 
   /**
    * List available companies (tenants) in the Acumatica instance
+   * Note: This may not work on all Acumatica instances as the Company endpoint may not be available
    */
   async listCompanies(): Promise<AcumaticaCompany[]> {
     await this.authenticateWithoutCompany();
-    return this.get<AcumaticaCompany[]>('Company', {
-      $select: 'CompanyID,CompanyName',
-    });
+    try {
+      return await this.get<AcumaticaCompany[]>('Company', {
+        $select: 'CompanyID,CompanyName',
+      });
+    } catch (error) {
+      console.error('[Acumatica Client] Company endpoint not available:', error);
+      throw new AcumaticaAPIError(
+        'Company endpoint not available. This Acumatica instance may not expose company information via API.',
+        404
+      );
+    }
   }
 
   /**
-   * Test the connection by fetching company info
+   * Test the connection by attempting authentication and a simple API call
    */
-  async testConnection(): Promise<AcumaticaCompany[]> {
+  async testConnection(): Promise<void> {
+    console.log('[Acumatica Client] testConnection: Starting authentication...');
     await this.authenticate();
-    return this.get<AcumaticaCompany[]>('Company', {
-      $select: 'CompanyID,CompanyName',
-    });
+    console.log('[Acumatica Client] testConnection: Authentication successful');
+
+    // Try to fetch a simple entity to verify API access
+    // Using Salesperson as it's commonly available and needed for the integration
+    console.log('[Acumatica Client] testConnection: Verifying API access with Salesperson endpoint...');
+    try {
+      await this.get<AcumaticaSalesperson[]>('Salesperson', {
+        $select: 'SalespersonID',
+        $top: '1',
+      });
+      console.log('[Acumatica Client] testConnection: API access verified successfully');
+    } catch (error) {
+      console.error('[Acumatica Client] testConnection: Failed to access Salesperson endpoint:', error);
+      throw new AcumaticaAPIError(
+        'Authentication succeeded but API access failed. Verify user has permissions to access Salesperson endpoint.',
+        403
+      );
+    }
   }
 
   /**
