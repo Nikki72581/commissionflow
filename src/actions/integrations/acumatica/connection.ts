@@ -165,7 +165,6 @@ export async function saveAcumaticaConnection(
     );
 
     // Save or update integration
-    // @ts-expect-error - Prisma client will be updated after migration
     const integration = await prisma.acumaticaIntegration.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -222,7 +221,6 @@ export async function getAcumaticaIntegration() {
       return null;
     }
 
-    // @ts-expect-error - Prisma client will be updated after migration
     const integration = await prisma.acumaticaIntegration.findUnique({
       where: { organizationId: organization.id },
     });
