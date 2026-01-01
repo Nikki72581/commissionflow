@@ -1,0 +1,152 @@
+/**
+ * Acumatica API response types
+ * All fields are wrapped in { value: T } objects
+ */
+
+export interface AcumaticaValue<T> {
+  value: T;
+}
+
+export interface AcumaticaInvoice {
+  ReferenceNbr: AcumaticaValue<string>;
+  Type: AcumaticaValue<string>;
+  Status: AcumaticaValue<string>;
+  Date: AcumaticaValue<string>;
+  CustomerID: AcumaticaValue<string>;
+  Customer: AcumaticaValue<string>;
+  Amount: AcumaticaValue<number>;
+  DocTotal: AcumaticaValue<number>;
+  SalespersonID: AcumaticaValue<string>;
+  Project: AcumaticaValue<string | null>;
+  Branch: AcumaticaValue<string>;
+  Details: AcumaticaInvoiceLine[];
+}
+
+export interface AcumaticaInvoiceLine {
+  InventoryID: AcumaticaValue<string>;
+  Description: AcumaticaValue<string>;
+  ExtendedPrice: AcumaticaValue<number>;
+  Amount: AcumaticaValue<number>;
+  ItemClass: AcumaticaValue<string>;
+  Account: AcumaticaValue<string>;
+  Qty: AcumaticaValue<number>;
+  UnitPrice: AcumaticaValue<number>;
+}
+
+export interface AcumaticaSalesperson {
+  SalespersonID: AcumaticaValue<string>;
+  Name: AcumaticaValue<string>;
+  Email: AcumaticaValue<string | null>;
+}
+
+export interface AcumaticaBranch {
+  BranchID: AcumaticaValue<string>;
+  BranchName: AcumaticaValue<string>;
+}
+
+export interface AcumaticaItemClass {
+  ClassID: AcumaticaValue<string>;
+  Description: AcumaticaValue<string>;
+}
+
+export interface AcumaticaCustomer {
+  CustomerID: AcumaticaValue<string>;
+  CustomerName: AcumaticaValue<string>;
+  CustomerCD: AcumaticaValue<string>;
+}
+
+export interface AcumaticaProject {
+  ProjectID: AcumaticaValue<string>;
+  ProjectCD: AcumaticaValue<string>;
+  Description: AcumaticaValue<string>;
+}
+
+export interface AcumaticaCompany {
+  CompanyID: AcumaticaValue<string>;
+  CompanyName: AcumaticaValue<string>;
+}
+
+/**
+ * OAuth token response
+ */
+export interface AcumaticaTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+}
+
+/**
+ * API error response
+ */
+export interface AcumaticaErrorResponse {
+  message?: string;
+  exceptionMessage?: string;
+  error?: string;
+  error_description?: string;
+}
+
+/**
+ * Credentials for authentication
+ */
+export interface AcumaticaPasswordCredentials {
+  type: 'password';
+  username: string;
+  password: string;
+}
+
+export interface AcumaticaOAuthCredentials {
+  type: 'oauth';
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: number;
+}
+
+export type AcumaticaCredentials =
+  | AcumaticaPasswordCredentials
+  | AcumaticaOAuthCredentials;
+
+/**
+ * Connection configuration
+ */
+export interface AcumaticaConnectionConfig {
+  instanceUrl: string;
+  apiVersion: string;
+  companyId: string;
+  credentials: AcumaticaCredentials;
+}
+
+/**
+ * Invoice query filters
+ */
+export interface InvoiceQueryFilters {
+  startDate: Date;
+  endDate?: Date;
+  branches?: string[];
+  includeInvoices: boolean;
+  includeCreditMemos: boolean;
+  includeDebitMemos: boolean;
+}
+
+/**
+ * Sync result from invoice processing
+ */
+export interface ProcessResult {
+  skipped: boolean;
+  skipReason?: string;
+  salesCreated?: number;
+  clientCreated?: boolean;
+  projectCreated?: boolean;
+}
+
+/**
+ * Overall sync result
+ */
+export interface SyncResult {
+  processed: number;
+  skipped: Array<{ invoiceRef: string; reason: string }>;
+  errors: Array<{ invoiceRef: string; error: string }>;
+  salesCreated: number;
+  clientsCreated: number;
+  projectsCreated: number;
+}

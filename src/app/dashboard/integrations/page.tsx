@@ -18,6 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import Link from 'next/link'
+import { getAcumaticaIntegration } from '@/actions/integrations/acumatica/connection'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,56 +39,65 @@ interface Integration {
   setupUrl?: string
 }
 
-const integrations: Integration[] = [
-  {
-    id: 'acumatica',
-    name: 'Acumatica',
-    description: 'Cloud-based ERP and accounting software for growing businesses',
-    logo: '🏢',
-    status: 'connected',
-    lastSync: '2 hours ago',
-    features: [
-      'Automatic sales data sync',
-      'Customer account matching',
-      'Real-time commission calculations',
-      'Invoice integration'
-    ],
-    setupUrl: 'https://acumatica.com'
-  },
-  {
-    id: 'sage-intacct',
-    name: 'Sage Intacct',
-    description: 'Cloud financial management and accounting software',
-    logo: '💼',
-    status: 'disconnected',
-    features: [
-      'Financial data synchronization',
-      'Multi-entity support',
-      'Automated GL posting',
-      'Advanced reporting'
-    ],
-    setupUrl: 'https://www.sageintacct.com'
-  },
-  {
-    id: 'dynamics-bc',
-    name: 'Microsoft Dynamics BC',
-    description: 'Business Central - comprehensive business management solution',
-    logo: '🔷',
-    status: 'disconnected',
-    features: [
-      'Sales order integration',
-      'Customer data sync',
-      'Commission automation',
-      'Power BI integration'
-    ],
-    setupUrl: 'https://dynamics.microsoft.com'
-  }
-]
+async function getIntegrations(): Promise<Integration[]> {
+  const acumaticaIntegration = await getAcumaticaIntegration();
+
+  return [
+    {
+      id: 'acumatica',
+      name: 'Acumatica',
+      description: 'Cloud-based ERP and accounting software for growing businesses',
+      logo: '🏢',
+      status: acumaticaIntegration?.status === 'ACTIVE' ? 'connected' : 'disconnected',
+      lastSync: acumaticaIntegration?.lastSyncAt
+        ? new Date(acumaticaIntegration.lastSyncAt).toLocaleString()
+        : undefined,
+      features: [
+        'Automatic sales data sync',
+        'Customer account matching',
+        'Real-time commission calculations',
+        'Invoice integration'
+      ],
+      setupUrl: acumaticaIntegration
+        ? '/dashboard/integrations/acumatica/setup'
+        : '/dashboard/integrations/acumatica/setup'
+    },
+    {
+      id: 'sage-intacct',
+      name: 'Sage Intacct',
+      description: 'Cloud financial management and accounting software',
+      logo: '💼',
+      status: 'disconnected',
+      features: [
+        'Financial data synchronization',
+        'Multi-entity support',
+        'Automated GL posting',
+        'Advanced reporting'
+      ],
+      setupUrl: 'https://www.sageintacct.com'
+    },
+    {
+      id: 'dynamics-bc',
+      name: 'Microsoft Dynamics BC',
+      description: 'Business Central - comprehensive business management solution',
+      logo: '🔷',
+      status: 'disconnected',
+      features: [
+        'Sales order integration',
+        'Customer data sync',
+        'Commission automation',
+        'Power BI integration'
+      ],
+      setupUrl: 'https://dynamics.microsoft.com'
+    }
+  ];
+}
 
 export default async function IntegrationsPage() {
   // Verify admin access
   await requireAdmin()
 
+  const integrations = await getIntegrations()
   const connectedCount = integrations.filter(i => i.status === 'connected').length
   const totalIntegrations = integrations.length
 
@@ -196,10 +207,12 @@ export default async function IntegrationsPage() {
                       </Button>
                     </>
                   ) : (
-                    <Button className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                      <Plug className="h-4 w-4" />
-                      Connect
-                    </Button>
+                    <Link href={integration.setupUrl || '#'}>
+                      <Button className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                        <Plug className="h-4 w-4" />
+                        Connect
+                      </Button>
+                    </Link>
                   )}
                 </div>
               </div>
