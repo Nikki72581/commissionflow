@@ -9,7 +9,7 @@ import { revalidatePath } from 'next/cache'
  */
 async function getOrganizationId(): Promise<string> {
   const { userId } = await auth()
-  
+
   if (!userId) {
     throw new Error('Unauthorized')
   }
@@ -45,6 +45,8 @@ export async function getUsers() {
         role: true,
         employeeId: true,
         salespersonId: true,
+        isPlaceholder: true,
+        invitedAt: true,
         createdAt: true,
       },
       orderBy: {
@@ -403,6 +405,304 @@ export async function updateUserFields(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to update user',
+    }
+  }
+}
+
+/**
+ * Create placeholder user(s) without sending Clerk invites
+ * Allows admin to pre-create users for mapping with external systems
+ */
+export async function createPlaceholderUsers(
+  users: Array<{
+    email: string
+    firstName?: string
+    lastName?: string
+    employeeId?: string
+    salespersonId?: string
+    role?: 'ADMIN' | 'SALESPERSON'
+  }>
+) {
+  try {
+    const admin = await requireAdmin()
+
+    if (!users || users.length === 0) {
+      return {
+        success: false,
+        error: 'At least one user is required',
+      }
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const invalidEmails = users.filter(u => !emailRegex.test(u.email))
+
+    if (invalidEmails.length > 0) {
+      return {
+        success: false,
+        error: `Invalid email format: ${invalidEmails.map(u => u.email).join(', ')}`,
+      }
+    }
+
+    // Check for duplicate emails within the request
+    const emailSet = new Set<string>()
+    const duplicates: string[] = []
+    users.forEach(u => {
+      const lowerEmail = u.email.toLowerCase()
+      if (emailSet.has(lowerEmail)) {
+        duplicates.push(u.email)
+      }
+      emailSet.add(lowerEmail)
+    })
+
+    if (duplicates.length > 0) {
+      return {
+        success: false,
+        error: `Duplicate emails in request: ${duplicates.join(', ')}`,
+      }
+    }
+
+    // Check for existing users with same email in this organization
+    const existingUsers = await prisma.user.findMany({
+      where: {
+        organizationId: admin.organizationId,
+        email: {
+          in: users.map(u => u.email.toLowerCase()),
+        },
+      },
+      select: { email: true },
+    })
+
+    if (existingUsers.length > 0) {
+      return {
+        success: false,
+        error: `Users already exist with emails: ${existingUsers.map(u => u.email).join(', ')}`,
+      }
+    }
+
+    // Create placeholder users
+    const createdUsers = await prisma.$transaction(
+      users.map(userData =>
+        prisma.user.create({
+          data: {
+            email: userData.email.toLowerCase(),
+            firstName: userData.firstName || null,
+            lastName: userData.lastName || null,
+            employeeId: userData.employeeId || null,
+            salespersonId: userData.salespersonId || null,
+            role: userData.role || 'SALESPERSON',
+            organizationId: admin.organizationId,
+            isPlaceholder: true,
+            clerkId: null, // No Clerk account yet
+            invitedAt: null,
+          },
+        })
+      )
+    )
+
+    // Log audit trail
+    await prisma.auditLog.create({
+      data: {
+        action: 'placeholder_users_created',
+        entityType: 'user',
+        description: `Created ${createdUsers.length} placeholder user(s)`,
+        userId: admin.id,
+        userName: `${admin.firstName} ${admin.lastName}`,
+        userEmail: admin.email,
+        organizationId: admin.organizationId,
+        metadata: {
+          users: createdUsers.map(u => ({
+            id: u.id,
+            email: u.email,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            employeeId: u.employeeId,
+            salespersonId: u.salespersonId,
+          })),
+        },
+      },
+    })
+
+    revalidatePath('/dashboard/team')
+
+    return {
+      success: true,
+      data: {
+        count: createdUsers.length,
+        users: createdUsers.map(u => ({
+          id: u.id,
+          email: u.email,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          employeeId: u.employeeId,
+          salespersonId: u.salespersonId,
+          role: u.role,
+        })),
+      },
+    }
+  } catch (error) {
+    console.error('Error creating placeholder users:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create placeholder users',
+    }
+  }
+}
+
+/**
+ * Send Clerk invite to a placeholder user
+ * Converts placeholder user to active user once they accept
+ */
+export async function invitePlaceholderUser(userId: string) {
+  try {
+    const admin = await requireAdmin()
+
+    // Get the placeholder user
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId: admin.organizationId,
+        isPlaceholder: true,
+      },
+    })
+
+    if (!user) {
+      return {
+        success: false,
+        error: 'Placeholder user not found',
+      }
+    }
+
+    if (!admin.organization.clerkOrgId) {
+      return {
+        success: false,
+        error: 'Organization not configured with Clerk',
+      }
+    }
+
+    // Send Clerk invitation
+    const clerk = await clerkClient()
+    const invitation = await clerk.organizations.createOrganizationInvitation({
+      organizationId: admin.organization.clerkOrgId,
+      emailAddress: user.email,
+      role: 'org:member',
+    })
+
+    // Update user to mark as invited
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        invitedAt: new Date(),
+      },
+    })
+
+    // Log audit trail
+    await prisma.auditLog.create({
+      data: {
+        action: 'placeholder_user_invited',
+        entityType: 'user',
+        entityId: userId,
+        description: `Sent Clerk invitation to placeholder user ${user.email}`,
+        userId: admin.id,
+        userName: `${admin.firstName} ${admin.lastName}`,
+        userEmail: admin.email,
+        organizationId: admin.organizationId,
+        metadata: {
+          invitationId: invitation.id,
+          userEmail: user.email,
+        },
+      },
+    })
+
+    revalidatePath('/dashboard/team')
+
+    return {
+      success: true,
+      data: {
+        invitationId: invitation.id,
+        email: user.email,
+      },
+    }
+  } catch (error) {
+    console.error('Error inviting placeholder user:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send invitation',
+    }
+  }
+}
+
+/**
+ * Delete a placeholder user (only if they haven't been invited yet)
+ */
+export async function deletePlaceholderUser(userId: string) {
+  try {
+    const admin = await requireAdmin()
+
+    // Get the placeholder user
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId: admin.organizationId,
+        isPlaceholder: true,
+        invitedAt: null, // Can only delete if not invited yet
+      },
+    })
+
+    if (!user) {
+      return {
+        success: false,
+        error: 'Placeholder user not found or already invited',
+      }
+    }
+
+    // Check if user has any related data
+    const [salesCount, commissionCount] = await Promise.all([
+      prisma.salesTransaction.count({ where: { userId } }),
+      prisma.commissionCalculation.count({ where: { userId } }),
+    ])
+
+    if (salesCount > 0 || commissionCount > 0) {
+      return {
+        success: false,
+        error: 'Cannot delete user with existing sales or commissions',
+      }
+    }
+
+    // Delete the user
+    await prisma.user.delete({
+      where: { id: userId },
+    })
+
+    // Log audit trail
+    await prisma.auditLog.create({
+      data: {
+        action: 'placeholder_user_deleted',
+        entityType: 'user',
+        entityId: userId,
+        description: `Deleted placeholder user ${user.email}`,
+        userId: admin.id,
+        userName: `${admin.firstName} ${admin.lastName}`,
+        userEmail: admin.email,
+        organizationId: admin.organizationId,
+        metadata: {
+          userEmail: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+      },
+    })
+
+    revalidatePath('/dashboard/team')
+
+    return {
+      success: true,
+    }
+  } catch (error) {
+    console.error('Error deleting placeholder user:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete placeholder user',
     }
   }
 }

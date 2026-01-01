@@ -205,7 +205,7 @@ model Organization {
 
 model User {
   id             String     @id @default(cuid())
-  clerkId        String     @unique
+  clerkId        String?    @unique // Nullable for placeholder users not yet invited
   email          String
   firstName      String?
   lastName       String?
@@ -214,6 +214,10 @@ model User {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
   auditLogs      AuditLog[]
+
+  // Placeholder user tracking
+  isPlaceholder Boolean  @default(false) // True if user created without Clerk invite
+  invitedAt     DateTime? // When Clerk invitation was sent (null for placeholders)
 
   // External system integration IDs
   employeeId    String? // Optional Employee ID for external systems
@@ -235,6 +239,8 @@ model User {
 
   @@index([organizationId])
   @@index([clerkId])
+  @@index([email, organizationId])
+  @@index([isPlaceholder])
   @@map("users")
 }
 
@@ -649,6 +655,7 @@ model AcumaticaSalespersonMapping {
 
   @@unique([integrationId, acumaticaSalespersonId])
   @@index([integrationId])
+  @@index([userId])
   @@map("acumatica_salesperson_mappings")
 }
 

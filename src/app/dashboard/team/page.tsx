@@ -16,9 +16,10 @@ import { getUsers } from '@/app/actions/users'
 import { db } from '@/lib/db'
 import { formatDate } from '@/lib/utils'
 import { getCurrentUserWithOrg } from '@/lib/auth'
-import { InviteMembersDialog } from '@/components/team/invite-members-dialog'
+import { AddTeamMemberDialog } from '@/components/team/add-team-member-dialog'
 import { PendingInvitations } from '@/components/team/pending-invitations'
 import { EditUserDialog } from '@/components/team/edit-user-dialog'
+import { PlaceholderUserActions } from '@/components/team/placeholder-user-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -142,6 +143,7 @@ async function TeamTable({ searchQuery, isAdmin }: { searchQuery?: string; isAdm
           <TableRow className="border-b border-orange-500/10 bg-gradient-to-r from-orange-500/5 to-amber-500/5">
             <TableHead className="font-semibold">Name</TableHead>
             <TableHead className="font-semibold">Email</TableHead>
+            <TableHead className="font-semibold">Status</TableHead>
             <TableHead className="font-semibold">Employee ID</TableHead>
             <TableHead className="font-semibold">Salesperson ID</TableHead>
             <TableHead className="font-semibold">Role</TableHead>
@@ -167,6 +169,17 @@ async function TeamTable({ searchQuery, isAdmin }: { searchQuery?: string; isAdm
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {user.email}
+                </TableCell>
+                <TableCell>
+                  {user.isPlaceholder ? (
+                    <Badge variant="secondary" className="gap-1">
+                      Placeholder
+                    </Badge>
+                  ) : (
+                    <Badge variant="success" className="gap-1">
+                      Active
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {user.employeeId || '—'}
@@ -200,7 +213,16 @@ async function TeamTable({ searchQuery, isAdmin }: { searchQuery?: string; isAdm
                 </TableCell>
                 {isAdmin && (
                   <TableCell>
-                    <EditUserDialog user={user} />
+                    {user.isPlaceholder ? (
+                      <PlaceholderUserActions
+                        userId={user.id}
+                        userEmail={user.email}
+                        userName={fullName}
+                        invitedAt={user.invitedAt}
+                      />
+                    ) : (
+                      <EditUserDialog user={user} />
+                    )}
                   </TableCell>
                 )}
               </TableRow>
@@ -268,7 +290,7 @@ export default async function TeamPage({
             View and manage your team members
           </p>
         </div>
-        {isAdmin && <InviteMembersDialog />}
+        {isAdmin && <AddTeamMemberDialog />}
       </div>
 
       {/* Team Metrics */}

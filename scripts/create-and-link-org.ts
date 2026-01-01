@@ -41,15 +41,24 @@ async function createAndLinkOrg() {
     console.log(`Clerk user ID: ${adminUser.clerkId}`);
 
     // Check if user exists in Clerk
-    try {
-      const clerkUser = await clerk.users.getUser(adminUser.clerkId);
-      console.log(`✅ Clerk user found: ${clerkUser.emailAddresses[0]?.emailAddress}`);
-    } catch (error) {
-      console.error('❌ Clerk user not found. Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
+    if (adminUser.clerkId) {
+      try {
+        const clerkUser = await clerk.users.getUser(adminUser.clerkId);
+        console.log(`✅ Clerk user found: ${clerkUser.emailAddresses[0]?.emailAddress}`);
+      } catch (error) {
+        console.error('❌ Clerk user not found. Error:', error instanceof Error ? error.message : error);
+        process.exit(1);
+      }
+    } else {
+      console.log('⚠️ User is a placeholder (no clerkId). Skipping Clerk verification.');
     }
 
     // Create organization in Clerk
+    if (!adminUser.clerkId) {
+      console.error('❌ Cannot create Clerk organization: admin user has no clerkId (is placeholder)');
+      process.exit(1);
+    }
+
     try {
       const clerkOrg = await clerk.organizations.createOrganization({
         name: org.name,

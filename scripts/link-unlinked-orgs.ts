@@ -41,6 +41,11 @@ async function linkUnlinkedOrgs() {
       console.log(`  Clerk user ID: ${adminUser.clerkId}`);
 
       // Verify user exists in Clerk
+      if (!adminUser.clerkId) {
+        console.log(`  ⚠️ Admin user is a placeholder (no clerkId) - skipping`);
+        continue;
+      }
+
       try {
         const clerkUser = await clerk.users.getUser(adminUser.clerkId);
         console.log(`  ✅ Clerk user verified: ${clerkUser.emailAddresses[0]?.emailAddress}`);

@@ -43,6 +43,11 @@ async function linkClerkOrganizations() {
         continue;
       }
 
+      if (!adminUser.clerkId) {
+        console.log(`⚠️  Admin user is a placeholder (no clerkId) for ${org.name}, skipping...`);
+        continue;
+      }
+
       try {
         // Create Clerk organization
         const clerkOrg = await clerk.organizations.createOrganization({
@@ -68,6 +73,12 @@ async function linkClerkOrganizations() {
 
         for (const user of allUsers) {
           try {
+            // Skip placeholder users (no clerkId)
+            if (!user.clerkId) {
+              console.log(`   ⚠️  Skipping placeholder user ${user.email}`);
+              continue;
+            }
+
             // Skip the creator as they're already a member
             if (user.clerkId === adminUser.clerkId) {
               continue;
