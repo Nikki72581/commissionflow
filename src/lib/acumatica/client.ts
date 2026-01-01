@@ -74,6 +74,10 @@ export class AcumaticaClient {
 
     try {
       // First, get the token (though we'll use cookie-based auth)
+      console.log('[Acumatica Client] Attempting OAuth token authentication...');
+      console.log('[Acumatica Client] Auth URL:', authUrl);
+      console.log('[Acumatica Client] Username:', username);
+
       const tokenResponse = await fetch(authUrl, {
         method: 'POST',
         headers: {
@@ -82,16 +86,31 @@ export class AcumaticaClient {
         body: formData,
       });
 
+      console.log('[Acumatica Client] Token response status:', tokenResponse.status);
+
       if (!tokenResponse.ok) {
         const error = (await tokenResponse.json()) as AcumaticaErrorResponse;
+        console.error('[Acumatica Client] Token authentication failed:', {
+          status: tokenResponse.status,
+          statusText: tokenResponse.statusText,
+          error: error.error,
+          error_description: error.error_description,
+          fullError: JSON.stringify(error),
+        });
         throw new AcumaticaAPIError(
-          error.error_description || 'Authentication failed',
+          `Token auth failed (${tokenResponse.status}): ${error.error_description || error.error || 'Authentication failed'}`,
           tokenResponse.status,
           error
         );
       }
 
+      console.log('[Acumatica Client] Token obtained successfully');
+
       // Now login to get cookies
+      console.log('[Acumatica Client] Attempting session login...');
+      console.log('[Acumatica Client] Login URL:', loginUrl);
+      console.log('[Acumatica Client] Company ID:', this.config.companyId);
+
       const loginResponse = await fetch(loginUrl, {
         method: 'POST',
         headers: {
@@ -104,24 +123,46 @@ export class AcumaticaClient {
         }),
       });
 
+      console.log('[Acumatica Client] Login response status:', loginResponse.status);
+
       if (!loginResponse.ok) {
-        const error = (await loginResponse.json()) as AcumaticaErrorResponse;
+        const errorText = await loginResponse.text();
+        console.error('[Acumatica Client] Session login failed:', {
+          status: loginResponse.status,
+          statusText: loginResponse.statusText,
+          responseBody: errorText,
+        });
+
+        let error: AcumaticaErrorResponse;
+        try {
+          error = JSON.parse(errorText) as AcumaticaErrorResponse;
+        } catch {
+          error = { message: errorText || 'Login failed' };
+        }
+
         throw new AcumaticaAPIError(
-          error.message || 'Login failed',
+          `Session login failed (${loginResponse.status}): ${error.message || errorText || 'Login failed'}. Check: 1) Company ID is correct, 2) User has permissions, 3) User is not locked`,
           loginResponse.status,
           error
         );
       }
 
+      console.log('[Acumatica Client] Session login successful');
+
       // Store cookies for subsequent requests
       const cookies = loginResponse.headers.get('set-cookie');
       if (cookies) {
         this.cookies = cookies.split(',').map((c) => c.split(';')[0].trim());
+        console.log('[Acumatica Client] Cookies stored:', this.cookies.length);
+      } else {
+        console.warn('[Acumatica Client] No cookies received from login response');
       }
     } catch (error) {
       if (error instanceof AcumaticaAPIError) {
+        console.error('[Acumatica Client] AcumaticaAPIError thrown:', error.message);
         throw error;
       }
+      console.error('[Acumatica Client] Unexpected authentication error:', error);
       throw new AcumaticaAPIError(
         `Authentication error: ${(error as Error).message}`
       );

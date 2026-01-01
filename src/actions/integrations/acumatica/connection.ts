@@ -75,6 +75,13 @@ export async function testAcumaticaConnection(
 
     console.log('[Server] Test connection result:', JSON.stringify(result));
 
+    if (!result.success) {
+      console.error('[Server] Connection test failed with error:', result.error);
+      if (result.statusCode) {
+        console.error('[Server] HTTP Status Code:', result.statusCode);
+      }
+    }
+
     // Ensure we return a plain serializable object
     const returnValue: TestConnectionResult = {
       success: result.success,

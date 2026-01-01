@@ -40,7 +40,14 @@ export async function testConnection(
   companyId: string,
   username: string,
   password: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; statusCode?: number }> {
+  console.log('[Auth] testConnection called with:', {
+    instanceUrl,
+    apiVersion,
+    companyId,
+    username,
+  });
+
   try {
     const config: AcumaticaConnectionConfig = {
       instanceUrl,
@@ -54,14 +61,38 @@ export async function testConnection(
     };
 
     const client = createAcumaticaClient(config);
+    console.log('[Auth] Testing connection...');
     await client.testConnection();
+    console.log('[Auth] Connection test successful');
     await client.logout();
+    console.log('[Auth] Logged out successfully');
 
     return { success: true };
   } catch (error) {
+    console.error('[Auth] Connection test failed:', error);
+
+    // Preserve detailed error information
+    if (error instanceof Error) {
+      console.error('[Auth] Error name:', error.name);
+      console.error('[Auth] Error message:', error.message);
+      console.error('[Auth] Error stack:', error.stack);
+    }
+
+    // Check if it's an AcumaticaAPIError with additional details
+    const statusCode = (error as any).statusCode;
+    const response = (error as any).response;
+
+    if (statusCode || response) {
+      console.error('[Auth] API Error details:', {
+        statusCode,
+        response: JSON.stringify(response),
+      });
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
+      statusCode: statusCode,
     };
   }
 }
