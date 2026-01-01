@@ -416,12 +416,59 @@ export async function saveSalespersonMappings(): Promise<SaveMappingsResult> {
       return { success: false, error: 'Integration not found' };
     }
 
-    // All mappings are automatically set to either MATCHED, PLACEHOLDER, or user can set to IGNORED
-    // No need to check for pending mappings as the default is PLACEHOLDER which is valid
+    // Get all mappings that need placeholder users created
+    const placeholderMappings = await prisma.acumaticaSalespersonMapping.findMany({
+      where: {
+        integrationId: integration.id,
+        status: 'PLACEHOLDER',
+        userId: null, // Not yet created
+      },
+    });
+
+    console.log('[Server] Found', placeholderMappings.length, 'placeholder mappings to process');
+
+    // Create placeholder users for mappings that don't have users yet
+    if (placeholderMappings.length > 0) {
+      const createdUsers = await prisma.$transaction(
+        placeholderMappings.map((mapping) =>
+          prisma.user.create({
+            data: {
+              email: mapping.acumaticaEmail || `${mapping.acumaticaSalespersonId.toLowerCase()}@placeholder.local`,
+              firstName: mapping.acumaticaSalespersonName.split(' ')[0] || null,
+              lastName: mapping.acumaticaSalespersonName.split(' ').slice(1).join(' ') || null,
+              role: 'SALESPERSON',
+              organizationId: organization.id,
+              isPlaceholder: true,
+              clerkId: null,
+              salespersonId: mapping.acumaticaSalespersonId,
+              invitedAt: null,
+            },
+          })
+        )
+      );
+
+      console.log('[Server] Created', createdUsers.length, 'placeholder users');
+
+      // Update mappings to link to the created users
+      await Promise.all(
+        placeholderMappings.map((mapping, index) =>
+          prisma.acumaticaSalespersonMapping.update({
+            where: { id: mapping.id },
+            data: {
+              userId: createdUsers[index].id,
+              matchType: 'AUTO_PLACEHOLDER',
+            },
+          })
+        )
+      );
+
+      console.log('[Server] Updated mappings with user IDs');
+    }
 
     console.log('[Server] Salesperson mappings saved successfully');
 
     revalidatePath('/dashboard/integrations');
+    revalidatePath('/dashboard/team');
 
     return { success: true };
   } catch (error) {
