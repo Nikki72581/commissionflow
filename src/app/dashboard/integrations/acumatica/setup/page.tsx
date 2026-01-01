@@ -71,25 +71,35 @@ export default function AcumaticaSetupPage() {
 
       console.log('[Client] Calling testAcumaticaConnection...');
       const result = await testAcumaticaConnection(formData);
-      console.log('[Client] Test result received:', result);
+      console.log('[Client] Test result received:', JSON.stringify(result));
 
       if (!result) {
         console.error('[Client] Result is null or undefined');
-        setTestResult({
-          success: false,
+        const errorResult = {
+          success: false as const,
           error: 'No response from server',
-        });
+        };
+        setTestResult(errorResult);
+        console.log('[Client] Set error result:', JSON.stringify(errorResult));
         return;
       }
 
-      setTestResult(result);
-      console.log('[Client] Test result set in state');
+      // Force a new object to ensure React detects the change
+      const finalResult = {
+        success: result.success,
+        error: result.error,
+      };
+      console.log('[Client] Setting test result:', JSON.stringify(finalResult));
+      setTestResult(finalResult);
+      console.log('[Client] Test result state updated');
     } catch (error) {
       console.error('[Client] Test connection error:', error);
-      setTestResult({
-        success: false,
+      const errorResult = {
+        success: false as const,
         error: error instanceof Error ? error.message : 'An unexpected error occurred',
-      });
+      };
+      setTestResult(errorResult);
+      console.log('[Client] Set exception result:', JSON.stringify(errorResult));
     } finally {
       console.log('[Client] Setting testing to false');
       setTesting(false);
