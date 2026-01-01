@@ -51,7 +51,7 @@ export class AcumaticaClient {
   }
 
   /**
-   * Authenticate with Acumatica using Resource Owner Password flow
+   * Authenticate with Acumatica using cookie-based session authentication
    */
   async authenticate(): Promise<void> {
     if (this.config.credentials.type !== 'password') {
@@ -59,56 +59,12 @@ export class AcumaticaClient {
     }
 
     const { username, password } = this.config.credentials;
-    const authUrl = `${this.config.instanceUrl}/identity/connect/token`;
-
-    const formData = new URLSearchParams({
-      grant_type: 'password',
-      client_id: 'Default',
-      username,
-      password,
-      scope: 'api',
-    });
-
-    // Also login to get session cookies
     const loginUrl = `${this.config.instanceUrl}/entity/auth/login`;
 
     try {
-      // First, get the token (though we'll use cookie-based auth)
-      console.log('[Acumatica Client] Attempting OAuth token authentication...');
-      console.log('[Acumatica Client] Auth URL:', authUrl);
-      console.log('[Acumatica Client] Username:', username);
-
-      const tokenResponse = await fetch(authUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: formData,
-      });
-
-      console.log('[Acumatica Client] Token response status:', tokenResponse.status);
-
-      if (!tokenResponse.ok) {
-        const error = (await tokenResponse.json()) as AcumaticaErrorResponse;
-        console.error('[Acumatica Client] Token authentication failed:', {
-          status: tokenResponse.status,
-          statusText: tokenResponse.statusText,
-          error: error.error,
-          error_description: error.error_description,
-          fullError: JSON.stringify(error),
-        });
-        throw new AcumaticaAPIError(
-          `Token auth failed (${tokenResponse.status}): ${error.error_description || error.error || 'Authentication failed'}`,
-          tokenResponse.status,
-          error
-        );
-      }
-
-      console.log('[Acumatica Client] Token obtained successfully');
-
-      // Now login to get cookies
       console.log('[Acumatica Client] Attempting session login...');
       console.log('[Acumatica Client] Login URL:', loginUrl);
+      console.log('[Acumatica Client] Username:', username);
       console.log('[Acumatica Client] Company ID:', this.config.companyId);
 
       const loginResponse = await fetch(loginUrl, {
@@ -140,8 +96,18 @@ export class AcumaticaClient {
           error = { message: errorText || 'Login failed' };
         }
 
+        // Provide helpful error messages based on status code
+        let helpMessage = '';
+        if (loginResponse.status === 400) {
+          helpMessage = ' Possible issues: Wrong username/password, or company ID not found.';
+        } else if (loginResponse.status === 401) {
+          helpMessage = ' Check username and password are correct.';
+        } else if (loginResponse.status === 403) {
+          helpMessage = ' User may not have permissions or account is locked.';
+        }
+
         throw new AcumaticaAPIError(
-          `Session login failed (${loginResponse.status}): ${error.message || errorText || 'Login failed'}. Check: 1) Company ID is correct, 2) User has permissions, 3) User is not locked`,
+          `Login failed (${loginResponse.status}): ${error.message || errorText || 'Authentication failed'}.${helpMessage}`,
           loginResponse.status,
           error
         );
