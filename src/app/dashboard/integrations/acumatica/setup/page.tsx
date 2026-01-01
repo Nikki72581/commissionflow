@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, XCircle, ArrowRight, Search } from 'lucide-react';
-import { testAcumaticaConnection, saveAcumaticaConnection, listAcumaticaCompanies } from '@/actions/integrations/acumatica/connection';
+import { testAcumaticaConnection, saveAcumaticaConnection, listAcumaticaCompanies, getAcumaticaIntegration } from '@/actions/integrations/acumatica/connection';
 
 const API_VERSIONS = [
   '23.200.001',
@@ -32,6 +32,7 @@ const API_VERSIONS = [
 
 export default function AcumaticaSetupPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     instanceUrl: '',
     apiVersion: '24.200.001',
@@ -51,6 +52,45 @@ export default function AcumaticaSetupPage() {
     success: boolean;
     error?: string;
   } | null>(null);
+
+  // Load existing integration data on mount
+  useEffect(() => {
+    const loadIntegration = async () => {
+      try {
+        const integration = await getAcumaticaIntegration();
+        if (integration) {
+          console.log('[Client] Loaded existing integration:', {
+            hasInstanceUrl: !!integration.instanceUrl,
+            hasApiVersion: !!integration.apiVersion,
+            hasCompanyId: !!integration.companyId,
+            hasEncryptedCredentials: !!integration.encryptedCredentials,
+          });
+
+          setFormData({
+            instanceUrl: integration.instanceUrl,
+            apiVersion: integration.apiVersion,
+            companyId: integration.companyId,
+            username: '', // Don't pre-fill for security
+            password: '', // User needs to re-enter to make changes
+          });
+
+          // Show info that credentials are saved
+          if (integration.encryptedCredentials) {
+            setTestResult({
+              success: true,
+              error: undefined,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('[Client] Failed to load integration:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadIntegration();
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -150,6 +190,15 @@ export default function AcumaticaSetupPage() {
     setSaving(true);
 
     try {
+      // If credentials are already saved and user hasn't entered new ones,
+      // just navigate to the next step
+      if (testResult?.success && !formData.username && !formData.password) {
+        console.log('[Client] Credentials already saved, proceeding to next step');
+        router.push('/dashboard/integrations/acumatica/setup/salespeople');
+        return;
+      }
+
+      // Otherwise, save the new/updated credentials
       const result = await saveAcumaticaConnection(formData);
 
       if (result.success) {
@@ -179,6 +228,14 @@ export default function AcumaticaSetupPage() {
     formData.password;
 
   const canProceed = testResult?.success === true;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 py-8">
@@ -396,7 +453,9 @@ export default function AcumaticaSetupPage() {
                   <XCircle className="h-5 w-5 mt-0.5" />
                 )}
                 <AlertDescription>
-                  {testResult.success
+                  {testResult.success && !formData.username && !formData.password
+                    ? 'Credentials saved! Enter username and password to update or proceed to the next step.'
+                    : testResult.success
                     ? 'Connection successful! You can proceed to the next step.'
                     : `Connection failed: ${testResult.error}`}
                 </AlertDescription>
