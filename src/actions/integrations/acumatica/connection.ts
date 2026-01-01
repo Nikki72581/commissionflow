@@ -222,35 +222,65 @@ interface SaveConnectionResult {
 export async function saveAcumaticaConnection(
   input: SaveConnectionInput
 ): Promise<SaveConnectionResult> {
+  console.log('[Server] saveAcumaticaConnection called');
+
   try {
     const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    console.log('[Server] Auth result - userId:', userId ? 'present' : 'missing', 'orgId:', orgId ? 'present' : 'missing');
+
+    if (!userId) {
+      console.log('[Server] No userId - unauthorized');
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Get organization
-    const organization = await prisma.organization.findUnique({
-      where: { clerkOrgId: orgId },
+    // Get user and organization from database
+    // This is more reliable than using orgId from Clerk which may not be set
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { organization: true },
     });
 
-    if (!organization) {
-      return { success: false, error: 'Organization not found' };
+    console.log('[Server] User lookup result:', user ? {
+      id: user.id,
+      role: user.role,
+      hasOrganization: !!user.organization,
+      organizationId: user.organizationId,
+    } : 'not found');
+
+    if (!user) {
+      console.log('[Server] User not found in database');
+      return { success: false, error: 'User not found. Please complete onboarding first.' };
+    }
+
+    if (!user.organization) {
+      console.log('[Server] User has no organization');
+      return { success: false, error: 'Organization not found. Please contact support.' };
     }
 
     // Validate user is admin
-    const user = await prisma.user.findFirst({
-      where: {
-        clerkId: userId,
-        organizationId: organization.id,
-        role: 'ADMIN',
-      },
-    });
-
-    if (!user) {
+    if (user.role !== 'ADMIN') {
+      console.log('[Server] User is not admin:', user.role);
       return { success: false, error: 'Only admins can configure integrations' };
     }
 
+    const organization = user.organization;
+
+    console.log('[Server] Validating connection inputs:', {
+      hasInstanceUrl: !!input.instanceUrl,
+      hasApiVersion: !!input.apiVersion,
+      hasCompanyId: !!input.companyId,
+      hasUsername: !!input.username,
+      hasPassword: !!input.password,
+    });
+
+    // Validate all required fields
+    if (!input.instanceUrl || !input.apiVersion || !input.companyId || !input.username || !input.password) {
+      console.log('[Server] Missing required fields');
+      return { success: false, error: 'All connection fields are required' };
+    }
+
     // Test connection first
+    console.log('[Server] Testing connection before saving...');
     const testResult = await testConnection(
       input.instanceUrl,
       input.apiVersion,
@@ -258,6 +288,8 @@ export async function saveAcumaticaConnection(
       input.username,
       input.password
     );
+
+    console.log('[Server] Test result:', testResult.success ? 'SUCCESS' : 'FAILED', testResult.error || '');
 
     if (!testResult.success) {
       return {
@@ -267,12 +299,14 @@ export async function saveAcumaticaConnection(
     }
 
     // Encrypt credentials
+    console.log('[Server] Encrypting credentials...');
     const encryptedCredentials = encryptPasswordCredentials(
       input.username,
       input.password
     );
 
     // Save or update integration
+    console.log('[Server] Saving integration to database for organization:', organization.id);
     const integration = await prisma.acumaticaIntegration.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -296,14 +330,17 @@ export async function saveAcumaticaConnection(
       },
     });
 
+    console.log('[Server] Integration saved successfully:', integration.id);
+
     revalidatePath('/settings/integrations/acumatica');
+    console.log('[Server] Revalidated path');
 
     return {
       success: true,
       integrationId: integration.id,
     };
   } catch (error) {
-    console.error('Save connection error:', error);
+    console.error('[Server] Save connection error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to save connection',
@@ -316,21 +353,23 @@ export async function saveAcumaticaConnection(
  */
 export async function getAcumaticaIntegration() {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { userId } = await auth();
+    if (!userId) {
       return null;
     }
 
-    const organization = await prisma.organization.findUnique({
-      where: { clerkOrgId: orgId },
+    // Get user and organization from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { organization: true },
     });
 
-    if (!organization) {
+    if (!user || !user.organization) {
       return null;
     }
 
     const integration = await prisma.acumaticaIntegration.findUnique({
-      where: { organizationId: organization.id },
+      where: { organizationId: user.organization.id },
     });
 
     return integration;

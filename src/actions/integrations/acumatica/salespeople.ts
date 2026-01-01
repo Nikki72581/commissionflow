@@ -21,19 +21,22 @@ interface FetchSalespeopleResult {
  */
 export async function fetchAcumaticaSalespeople(): Promise<FetchSalespeopleResult> {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { userId } = await auth();
+    if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Get organization
-    const organization = await prisma.organization.findUnique({
-      where: { clerkOrgId: orgId },
+    // Get user and organization from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { organization: true },
     });
 
-    if (!organization) {
+    if (!user || !user.organization) {
       return { success: false, error: 'Organization not found' };
     }
+
+    const organization = user.organization;
 
     // Get integration
     const integration = await prisma.acumaticaIntegration.findUnique({
@@ -205,18 +208,22 @@ interface GetSalespersonMappingsResult {
  */
 export async function getSalespersonMappings(): Promise<GetSalespersonMappingsResult> {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { userId } = await auth();
+    if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const organization = await prisma.organization.findUnique({
-      where: { clerkOrgId: orgId },
+    // Get user and organization from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { organization: true },
     });
 
-    if (!organization) {
+    if (!user || !user.organization) {
       return { success: false, error: 'Organization not found' };
     }
+
+    const organization = user.organization;
 
     const integration = await prisma.acumaticaIntegration.findUnique({
       where: { organizationId: organization.id },
@@ -286,31 +293,27 @@ export async function updateSalespersonMapping(
   input: UpdateMappingInput
 ): Promise<UpdateMappingResult> {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { userId } = await auth();
+    if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const organization = await prisma.organization.findUnique({
-      where: { clerkOrgId: orgId },
+    // Get user and organization from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { organization: true },
     });
 
-    if (!organization) {
+    if (!user || !user.organization) {
       return { success: false, error: 'Organization not found' };
     }
 
     // Verify user is admin
-    const user = await prisma.user.findFirst({
-      where: {
-        clerkId: userId,
-        organizationId: organization.id,
-        role: 'ADMIN',
-      },
-    });
-
-    if (!user) {
+    if (user.role !== 'ADMIN') {
       return { success: false, error: 'Only admins can update mappings' };
     }
+
+    const organization = user.organization;
 
     if (input.action === 'ignore') {
       await prisma.acumaticaSalespersonMapping.update({
@@ -356,18 +359,22 @@ interface SaveMappingsResult {
  */
 export async function saveSalespersonMappings(): Promise<SaveMappingsResult> {
   try {
-    const { userId, orgId } = await auth();
-    if (!userId || !orgId) {
+    const { userId } = await auth();
+    if (!userId) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    const organization = await prisma.organization.findUnique({
-      where: { clerkOrgId: orgId },
+    // Get user and organization from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { organization: true },
     });
 
-    if (!organization) {
+    if (!user || !user.organization) {
       return { success: false, error: 'Organization not found' };
     }
+
+    const organization = user.organization;
 
     const integration = await prisma.acumaticaIntegration.findUnique({
       where: { organizationId: organization.id },
