@@ -7,7 +7,8 @@ import {
   Settings,
   RefreshCw,
   Calendar,
-  Database
+  Database,
+  Clock
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +20,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import Link from 'next/link'
+import Image from 'next/image'
 import { getAcumaticaIntegration } from '@/actions/integrations/acumatica/connection'
 
 export const dynamic = 'force-dynamic'
@@ -37,6 +39,7 @@ interface Integration {
   lastSync?: string
   features: string[]
   setupUrl?: string
+  comingSoon?: boolean
 }
 
 async function getIntegrations(): Promise<Integration[]> {
@@ -47,7 +50,7 @@ async function getIntegrations(): Promise<Integration[]> {
       id: 'acumatica',
       name: 'Acumatica',
       description: 'Cloud-based ERP and accounting software for growing businesses',
-      logo: '🏢',
+      logo: 'https://www.acumatica.com/wp-content/uploads/acumatica-logo.svg',
       status: acumaticaIntegration?.status === 'ACTIVE' ? 'connected' : 'disconnected',
       lastSync: acumaticaIntegration?.lastSyncAt
         ? new Date(acumaticaIntegration.lastSyncAt).toLocaleString()
@@ -66,8 +69,9 @@ async function getIntegrations(): Promise<Integration[]> {
       id: 'sage-intacct',
       name: 'Sage Intacct',
       description: 'Cloud financial management and accounting software',
-      logo: '💼',
+      logo: 'https://www.sageintacct.com/~/media/intacct/new-logo/sage-intacct-logo.png',
       status: 'disconnected',
+      comingSoon: true,
       features: [
         'Financial data synchronization',
         'Multi-entity support',
@@ -80,8 +84,9 @@ async function getIntegrations(): Promise<Integration[]> {
       id: 'dynamics-bc',
       name: 'Microsoft Dynamics BC',
       description: 'Business Central - comprehensive business management solution',
-      logo: '🔷',
+      logo: 'https://dynamics.microsoft.com/assets/images/dynamics-365-bc-logo.svg',
       status: 'disconnected',
+      comingSoon: true,
       features: [
         'Sales order integration',
         'Customer data sync',
@@ -169,17 +174,31 @@ export default async function IntegrationsPage() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="text-5xl">{integration.logo}</div>
+                  <div className="relative w-16 h-16 flex items-center justify-center bg-white dark:bg-slate-800 rounded-lg p-2 border border-purple-500/20">
+                    <Image
+                      src={integration.logo}
+                      alt={`${integration.name} logo`}
+                      width={64}
+                      height={64}
+                      className="object-contain"
+                    />
+                  </div>
                   <div>
-                    <CardTitle className="flex items-center gap-2 text-xl">
+                    <CardTitle className="flex items-center gap-2 text-xl flex-wrap">
                       {integration.name}
+                      {integration.comingSoon && (
+                        <Badge variant="outline" className="gap-1 bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30">
+                          <Clock className="h-3 w-3" />
+                          Coming Soon
+                        </Badge>
+                      )}
                       {integration.status === 'connected' && (
                         <Badge variant="success" className="gap-1">
                           <CheckCircle className="h-3 w-3" />
                           Connected
                         </Badge>
                       )}
-                      {integration.status === 'disconnected' && (
+                      {integration.status === 'disconnected' && !integration.comingSoon && (
                         <Badge variant="secondary" className="gap-1">
                           <AlertCircle className="h-3 w-3" />
                           Not Connected
@@ -206,6 +225,11 @@ export default async function IntegrationsPage() {
                         Disconnect
                       </Button>
                     </>
+                  ) : integration.comingSoon ? (
+                    <Button disabled className="gap-2">
+                      <Clock className="h-4 w-4" />
+                      Coming Soon
+                    </Button>
                   ) : (
                     <Link href={integration.setupUrl || '#'}>
                       <Button className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
