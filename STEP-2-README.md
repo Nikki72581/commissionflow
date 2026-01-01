@@ -430,4 +430,6 @@ import {
 
 ---
 
-Ready to continue with Step 3? Let me know!
+## Next Steps
+
+Proceed to [STEP-3-README.md](STEP-3-README.md) to build the Commission Plan Builder.

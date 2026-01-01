@@ -402,4 +402,6 @@ Check:
 
 ---
 
-Ready for Step 4? Let me know!
+## Next Steps
+
+Proceed to [STEP-4-README.md](STEP-4-README.md) to implement sales data tracking and automatic commission calculations.

@@ -301,4 +301,6 @@ const commStats = await getCommissionStats()
 
 ---
 
-Ready to test! 🚀
+## Testing
+
+Use the above commands and workflow examples to test your sales and commission implementation.

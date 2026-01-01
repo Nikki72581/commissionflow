@@ -312,4 +312,6 @@ console.log(result.finalAmount) // Should be 1000
 
 ---
 
-Ready to test! 🚀
+## Testing
+
+Use the above examples to test your commission plan implementation.

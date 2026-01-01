@@ -16,7 +16,8 @@ A modern, full-stack commission management platform built with Next.js. Track sa
 - **Salesperson Portal** - Self-service dashboard for sales team members
 - **Bulk Payouts** - Process multiple commission payments at once
 - **Email Notifications** - Automated notifications for approvals and payments
-- **Reporting & Analytics** - Comprehensive dashboards and export capabilities
+- **Audit Logs** - Comprehensive activity tracking for compliance
+- **Reporting & Analytics** - Dashboards, charts, and export capabilities
 
 ### Technical Features
 - Multi-tenant organization support with Clerk authentication
@@ -25,11 +26,11 @@ A modern, full-stack commission management platform built with Next.js. Track sa
 - Responsive UI built with Tailwind CSS and shadcn/ui
 - PostgreSQL database with Prisma ORM
 - CSV import/export functionality
-- AI-powered demo data generation
+- Comprehensive test coverage (unit, integration, E2E)
 
 ## Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org) (App Router)
+- **Framework**: [Next.js 15](https://nextjs.org) (App Router)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Database**: PostgreSQL with [Prisma ORM](https://www.prisma.io/)
 - **Authentication**: [Clerk](https://clerk.com/)
@@ -38,7 +39,7 @@ A modern, full-stack commission management platform built with Next.js. Track sa
 - **Forms**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
 - **Charts**: [Recharts](https://recharts.org/)
 - **Email**: [Resend](https://resend.com/)
-- **AI Integration**: [Anthropic API](https://www.anthropic.com/)
+- **Testing**: [Vitest](https://vitest.dev/) + [Playwright](https://playwright.dev/)
 
 ## Getting Started
 
@@ -82,8 +83,9 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL="/sign-up"
 RESEND_API_KEY="re_..."
 RESEND_FROM_EMAIL="noreply@yourdomain.com"
 
-# Anthropic (for AI features)
-ANTHROPIC_API_KEY="sk-ant-..."
+# Application
+COMPANY_NAME="Your Company Name"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
 4. Set up the database:
@@ -117,8 +119,8 @@ commissionflow/
 │   │   ├── plans/        # Commission plan builder
 │   │   ├── sales/        # Sales transaction tracking
 │   │   ├── commissions/  # Commission calculations & approvals
-│   │   ├── payouts/      # Payout processing
-│   │   └── my-commissions/ # Salesperson portal
+│   │   ├── my-commissions/ # Salesperson portal
+│   │   └── audit-logs/   # Audit log viewer
 │   └── (auth)/           # Authentication pages
 ├── components/
 │   ├── ui/              # shadcn/ui components
@@ -127,83 +129,65 @@ commissionflow/
 │   ├── plans/           # Commission plan components
 │   ├── sales/           # Sales components
 │   ├── commissions/     # Commission components
-│   └── layout/          # Layout components (nav, header)
+│   └── shared/          # Shared components
 ├── lib/
 │   ├── validations/     # Zod schemas for validation
 │   ├── commission-calculator.ts  # Commission calculation engine
+│   ├── email.ts         # Email service
+│   ├── audit-log.ts     # Audit logging utilities
 │   └── utils.ts         # Utility functions
 ├── prisma/
 │   ├── schema.prisma    # Database schema
 │   └── seed.ts          # Seed script
-└── public/              # Static assets
+└── tests/
+    ├── unit/            # Unit tests
+    ├── integration/     # Integration tests
+    └── e2e/             # End-to-end tests
 ```
-
-## Usage
-
-### Creating Your First Commission Plan
-
-1. Navigate to [Dashboard > Commission Plans](http://localhost:3000/dashboard/plans)
-2. Click "New Commission Plan"
-3. Enter a name and description
-4. Optionally attach to a specific project
-5. Add commission rules:
-   - **Percentage**: 10% of sale amount
-   - **Flat Amount**: $500 per sale
-   - **Tiered**: 5% up to $10k, then 7% above
-6. Set min/max caps if needed
-7. Test with the live preview calculator
-
-### Recording Sales and Calculating Commissions
-
-1. Navigate to [Dashboard > Sales](http://localhost:3000/dashboard/sales)
-2. Add sales transactions (manual entry or CSV import)
-3. Link sales to projects with commission plans
-4. Navigate to [Dashboard > Commissions](http://localhost:3000/dashboard/commissions)
-5. Click "Calculate Commissions" to apply plans to sales
-6. Review calculated amounts
-7. Approve commissions for payout
-
-### Processing Payouts
-
-1. Navigate to [Dashboard > Payouts](http://localhost:3000/dashboard/payouts)
-2. Review approved commissions
-3. Select commissions for payout
-4. Click "Create Payout" to batch process
-5. Mark as paid when completed
-
-## Documentation
-
-Detailed step-by-step implementation guides are available in the project:
-
-- [STEP-2-README.md](STEP-2-README.md) - Clients & Projects Management
-- [STEP-3-README.md](STEP-3-README.md) - Commission Plan Builder
-- [STEP-4-README.md](STEP-4-README.md) - Sales Data & Calculations
-- [STEP-5-INSTALL.md](STEP-5-INSTALL.md) - Reporting & Dashboards
-- [STEP-6-GUIDE.md](STEP-6-GUIDE.md) - Advanced Features (Salesperson Portal, Bulk Payouts, Notifications)
-- [STEP-6-QUICK-REFERENCE.md](STEP-6-QUICK-REFERENCE.md) - Quick reference for Step 6 features
-
-### Setup Guides
-
-- [RESEND-SETUP.md](RESEND-SETUP.md) - Email service configuration
-- [INTEGRATION-GUIDE.md](INTEGRATION-GUIDE.md) - Email notification integration
-- [TEAM_INVITATIONS_SETUP.md](TEAM_INVITATIONS_SETUP.md) - Team invitation setup
-- [FILE-STRUCTURE.md](FILE-STRUCTURE.md) - Detailed project structure guide
-
-### Testing
-
-- [TESTING-CHECKLIST.md](TESTING-CHECKLIST.md) - Comprehensive testing guide
 
 ## Available Scripts
 
 ```bash
-npm run dev          # Start development server with Turbopack
+npm run dev          # Start development server
 npm run build        # Build for production
 npm start            # Start production server
 npm run lint         # Run ESLint
 npm run db:seed      # Seed database with demo data
+
+# Testing
+npm run test:all         # Run all tests
+npm run test:unit        # Run unit tests only
+npm run test:integration # Run integration tests
+npm run test:e2e         # Run E2E tests
+npm run test:coverage    # Generate coverage report
 ```
 
-## Key Features in Detail
+## Documentation
+
+### Implementation Guides
+- [STEP-2-README.md](STEP-2-README.md) - Clients & Projects Management
+- [STEP-3-README.md](STEP-3-README.md) - Commission Plan Builder
+- [STEP-4-README.md](STEP-4-README.md) - Sales Data & Calculations
+- [STEP-5-INSTALL.md](STEP-5-INSTALL.md) - Reporting & Dashboards
+- [STEP-6-GUIDE.md](STEP-6-GUIDE.md) - Advanced Features
+
+### Quick Reference
+- [STEP-3-QUICK-REFERENCE.md](STEP-3-QUICK-REFERENCE.md) - Commission plans quick reference
+- [STEP-4-QUICK-REFERENCE.md](STEP-4-QUICK-REFERENCE.md) - Sales & calculations quick reference
+- [STEP-6-QUICK-REFERENCE.md](STEP-6-QUICK-REFERENCE.md) - Advanced features quick reference
+
+### Setup Guides
+- [RESEND-SETUP.md](RESEND-SETUP.md) - Email service configuration
+- [INTEGRATION-GUIDE.md](INTEGRATION-GUIDE.md) - Email notification integration
+- [TEAM_INVITATIONS_SETUP.md](TEAM_INVITATIONS_SETUP.md) - Team invitation setup
+- [FILE-STRUCTURE.md](FILE-STRUCTURE.md) - Detailed project structure
+
+### Testing
+- [TESTING.md](TESTING.md) - Comprehensive testing guide
+- [TESTING-SUMMARY.md](TESTING-SUMMARY.md) - Test infrastructure overview
+- [TEST-IDS-GUIDE.md](TEST-IDS-GUIDE.md) - Guide for adding test IDs to components
+
+## Key Features
 
 ### Multi-Rule Commission Plans
 Stack multiple commission rules to create complex compensation structures:
@@ -230,8 +214,11 @@ if (result.success) {
 }
 ```
 
-### Real-Time Calculations
-Commission preview calculator updates in real-time as you configure rules, helping you understand exactly how commissions will be calculated.
+### Workflow Automation
+- Commissions automatically calculated when sales are recorded
+- Email notifications sent on approval and payment
+- Bulk payout processing for efficiency
+- Complete audit trail for compliance
 
 ## Troubleshooting
 
@@ -250,6 +237,9 @@ Install required shadcn/ui components:
 ```bash
 npx shadcn-ui@latest add button card input label table badge dialog
 ```
+
+### Testing Issues
+See [TESTING.md](TESTING.md) for detailed troubleshooting guides.
 
 ## Contributing
 
