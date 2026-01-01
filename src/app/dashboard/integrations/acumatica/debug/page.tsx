@@ -13,11 +13,11 @@ export default function DebugPage() {
       setResult('Testing...');
 
       const testResult = await testAcumaticaConnection({
-        instanceUrl: 'https://test.acumatica.com',
+        instanceUrl: 'https://islandparts.acumatica.com/',
         apiVersion: '24.200.001',
-        companyId: 'TEST',
-        username: 'test',
-        password: 'test',
+        companyId: 'DYER',
+        username: 'NicoleRonchetti',
+        password: 'Nicole@01',
       });
 
       setResult(JSON.stringify(testResult, null, 2));
