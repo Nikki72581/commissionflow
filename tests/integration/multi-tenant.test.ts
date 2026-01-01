@@ -30,10 +30,6 @@ describe('Multi-Tenant Data Isolation', () => {
         { id: 'client-2', name: 'Client 2', organizationId: ORG_1_ID },
       ]
 
-      const org2Clients = [
-        { id: 'client-3', name: 'Client 3', organizationId: ORG_2_ID },
-      ]
-
       // Mock Prisma to return only org1 clients
       vi.mocked(prisma.client.findMany).mockResolvedValue(org1Clients as any)
 
@@ -47,7 +43,7 @@ describe('Multi-Tenant Data Isolation', () => {
         organizationId: ORG_1_ID,
       } as any)
 
-      const clients = await getClients()
+      const result = await getClients()
 
       // Verify Prisma was called with organizationId filter
       expect(prisma.client.findMany).toHaveBeenCalledWith(
@@ -59,8 +55,9 @@ describe('Multi-Tenant Data Isolation', () => {
       )
 
       // Should only get org1 clients
-      expect(clients).toHaveLength(2)
-      expect(clients.every((c) => c.organizationId === ORG_1_ID)).toBe(true)
+      expect(result.success).toBe(true)
+      expect(result.data).toHaveLength(2)
+      expect(result.data?.every((c: any) => c.organizationId === ORG_1_ID)).toBe(true)
     })
 
     it('should prevent access to clients from other organizations', async () => {
@@ -121,7 +118,7 @@ describe('Multi-Tenant Data Isolation', () => {
 
       const { getProjects } = await import('@/app/actions/projects')
 
-      const projects = await getProjects()
+      const result = await getProjects()
 
       expect(prisma.project.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -131,8 +128,9 @@ describe('Multi-Tenant Data Isolation', () => {
         })
       )
 
-      expect(projects).toHaveLength(2)
-      expect(projects.every((p) => p.organizationId === ORG_1_ID)).toBe(true)
+      expect(result.success).toBe(true)
+      expect(result.data).toHaveLength(2)
+      expect(result.data?.every((p: any) => p.organizationId === ORG_1_ID)).toBe(true)
     })
 
     it('should prevent cross-organization project access', async () => {
@@ -188,7 +186,7 @@ describe('Multi-Tenant Data Isolation', () => {
         '@/app/actions/commission-plans'
       )
 
-      const plans = await getCommissionPlans()
+      const result = await getCommissionPlans()
 
       expect(prisma.commissionPlan.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -198,8 +196,9 @@ describe('Multi-Tenant Data Isolation', () => {
         })
       )
 
-      expect(plans).toHaveLength(2)
-      expect(plans.every((p) => p.organizationId === ORG_1_ID)).toBe(true)
+      expect(result.success).toBe(true)
+      expect(result.data).toHaveLength(2)
+      expect(result.data?.every((p: any) => p.organizationId === ORG_1_ID)).toBe(true)
     })
 
     it('should prevent accessing commission plans from other organizations', async () => {
@@ -261,7 +260,7 @@ describe('Multi-Tenant Data Isolation', () => {
         '@/app/actions/sales-transactions'
       )
 
-      const sales = await getSalesTransactions()
+      const result = await getSalesTransactions()
 
       expect(prisma.salesTransaction.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -271,8 +270,9 @@ describe('Multi-Tenant Data Isolation', () => {
         })
       )
 
-      expect(sales).toHaveLength(2)
-      expect(sales.every((s) => s.organizationId === ORG_1_ID)).toBe(true)
+      expect(result.success).toBe(true)
+      expect(result.data).toHaveLength(2)
+      expect(result.data?.every((s: any) => s.organizationId === ORG_1_ID)).toBe(true)
     })
   })
 
@@ -307,7 +307,7 @@ describe('Multi-Tenant Data Isolation', () => {
         '@/app/actions/commission-calculations'
       )
 
-      const commissions = await getCommissionCalculations()
+      const result = await getCommissionCalculations()
 
       expect(prisma.commissionCalculation.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -317,8 +317,9 @@ describe('Multi-Tenant Data Isolation', () => {
         })
       )
 
-      expect(commissions).toHaveLength(2)
-      expect(commissions.every((c) => c.organizationId === ORG_1_ID)).toBe(
+      expect(result.success).toBe(true)
+      expect(result.data).toHaveLength(2)
+      expect(result.data?.every((c: any) => c.organizationId === ORG_1_ID)).toBe(
         true
       )
     })
@@ -332,11 +333,11 @@ describe('Multi-Tenant Data Isolation', () => {
 
       vi.mocked(prisma.commissionCalculation.findFirst).mockResolvedValue(null)
 
-      const { approveCommission } = await import(
+      const { approveCalculation } = await import(
         '@/app/actions/commission-calculations'
       )
 
-      const result = await approveCommission('commission-from-org-2')
+      const result = await approveCalculation('commission-from-org-2')
 
       expect(prisma.commissionCalculation.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -406,8 +407,10 @@ describe('Multi-Tenant Data Isolation', () => {
 
       const { getClients } = await import('@/app/actions/clients')
 
-      // Should throw or return error when not authenticated
-      await expect(getClients()).rejects.toThrow()
+      // Should return error when not authenticated
+      const result = await getClients()
+      expect(result.success).toBe(false)
+      expect(result.error).toMatch(/unauthorized/i)
     })
 
     it('should require organization association for all operations', async () => {
@@ -428,10 +431,10 @@ describe('Multi-Tenant Data Isolation', () => {
 
       const { getClients } = await import('@/app/actions/clients')
 
-      // Should throw error about missing organization
-      await expect(getClients()).rejects.toThrow(
-        /not associated with an organization/i
-      )
+      // Should return error about missing organization
+      const result = await getClients()
+      expect(result.success).toBe(false)
+      expect(result.error).toMatch(/not associated with an organization/i)
     })
   })
 
@@ -464,10 +467,11 @@ describe('Multi-Tenant Data Isolation', () => {
 
       const { getProjects } = await import('@/app/actions/projects')
 
-      const projects = await getProjects()
+      const result = await getProjects()
 
       // Verify all related client data is also from ORG_1
-      projects.forEach((project) => {
+      expect(result.success).toBe(true)
+      result.data?.forEach((project: any) => {
         if (project.client) {
           expect(project.client.organizationId).toBe(ORG_1_ID)
         }
@@ -504,10 +508,11 @@ describe('Multi-Tenant Data Isolation', () => {
         '@/app/actions/commission-calculations'
       )
 
-      const commissions = await getCommissionCalculations()
+      const result = await getCommissionCalculations()
 
       // Verify all related plan data is also from ORG_1
-      commissions.forEach((commission) => {
+      expect(result.success).toBe(true)
+      result.data?.forEach((commission: any) => {
         if (commission.commissionPlan) {
           expect(commission.commissionPlan.organizationId).toBe(ORG_1_ID)
         }

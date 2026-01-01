@@ -64,6 +64,7 @@ vi.mock('@/lib/db', () => ({
   prisma: {
     user: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -71,12 +72,14 @@ vi.mock('@/lib/db', () => ({
     },
     organization: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
     },
     client: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -84,6 +87,7 @@ vi.mock('@/lib/db', () => ({
     },
     project: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -91,12 +95,15 @@ vi.mock('@/lib/db', () => ({
     },
     commissionPlan: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
     commissionRule: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -104,6 +111,7 @@ vi.mock('@/lib/db', () => ({
     },
     salesTransaction: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -111,6 +119,17 @@ vi.mock('@/lib/db', () => ({
     },
     commissionCalculation: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+    },
+  },
+  db: {
+    user: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -120,5 +139,13 @@ vi.mock('@/lib/db', () => ({
 }))
 
 // Set up environment variables for tests
-process.env.NODE_ENV = 'test'
-process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgresql://test:test@localhost:5432/commissionflow_test'
+// @ts-ignore - Allow setting NODE_ENV in test environment
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/commissionflow_test'
+}
+if (!process.env.RESEND_API_KEY) {
+  process.env.RESEND_API_KEY = 're_test_mock_api_key'
+}
+if (!process.env.RESEND_FROM_EMAIL) {
+  process.env.RESEND_FROM_EMAIL = 'test@test.com'
+}
