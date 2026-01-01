@@ -50,6 +50,13 @@ export async function fetchAcumaticaSalespeople(): Promise<FetchSalespeopleResul
     // Decrypt credentials
     const credentials = decryptPasswordCredentials(integration.encryptedCredentials);
 
+    console.log('[Server] Creating Acumatica client with config:', {
+      instanceUrl: integration.instanceUrl,
+      apiVersion: integration.apiVersion,
+      companyId: integration.companyId,
+      username: credentials.username,
+    });
+
     // Create Acumatica client
     const client = createAcumaticaClient({
       instanceUrl: integration.instanceUrl,
@@ -63,9 +70,28 @@ export async function fetchAcumaticaSalespeople(): Promise<FetchSalespeopleResul
     });
 
     // Authenticate and fetch salespeople
+    console.log('[Server] Authenticating with Acumatica...');
     await client.authenticate();
-    const acumaticaSalespeople = await client.fetchSalespeople();
-    await client.logout();
+    console.log('[Server] Authentication successful, fetching salespeople...');
+
+    let acumaticaSalespeople: Awaited<ReturnType<typeof client.fetchSalespeople>>;
+    try {
+      acumaticaSalespeople = await client.fetchSalespeople();
+      console.log('[Server] Fetched salespeople:', acumaticaSalespeople.length);
+      await client.logout();
+
+      if (!acumaticaSalespeople || acumaticaSalespeople.length === 0) {
+        console.log('[Server] No salespeople found in Acumatica');
+        return {
+          success: false,
+          error: 'No salespeople found in Acumatica. Please ensure salespeople are configured in your Acumatica instance.',
+        };
+      }
+    } catch (error) {
+      console.error('[Server] Error fetching salespeople:', error);
+      await client.logout();
+      throw error;
+    }
 
     // Get existing users in organization for auto-matching
     const users = await prisma.user.findMany({

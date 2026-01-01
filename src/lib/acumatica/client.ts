@@ -149,12 +149,17 @@ export class AcumaticaClient {
   private async get<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
     const url = this.buildUrl(endpoint, params);
 
+    console.log('[Acumatica Client] GET request:', url);
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
 
     if (this.cookies.length > 0) {
       headers['Cookie'] = this.cookies.join('; ');
+      console.log('[Acumatica Client] Using cookies:', this.cookies.length, 'cookies');
+    } else {
+      console.warn('[Acumatica Client] No cookies available for request');
     }
 
     const response = await fetch(url, {
@@ -162,10 +167,29 @@ export class AcumaticaClient {
       headers,
     });
 
+    console.log('[Acumatica Client] GET response status:', response.status);
+
     if (!response.ok) {
-      const error = (await response.json().catch(() => ({}))) as AcumaticaErrorResponse;
+      const errorText = await response.text();
+      console.error('[Acumatica Client] GET request failed:', {
+        url,
+        status: response.status,
+        statusText: response.statusText,
+        responseBody: errorText,
+      });
+
+      let error: AcumaticaErrorResponse;
+      try {
+        error = JSON.parse(errorText) as AcumaticaErrorResponse;
+      } catch {
+        error = { message: errorText || `API request failed: ${response.statusText}` };
+      }
+
+      const errorMessage = error.message || error.exceptionMessage || `API request failed: ${response.statusText}`;
+      console.error('[Acumatica Client] Error details:', errorMessage);
+
       throw new AcumaticaAPIError(
-        error.message || error.exceptionMessage || `API request failed: ${response.statusText}`,
+        errorMessage,
         response.status,
         error
       );
@@ -290,9 +314,32 @@ export class AcumaticaClient {
    * Fetch all salespeople
    */
   async fetchSalespeople(): Promise<AcumaticaSalesperson[]> {
-    return this.get<AcumaticaSalesperson[]>('Salesperson', {
-      $select: 'SalespersonID,Name,Email',
-    });
+    console.log('[Acumatica Client] fetchSalespeople: Fetching all salespeople...');
+
+    try {
+      // Try with Email field first
+      return await this.get<AcumaticaSalesperson[]>('Salesperson', {
+        $select: 'SalespersonID,Name,Email',
+      });
+    } catch (error) {
+      console.warn('[Acumatica Client] fetchSalespeople: Failed with Email field, retrying without it...', error);
+
+      // If that fails (Email field might not be available), try without Email
+      try {
+        const salespeople = await this.get<AcumaticaSalesperson[]>('Salesperson', {
+          $select: 'SalespersonID,Name',
+        });
+
+        // Add empty email to match expected type
+        return salespeople.map(sp => ({
+          ...sp,
+          Email: { value: '' },
+        }));
+      } catch (retryError) {
+        console.error('[Acumatica Client] fetchSalespeople: Failed even without Email field:', retryError);
+        throw retryError;
+      }
+    }
   }
 
   /**
