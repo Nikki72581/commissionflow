@@ -2,9 +2,10 @@
 
 import { auth } from '@clerk/nextjs/server';
 import { prisma } from '@/lib/db';
-import { testConnection } from '@/lib/acumatica/auth';
+import { testConnection, listAvailableCompanies } from '@/lib/acumatica/auth';
 import { encryptPasswordCredentials } from '@/lib/acumatica/encryption';
 import { revalidatePath } from 'next/cache';
+import type { AcumaticaCompany } from '@/lib/acumatica/types';
 
 interface TestConnectionInput {
   instanceUrl: string;
@@ -17,6 +18,106 @@ interface TestConnectionInput {
 interface TestConnectionResult {
   success: boolean;
   error?: string;
+}
+
+interface ListCompaniesInput {
+  instanceUrl: string;
+  apiVersion: string;
+  username: string;
+  password: string;
+}
+
+interface ListCompaniesResult {
+  success: boolean;
+  companies?: Array<{
+    id: string;
+    name: string;
+  }>;
+  error?: string;
+}
+
+/**
+ * List available companies from Acumatica instance
+ */
+export async function listAcumaticaCompanies(
+  input: ListCompaniesInput
+): Promise<ListCompaniesResult> {
+  console.log('[Server] listAcumaticaCompanies called');
+
+  try {
+    const { userId } = await auth();
+    console.log('[Server] Auth userId:', userId ? 'authenticated' : 'not authenticated');
+
+    if (!userId) {
+      console.log('[Server] Returning unauthorized');
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Validate inputs
+    console.log('[Server] Validating inputs:', {
+      hasInstanceUrl: !!input.instanceUrl,
+      hasApiVersion: !!input.apiVersion,
+      hasUsername: !!input.username,
+      hasPassword: !!input.password,
+    });
+
+    if (!input.instanceUrl || !input.apiVersion || !input.username || !input.password) {
+      console.log('[Server] Validation failed - missing fields');
+      return { success: false, error: 'Instance URL, API version, username, and password are required' };
+    }
+
+    // Ensure URL is valid HTTPS
+    try {
+      const url = new URL(input.instanceUrl);
+      console.log('[Server] URL protocol:', url.protocol);
+      if (url.protocol !== 'https:') {
+        console.log('[Server] URL is not HTTPS');
+        return { success: false, error: 'Instance URL must use HTTPS' };
+      }
+    } catch (urlError) {
+      console.error('[Server] URL parsing error:', urlError);
+      return { success: false, error: 'Invalid instance URL format' };
+    }
+
+    // List companies
+    console.log('[Server] Calling listAvailableCompanies...');
+    const result = await listAvailableCompanies(
+      input.instanceUrl,
+      input.apiVersion,
+      input.username,
+      input.password
+    );
+
+    console.log('[Server] List companies result:', JSON.stringify(result));
+
+    if (!result.success || !result.companies) {
+      return {
+        success: false,
+        error: result.error || 'Failed to retrieve companies',
+      };
+    }
+
+    // Convert to plain serializable format
+    const companies = result.companies.map((company) => ({
+      id: company.CompanyID.value,
+      name: company.CompanyName.value,
+    }));
+
+    console.log('[Server] Returning companies:', companies);
+
+    return {
+      success: true,
+      companies,
+    };
+  } catch (error) {
+    console.error('[Server] List companies error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.log('[Server] Returning error:', errorMessage);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
 }
 
 /**

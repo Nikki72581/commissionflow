@@ -20,8 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
-import { testAcumaticaConnection, saveAcumaticaConnection } from '@/actions/integrations/acumatica/connection';
+import { Loader2, CheckCircle, XCircle, ArrowRight, Search } from 'lucide-react';
+import { testAcumaticaConnection, saveAcumaticaConnection, listAcumaticaCompanies } from '@/actions/integrations/acumatica/connection';
 
 const API_VERSIONS = [
   '23.200.001',
@@ -42,6 +42,11 @@ export default function AcumaticaSetupPage() {
 
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fetchingCompanies, setFetchingCompanies] = useState(false);
+  const [availableCompanies, setAvailableCompanies] = useState<Array<{
+    id: string;
+    name: string;
+  }> | null>(null);
   const [testResult, setTestResult] = useState<{
     success: boolean;
     error?: string;
@@ -52,6 +57,41 @@ export default function AcumaticaSetupPage() {
     // Clear test result when form changes
     if (testResult) {
       setTestResult(null);
+    }
+    // Clear available companies if changing credentials
+    if (['instanceUrl', 'apiVersion', 'username', 'password'].includes(field)) {
+      setAvailableCompanies(null);
+    }
+  };
+
+  const handleFetchCompanies = async () => {
+    setFetchingCompanies(true);
+    setAvailableCompanies(null);
+    setTestResult(null);
+
+    try {
+      const result = await listAcumaticaCompanies({
+        instanceUrl: formData.instanceUrl,
+        apiVersion: formData.apiVersion,
+        username: formData.username,
+        password: formData.password,
+      });
+
+      if (result.success && result.companies) {
+        setAvailableCompanies(result.companies);
+      } else {
+        setTestResult({
+          success: false,
+          error: result.error || 'Failed to fetch companies',
+        });
+      }
+    } catch (error) {
+      setTestResult({
+        success: false,
+        error: error instanceof Error ? error.message : 'An unexpected error occurred',
+      });
+    } finally {
+      setFetchingCompanies(false);
     }
   };
 
@@ -214,9 +254,37 @@ export default function AcumaticaSetupPage() {
 
           {/* Company ID */}
           <div className="space-y-2">
-            <Label htmlFor="companyId">
-              Company ID <span className="text-red-500">*</span>
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="companyId">
+                Company ID <span className="text-red-500">*</span>
+              </Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleFetchCompanies}
+                disabled={
+                  !formData.instanceUrl ||
+                  !formData.apiVersion ||
+                  !formData.username ||
+                  !formData.password ||
+                  fetchingCompanies
+                }
+                className="text-xs h-7"
+              >
+                {fetchingCompanies ? (
+                  <>
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    Fetching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="mr-1 h-3 w-3" />
+                    Find Company IDs
+                  </>
+                )}
+              </Button>
+            </div>
             <Input
               id="companyId"
               placeholder="MYCOMPANY"
@@ -224,8 +292,36 @@ export default function AcumaticaSetupPage() {
               onChange={(e) => handleInputChange('companyId', e.target.value)}
             />
             <p className="text-sm text-muted-foreground">
-              Your Acumatica tenant/company identifier
+              Your Acumatica tenant/company identifier. Click "Find Company IDs" to see available companies.
             </p>
+
+            {/* Show available companies */}
+            {availableCompanies && availableCompanies.length > 0 && (
+              <Alert className="border-blue-500/50 bg-blue-500/10">
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p className="font-medium text-sm">Available Companies:</p>
+                    <div className="space-y-1">
+                      {availableCompanies.map((company) => (
+                        <button
+                          key={company.id}
+                          type="button"
+                          onClick={() => handleInputChange('companyId', company.id)}
+                          className="block w-full text-left px-3 py-2 text-sm rounded-md hover:bg-blue-500/20 transition-colors"
+                        >
+                          <div className="font-mono font-medium text-blue-600 dark:text-blue-400">
+                            {company.id}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {company.name}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           {/* Username */}

@@ -50,7 +50,7 @@ async function getIntegrations(): Promise<Integration[]> {
       id: 'acumatica',
       name: 'Acumatica',
       description: 'Cloud-based ERP and accounting software for growing businesses',
-      logo: 'https://www.acumatica.com/wp-content/uploads/acumatica-logo.svg',
+      logo: '/logos/acumatica.svg',
       status: acumaticaIntegration?.status === 'ACTIVE' ? 'connected' : 'disconnected',
       lastSync: acumaticaIntegration?.lastSyncAt
         ? new Date(acumaticaIntegration.lastSyncAt).toLocaleString()
@@ -69,7 +69,7 @@ async function getIntegrations(): Promise<Integration[]> {
       id: 'sage-intacct',
       name: 'Sage Intacct',
       description: 'Cloud financial management and accounting software',
-      logo: 'https://www.sageintacct.com/~/media/intacct/new-logo/sage-intacct-logo.png',
+      logo: '/logos/sage-intacct.svg',
       status: 'disconnected',
       comingSoon: true,
       features: [
@@ -84,7 +84,7 @@ async function getIntegrations(): Promise<Integration[]> {
       id: 'dynamics-bc',
       name: 'Microsoft Dynamics BC',
       description: 'Business Central - comprehensive business management solution',
-      logo: 'https://dynamics.microsoft.com/assets/images/dynamics-365-bc-logo.svg',
+      logo: '/logos/dynamics-bc.svg',
       status: 'disconnected',
       comingSoon: true,
       features: [

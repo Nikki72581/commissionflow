@@ -167,6 +167,74 @@ export class AcumaticaClient {
   }
 
   /**
+   * Authenticate without a specific company to list available companies
+   */
+  async authenticateWithoutCompany(): Promise<void> {
+    if (this.config.credentials.type !== 'password') {
+      throw new Error('Only password authentication is currently supported');
+    }
+
+    const { username, password } = this.config.credentials;
+    const loginUrl = `${this.config.instanceUrl}/entity/auth/login`;
+
+    try {
+      console.log('[Acumatica Client] Attempting login without company to list available companies...');
+
+      const loginResponse = await fetch(loginUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: username,
+          password: password,
+          // Omit company to login to default/list companies
+        }),
+      });
+
+      console.log('[Acumatica Client] Login response status:', loginResponse.status);
+
+      if (!loginResponse.ok) {
+        const errorText = await loginResponse.text();
+        console.error('[Acumatica Client] Login failed:', {
+          status: loginResponse.status,
+          statusText: loginResponse.statusText,
+          responseBody: errorText,
+        });
+
+        throw new AcumaticaAPIError(
+          `Login failed (${loginResponse.status}): Unable to authenticate to list companies. Check username and password.`,
+          loginResponse.status
+        );
+      }
+
+      // Store cookies for subsequent requests
+      const cookies = loginResponse.headers.get('set-cookie');
+      if (cookies) {
+        this.cookies = cookies.split(',').map((c) => c.split(';')[0].trim());
+        console.log('[Acumatica Client] Cookies stored:', this.cookies.length);
+      }
+    } catch (error) {
+      if (error instanceof AcumaticaAPIError) {
+        throw error;
+      }
+      throw new AcumaticaAPIError(
+        `Authentication error: ${(error as Error).message}`
+      );
+    }
+  }
+
+  /**
+   * List available companies (tenants) in the Acumatica instance
+   */
+  async listCompanies(): Promise<AcumaticaCompany[]> {
+    await this.authenticateWithoutCompany();
+    return this.get<AcumaticaCompany[]>('Company', {
+      $select: 'CompanyID,CompanyName',
+    });
+  }
+
+  /**
    * Test the connection by fetching company info
    */
   async testConnection(): Promise<AcumaticaCompany[]> {

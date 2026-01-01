@@ -1,4 +1,4 @@
-import { AcumaticaConnectionConfig } from './types';
+import { AcumaticaConnectionConfig, AcumaticaCompany } from './types';
 import { decryptPasswordCredentials, decryptOAuthCredentials } from './encryption';
 import { createAcumaticaClient } from './client';
 import type { AcumaticaIntegration } from '@prisma/client';
@@ -29,6 +29,57 @@ export async function createAuthenticatedClient(
   await client.authenticate();
 
   return client;
+}
+
+/**
+ * List available companies (tenants) from Acumatica instance
+ */
+export async function listAvailableCompanies(
+  instanceUrl: string,
+  apiVersion: string,
+  username: string,
+  password: string
+): Promise<{ success: boolean; companies?: AcumaticaCompany[]; error?: string }> {
+  console.log('[Auth] listAvailableCompanies called with:', {
+    instanceUrl,
+    apiVersion,
+    username,
+  });
+
+  try {
+    const config: AcumaticaConnectionConfig = {
+      instanceUrl,
+      apiVersion,
+      companyId: '', // Not needed for listing companies
+      credentials: {
+        type: 'password',
+        username,
+        password,
+      },
+    };
+
+    const client = createAcumaticaClient(config);
+    console.log('[Auth] Fetching available companies...');
+    const companies = await client.listCompanies();
+    console.log('[Auth] Companies retrieved:', companies.length);
+    await client.logout();
+
+    return { success: true, companies };
+  } catch (error) {
+    console.error('[Auth] Failed to list companies:', error);
+
+    if (error instanceof Error) {
+      console.error('[Auth] Error details:', {
+        name: error.name,
+        message: error.message,
+      });
+    }
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to retrieve companies',
+    };
+  }
 }
 
 /**
