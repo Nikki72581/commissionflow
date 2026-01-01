@@ -311,33 +311,58 @@ export class AcumaticaClient {
   }
 
   /**
-   * Fetch all salespeople
+   * Fetch all active salespeople
    */
   async fetchSalespeople(): Promise<AcumaticaSalesperson[]> {
-    console.log('[Acumatica Client] fetchSalespeople: Fetching all salespeople...');
+    console.log('[Acumatica Client] fetchSalespeople: Fetching active salespeople...');
 
     try {
-      // Try with Email field first
-      return await this.get<AcumaticaSalesperson[]>('Salesperson', {
-        $select: 'SalespersonID,Name,Email',
+      // Try with Email and IsActive fields first, filtering for active only
+      const salespeople = await this.get<AcumaticaSalesperson[]>('Salesperson', {
+        $select: 'SalespersonID,Name,Email,IsActive',
+        $filter: 'IsActive eq true',
       });
-    } catch (error) {
-      console.warn('[Acumatica Client] fetchSalespeople: Failed with Email field, retrying without it...', error);
 
-      // If that fails (Email field might not be available), try without Email
+      console.log('[Acumatica Client] fetchSalespeople: Fetched', salespeople.length, 'active salespeople');
+      return salespeople;
+    } catch (error) {
+      console.warn('[Acumatica Client] fetchSalespeople: Failed with Email/IsActive fields, retrying without Email...', error);
+
+      // If that fails (Email field might not be available), try without Email but keep IsActive filter
       try {
         const salespeople = await this.get<AcumaticaSalesperson[]>('Salesperson', {
-          $select: 'SalespersonID,Name',
+          $select: 'SalespersonID,Name,IsActive',
+          $filter: 'IsActive eq true',
         });
 
         // Add empty email to match expected type
         return salespeople.map(sp => ({
           ...sp,
-          Email: { value: '' },
+          Email: { value: null },
         }));
       } catch (retryError) {
-        console.error('[Acumatica Client] fetchSalespeople: Failed even without Email field:', retryError);
-        throw retryError;
+        console.warn('[Acumatica Client] fetchSalespeople: Failed with IsActive filter, trying without filter...', retryError);
+
+        // Last resort: fetch all salespeople without filter and filter locally
+        try {
+          const allSalespeople = await this.get<AcumaticaSalesperson[]>('Salesperson', {
+            $select: 'SalespersonID,Name,IsActive',
+          });
+
+          // Filter to active only
+          const activeSalespeople = allSalespeople.filter(sp => sp.IsActive?.value === true);
+
+          console.log('[Acumatica Client] fetchSalespeople: Filtered', activeSalespeople.length, 'active from', allSalespeople.length, 'total');
+
+          // Add empty email to match expected type
+          return activeSalespeople.map(sp => ({
+            ...sp,
+            Email: { value: null },
+          }));
+        } catch (finalError) {
+          console.error('[Acumatica Client] fetchSalespeople: All attempts failed:', finalError);
+          throw finalError;
+        }
       }
     }
   }

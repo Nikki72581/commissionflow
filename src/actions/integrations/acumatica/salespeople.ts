@@ -123,8 +123,8 @@ export async function fetchAcumaticaSalespeople(): Promise<FetchSalespeopleResul
 
       // Auto-match logic
       let matchedUserId: string | null = null;
-      let matchType: 'AUTO_EMAIL' | 'AUTO_NAME' | null = null;
-      let status: 'PENDING' | 'MATCHED' = 'PENDING';
+      let matchType: 'AUTO_EMAIL' | 'AUTO_PLACEHOLDER' | null = null;
+      let status: 'MATCHED' | 'PLACEHOLDER' = 'PLACEHOLDER'; // Default to PLACEHOLDER
 
       // First, try email match (most reliable)
       if (salespersonEmail) {
@@ -138,17 +138,10 @@ export async function fetchAcumaticaSalespeople(): Promise<FetchSalespeopleResul
         }
       }
 
-      // If no email match, try name match
-      if (!matchedUserId && salespersonName) {
-        const nameMatch = users.find((u) => {
-          const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
-          return fullName.toLowerCase() === salespersonName.toLowerCase();
-        });
-        if (nameMatch) {
-          matchedUserId = nameMatch.id;
-          matchType = 'AUTO_NAME';
-          status = 'MATCHED';
-        }
+      // If no email match, default to creating a placeholder user
+      if (!matchedUserId) {
+        matchType = 'AUTO_PLACEHOLDER';
+        status = 'PLACEHOLDER';
       }
 
       // Create or update mapping
@@ -350,17 +343,30 @@ export async function updateSalespersonMapping(
           matchType: null,
         },
       });
-    } else if (input.action === 'map' && input.userId) {
-      await prisma.acumaticaSalespersonMapping.update({
-        where: { id: input.mappingId },
-        data: {
-          status: 'MATCHED',
-          userId: input.userId,
-          matchType: 'MANUAL',
-        },
-      });
+    } else if (input.action === 'map') {
+      if (input.userId) {
+        // Map to existing user
+        await prisma.acumaticaSalespersonMapping.update({
+          where: { id: input.mappingId },
+          data: {
+            status: 'MATCHED',
+            userId: input.userId,
+            matchType: 'MANUAL',
+          },
+        });
+      } else {
+        // Set to placeholder (userId is null)
+        await prisma.acumaticaSalespersonMapping.update({
+          where: { id: input.mappingId },
+          data: {
+            status: 'PLACEHOLDER',
+            userId: null,
+            matchType: 'MANUAL',
+          },
+        });
+      }
     } else {
-      return { success: false, error: 'Invalid action or missing userId' };
+      return { success: false, error: 'Invalid action' };
     }
 
     revalidatePath('/dashboard/integrations/acumatica/setup/salespeople');
@@ -410,20 +416,10 @@ export async function saveSalespersonMappings(): Promise<SaveMappingsResult> {
       return { success: false, error: 'Integration not found' };
     }
 
-    // Check if all mappings are resolved (no PENDING status)
-    const pendingMappings = await prisma.acumaticaSalespersonMapping.count({
-      where: {
-        integrationId: integration.id,
-        status: 'PENDING',
-      },
-    });
+    // All mappings are automatically set to either MATCHED, PLACEHOLDER, or user can set to IGNORED
+    // No need to check for pending mappings as the default is PLACEHOLDER which is valid
 
-    if (pendingMappings > 0) {
-      return {
-        success: false,
-        error: `You have ${pendingMappings} pending salesperson mapping(s). Please map or ignore all salespeople before continuing.`,
-      };
-    }
+    console.log('[Server] Salesperson mappings saved successfully');
 
     revalidatePath('/dashboard/integrations');
 

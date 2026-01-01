@@ -16,9 +16,9 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle,
-  AlertCircle,
   UserCheck,
   UserX,
+  UserPlus,
   Mail,
   User,
   RefreshCw,
@@ -172,8 +172,8 @@ export default function SalespersonMappingPage() {
     return name || user.email;
   };
 
-  const pendingCount = mappings.filter((m) => m.status === 'PENDING').length;
   const matchedCount = mappings.filter((m) => m.status === 'MATCHED').length;
+  const placeholderCount = mappings.filter((m) => m.status === 'PLACEHOLDER').length;
   const ignoredCount = mappings.filter((m) => m.status === 'IGNORED').length;
 
   if (loading) {
@@ -229,7 +229,7 @@ export default function SalespersonMappingPage() {
                 <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Mapped</p>
+                <p className="text-sm font-medium text-muted-foreground">Matched to Users</p>
                 <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">
                   {matchedCount}
                 </p>
@@ -238,16 +238,16 @@ export default function SalespersonMappingPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/10 to-orange-500/5">
+        <Card className="border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/5">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-full bg-amber-500/20 p-3">
-                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <div className="rounded-full bg-blue-500/20 p-3">
+                <UserPlus className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold text-amber-700 dark:text-amber-400">
-                  {pendingCount}
+                <p className="text-sm font-medium text-muted-foreground">Placeholder Users</p>
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">
+                  {placeholderCount}
                 </p>
               </div>
             </div>
@@ -276,22 +276,42 @@ export default function SalespersonMappingPage() {
         <CardHeader>
           <CardTitle className="text-lg">How Salesperson Mapping Works</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+        <CardContent className="space-y-3 text-sm">
           <p>
-            Each salesperson in Acumatica needs to be mapped to a user in CommissionFlow to track
-            commissions properly.
+            Each active salesperson in Acumatica is automatically processed. You can review and adjust the mappings below.
           </p>
-          <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
-            <li>
-              <strong>Auto-matched:</strong> We automatically matched salespeople by email or name
-            </li>
-            <li>
-              <strong>Pending:</strong> Requires your action - select a user or ignore
-            </li>
-            <li>
-              <strong>Ignored:</strong> Sales from this salesperson won't be imported
-            </li>
-          </ul>
+          <div className="space-y-2">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="h-4 w-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <strong className="text-emerald-700 dark:text-emerald-400">Matched to User:</strong>
+                <span className="text-muted-foreground ml-1">
+                  Automatically matched by email to an existing user
+                </span>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <UserPlus className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <strong className="text-blue-700 dark:text-blue-400">Create Placeholder User (Default):</strong>
+                <span className="text-muted-foreground ml-1">
+                  A placeholder user will be created. You can invite them later or manually map to an existing user.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-start gap-2">
+              <UserX className="h-4 w-4 text-slate-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <strong className="text-slate-700 dark:text-slate-400">Ignored:</strong>
+                <span className="text-muted-foreground ml-1">
+                  Sales from this salesperson will not be imported
+                </span>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground pt-2 border-t">
+            <strong>Note:</strong> Only active salespeople from Acumatica are shown. Inactive salespeople are automatically filtered out.
+          </p>
         </CardContent>
       </Card>
 
@@ -335,15 +355,15 @@ export default function SalespersonMappingPage() {
                   {mapping.status === 'MATCHED' && (
                     <Badge variant="success" className="gap-1">
                       <CheckCircle className="h-3 w-3" />
-                      {mapping.matchType === 'AUTO_EMAIL' && 'Auto-matched (Email)'}
-                      {mapping.matchType === 'AUTO_NAME' && 'Auto-matched (Name)'}
+                      {mapping.matchType === 'AUTO_EMAIL' && 'Matched by Email'}
                       {mapping.matchType === 'MANUAL' && 'Manually Mapped'}
                     </Badge>
                   )}
-                  {mapping.status === 'PENDING' && (
-                    <Badge variant="secondary" className="gap-1">
-                      <AlertCircle className="h-3 w-3" />
-                      Pending
+                  {mapping.status === 'PLACEHOLDER' && (
+                    <Badge className="gap-1 bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30">
+                      <UserPlus className="h-3 w-3" />
+                      {mapping.matchType === 'AUTO_PLACEHOLDER' && 'Create Placeholder'}
+                      {mapping.matchType === 'MANUAL' && 'Create Placeholder'}
                     </Badge>
                   )}
                   {mapping.status === 'IGNORED' && (
@@ -356,23 +376,29 @@ export default function SalespersonMappingPage() {
                   {/* User Selection */}
                   {mapping.status !== 'IGNORED' && (
                     <Select
-                      value={mapping.userId || 'none'}
+                      value={mapping.userId || 'placeholder'}
                       onValueChange={(value) =>
-                        handleMapUser(mapping.id, value === 'none' ? null : value)
+                        handleMapUser(mapping.id, value === 'placeholder' ? null : value)
                       }
                     >
-                      <SelectTrigger className="w-[250px]">
-                        <SelectValue placeholder="Select user..." />
+                      <SelectTrigger className="w-[280px]">
+                        <SelectValue placeholder="Select mapping..." />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">
-                          <span className="text-muted-foreground">No mapping</span>
+                        <SelectItem value="placeholder">
+                          <div className="flex items-center gap-2">
+                            <UserPlus className="h-4 w-4 text-blue-600" />
+                            <span>Create Placeholder User</span>
+                          </div>
                         </SelectItem>
                         {availableUsers.map((user) => (
                           <SelectItem key={user.id} value={user.id}>
-                            <div className="flex flex-col">
-                              <span>{getUserDisplayName(user)}</span>
-                              <span className="text-xs text-muted-foreground">{user.email}</span>
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-muted-foreground" />
+                              <div className="flex flex-col">
+                                <span>{getUserDisplayName(user)}</span>
+                                <span className="text-xs text-muted-foreground">{user.email}</span>
+                              </div>
                             </div>
                           </SelectItem>
                         ))}
@@ -429,14 +455,14 @@ export default function SalespersonMappingPage() {
         </Link>
 
         <div className="flex items-center gap-3">
-          {pendingCount > 0 && (
-            <p className="text-sm text-amber-600 dark:text-amber-400">
-              {pendingCount} pending mapping{pendingCount === 1 ? '' : 's'} remaining
+          {mappings.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              {matchedCount} matched, {placeholderCount} placeholder{placeholderCount === 1 ? '' : 's'}, {ignoredCount} ignored
             </p>
           )}
           <Button
             onClick={handleSaveAndContinue}
-            disabled={pendingCount > 0 || saving || mappings.length === 0}
+            disabled={saving || mappings.length === 0}
             className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
           >
             {saving ? (

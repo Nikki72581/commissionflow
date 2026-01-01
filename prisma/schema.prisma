@@ -134,12 +134,14 @@ enum LineFilterMode {
 enum SalespersonMappingStatus {
   PENDING // Needs action from admin
   MATCHED // Successfully mapped to a user
+  PLACEHOLDER // Will create placeholder user on sync
   IGNORED // Admin chose to skip this salesperson
 }
 
 enum SalespersonMatchType {
   AUTO_EMAIL // Matched automatically by email
   AUTO_NAME // Matched automatically by name
+  AUTO_PLACEHOLDER // Will auto-create placeholder user
   MANUAL // Manually selected by admin
   CREATED_NEW // Admin created a new user for this salesperson
 }

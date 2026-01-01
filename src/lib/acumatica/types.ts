@@ -37,6 +37,7 @@ export interface AcumaticaSalesperson {
   SalespersonID: AcumaticaValue<string>;
   Name: AcumaticaValue<string>;
   Email: AcumaticaValue<string | null>;
+  IsActive: AcumaticaValue<boolean>;
 }
 
 export interface AcumaticaBranch {
