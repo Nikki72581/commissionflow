@@ -292,8 +292,29 @@ export default function AcumaticaSetupPage() {
               onChange={(e) => handleInputChange('companyId', e.target.value)}
             />
             <p className="text-sm text-muted-foreground">
-              Your Acumatica tenant/company identifier. Click "Find Company IDs" to see available companies.
+              Your Acumatica tenant/company identifier. Click "Find Company IDs" to try retrieving available companies (may not work on all Acumatica instances).
             </p>
+
+            {/* Show help if fetch fails */}
+            {testResult && !testResult.success && testResult.error?.includes('500') && (
+              <Alert className="border-yellow-500/50 bg-yellow-500/10">
+                <AlertDescription>
+                  <div className="space-y-2">
+                    <p className="font-medium text-sm">Unable to automatically fetch companies.</p>
+                    <p className="text-xs text-muted-foreground">
+                      Common Company ID formats:
+                    </p>
+                    <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
+                      <li>Company name (e.g., "Production", "Test", "Live")</li>
+                      <li>Abbreviated name (e.g., "PROD", "DEV", "QA")</li>
+                      <li>Your organization name</li>
+                      <li>Check your Acumatica login screen for the company dropdown</li>
+                      <li>Ask your Acumatica administrator for the tenant name</li>
+                    </ul>
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Show available companies */}
             {availableCompanies && availableCompanies.length > 0 && (

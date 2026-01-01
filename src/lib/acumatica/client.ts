@@ -96,18 +96,26 @@ export class AcumaticaClient {
           error = { message: errorText || 'Login failed' };
         }
 
-        // Provide helpful error messages based on status code
+        // Provide helpful error messages based on status code and error details
         let helpMessage = '';
-        if (loginResponse.status === 400) {
+        const exceptionMsg = error.exceptionMessage || '';
+
+        if (exceptionMsg.includes('concurrent API logins')) {
+          helpMessage = ' Your user has too many active API sessions. Log out of Acumatica or wait for old sessions to expire, or ask your admin to increase the API login limit in Users (SM201010).';
+        } else if (loginResponse.status === 400) {
           helpMessage = ' Possible issues: Wrong username/password, or company ID not found.';
         } else if (loginResponse.status === 401) {
           helpMessage = ' Check username and password are correct.';
         } else if (loginResponse.status === 403) {
           helpMessage = ' User may not have permissions or account is locked.';
+        } else if (loginResponse.status === 500 && exceptionMsg) {
+          helpMessage = ` ${exceptionMsg}`;
         }
 
+        const displayMessage = error.exceptionMessage || error.message || errorText || 'Authentication failed';
+
         throw new AcumaticaAPIError(
-          `Login failed (${loginResponse.status}): ${error.message || errorText || 'Authentication failed'}.${helpMessage}`,
+          `Login failed (${loginResponse.status}): ${displayMessage}.${helpMessage}`,
           loginResponse.status,
           error
         );
@@ -196,14 +204,23 @@ export class AcumaticaClient {
 
       if (!loginResponse.ok) {
         const errorText = await loginResponse.text();
-        console.error('[Acumatica Client] Login failed:', {
+        console.error('[Acumatica Client] Login without company failed:', {
           status: loginResponse.status,
           statusText: loginResponse.statusText,
           responseBody: errorText,
+          responseHeaders: Object.fromEntries(loginResponse.headers.entries()),
         });
 
+        let errorDetails = '';
+        try {
+          const parsed = JSON.parse(errorText);
+          errorDetails = parsed.message || parsed.error || errorText;
+        } catch {
+          errorDetails = errorText;
+        }
+
         throw new AcumaticaAPIError(
-          `Login failed (${loginResponse.status}): Unable to authenticate to list companies. Check username and password.`,
+          `Login failed (${loginResponse.status}): ${errorDetails || 'Unable to authenticate without company. Your Acumatica instance may require a company ID to be specified.'}`,
           loginResponse.status
         );
       }
