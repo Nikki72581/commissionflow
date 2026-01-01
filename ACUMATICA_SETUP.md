@@ -36,10 +36,9 @@ Add the following to your `.env.local` file:
 ENCRYPTION_KEY=yWIbfcIuVyoWfvLTYDAmidBMNZyFlnLZ2+l/PSu7SMI=
 ```
 
-**IMPORTANT**: Use a unique key for production! Generate a new one with:
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
-```
+**IMPORTANT**:
+- Use a unique key for production! Generate a new one with the command above
+- **You MUST restart your dev server after adding this**
 
 ### Step 2: Run Database Migration
 
@@ -49,6 +48,19 @@ Apply the new database schema:
 npx prisma migrate dev --name add_acumatica_integration
 ```
 
+**If you get errors about unique constraints:**
+```sql
+-- Your existing data conflicts with new unique constraints
+-- Option 1: Reset database (WARNING: loses all data)
+npx prisma migrate reset
+
+-- Option 2: Fix constraints manually (run in database)
+UPDATE clients SET external_id = NULL WHERE external_system IS NULL;
+UPDATE projects SET external_id = NULL WHERE external_system IS NULL;
+UPDATE sales_transactions SET external_id = NULL WHERE external_system IS NULL;
+-- Then run migrate dev again
+```
+
 This will create the necessary tables:
 - `acumatica_integrations`
 - `acumatica_salesperson_mappings`
@@ -56,14 +68,25 @@ This will create the necessary tables:
 
 And add integration tracking fields to existing tables.
 
-### Step 3: Regenerate Prisma Client (Already Done)
+### Step 3: Regenerate Prisma Client
 
-The Prisma client has already been regenerated with:
+**CRITICAL:** You must regenerate the Prisma client after migration:
+
 ```bash
 npx prisma generate
 ```
 
-### Step 4: Test the Connection
+### Step 4: Restart Development Server
+
+**CRITICAL:** You must restart your dev server:
+
+```bash
+# Press Ctrl+C to stop the current server
+# Then restart:
+npm run dev
+```
+
+### Step 5: Test the Connection
 
 1. Start your development server:
    ```bash

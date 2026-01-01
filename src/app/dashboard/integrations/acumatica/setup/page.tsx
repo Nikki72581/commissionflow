@@ -56,18 +56,42 @@ export default function AcumaticaSetupPage() {
   };
 
   const handleTestConnection = async () => {
+    console.log('[Client] handleTestConnection called');
     setTesting(true);
     setTestResult(null);
 
     try {
+      console.log('[Client] Testing connection with:', {
+        instanceUrl: formData.instanceUrl,
+        apiVersion: formData.apiVersion,
+        companyId: formData.companyId,
+        username: formData.username,
+        // Don't log password
+      });
+
+      console.log('[Client] Calling testAcumaticaConnection...');
       const result = await testAcumaticaConnection(formData);
+      console.log('[Client] Test result received:', result);
+
+      if (!result) {
+        console.error('[Client] Result is null or undefined');
+        setTestResult({
+          success: false,
+          error: 'No response from server',
+        });
+        return;
+      }
+
       setTestResult(result);
+      console.log('[Client] Test result set in state');
     } catch (error) {
+      console.error('[Client] Test connection error:', error);
       setTestResult({
         success: false,
-        error: 'An unexpected error occurred',
+        error: error instanceof Error ? error.message : 'An unexpected error occurred',
       });
     } finally {
+      console.log('[Client] Setting testing to false');
       setTesting(false);
     }
   };

@@ -25,28 +25,46 @@ interface TestConnectionResult {
 export async function testAcumaticaConnection(
   input: TestConnectionInput
 ): Promise<TestConnectionResult> {
+  console.log('[Server] testAcumaticaConnection called');
+
   try {
     const { userId } = await auth();
+    console.log('[Server] Auth userId:', userId ? 'authenticated' : 'not authenticated');
+
     if (!userId) {
+      console.log('[Server] Returning unauthorized');
       return { success: false, error: 'Unauthorized' };
     }
 
     // Validate inputs
+    console.log('[Server] Validating inputs:', {
+      hasInstanceUrl: !!input.instanceUrl,
+      hasApiVersion: !!input.apiVersion,
+      hasCompanyId: !!input.companyId,
+      hasUsername: !!input.username,
+      hasPassword: !!input.password,
+    });
+
     if (!input.instanceUrl || !input.apiVersion || !input.companyId || !input.username || !input.password) {
+      console.log('[Server] Validation failed - missing fields');
       return { success: false, error: 'All fields are required' };
     }
 
     // Ensure URL is valid HTTPS
     try {
       const url = new URL(input.instanceUrl);
+      console.log('[Server] URL protocol:', url.protocol);
       if (url.protocol !== 'https:') {
+        console.log('[Server] URL is not HTTPS');
         return { success: false, error: 'Instance URL must use HTTPS' };
       }
-    } catch {
+    } catch (urlError) {
+      console.error('[Server] URL parsing error:', urlError);
       return { success: false, error: 'Invalid instance URL format' };
     }
 
     // Test the connection
+    console.log('[Server] Calling testConnection...');
     const result = await testConnection(
       input.instanceUrl,
       input.apiVersion,
@@ -55,12 +73,23 @@ export async function testAcumaticaConnection(
       input.password
     );
 
-    return result;
+    console.log('[Server] Test connection result:', JSON.stringify(result));
+
+    // Ensure we return a plain serializable object
+    const returnValue: TestConnectionResult = {
+      success: result.success,
+      error: result.error || undefined,
+    };
+
+    console.log('[Server] Returning:', JSON.stringify(returnValue));
+    return returnValue;
   } catch (error) {
-    console.error('Test connection error:', error);
+    console.error('[Server] Test connection error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    console.log('[Server] Returning error:', errorMessage);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: errorMessage,
     };
   }
 }
@@ -136,6 +165,7 @@ export async function saveAcumaticaConnection(
     );
 
     // Save or update integration
+    // @ts-expect-error - Prisma client will be updated after migration
     const integration = await prisma.acumaticaIntegration.upsert({
       where: { organizationId: organization.id },
       create: {
@@ -192,6 +222,7 @@ export async function getAcumaticaIntegration() {
       return null;
     }
 
+    // @ts-expect-error - Prisma client will be updated after migration
     const integration = await prisma.acumaticaIntegration.findUnique({
       where: { organizationId: organization.id },
     });
