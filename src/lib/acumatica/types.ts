@@ -15,9 +15,9 @@ export interface AcumaticaInvoice {
   CustomerID: AcumaticaValue<string>;
   Amount: AcumaticaValue<number>;
   DocTotal: AcumaticaValue<number>;
-  SalespersonID: AcumaticaValue<string>;
-  Branch?: AcumaticaValue<string>; // Optional - not available in all Acumatica versions
   Details: AcumaticaInvoiceLine[];
+  Commissions?: AcumaticaInvoiceCommissions; // Expanded - contains salesperson data
+  FinancialDetails?: AcumaticaInvoiceFinancialDetails; // Expanded - contains branch data
 }
 
 export interface AcumaticaInvoiceLine {
@@ -29,6 +29,25 @@ export interface AcumaticaInvoiceLine {
   Account: AcumaticaValue<string>;
   Qty: AcumaticaValue<number>;
   UnitPrice: AcumaticaValue<number>;
+}
+
+export interface AcumaticaInvoiceCommissions {
+  CommissionAmount?: AcumaticaValue<number>;
+  SalesPersons?: AcumaticaSalesPersonDetail[];
+  TotalCommissionableAmount?: AcumaticaValue<number>;
+}
+
+export interface AcumaticaSalesPersonDetail {
+  CommissionableAmount?: AcumaticaValue<number>;
+  CommissionAmount?: AcumaticaValue<number>;
+  CommissionPercent?: AcumaticaValue<number>;
+  SalespersonID: AcumaticaValue<string>;
+}
+
+export interface AcumaticaInvoiceFinancialDetails {
+  BatchNbr?: AcumaticaValue<string>;
+  Branch?: AcumaticaValue<string>;
+  CustomerTaxZone?: AcumaticaValue<string>;
 }
 
 export interface AcumaticaSalesperson {

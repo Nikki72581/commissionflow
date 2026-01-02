@@ -430,7 +430,14 @@ async function buildTransactionUser({
   invoice: AcumaticaInvoice
   salespersonMap: Map<string, User>
 }) {
-  const salespersonId = invoice.SalespersonID?.value
+  // Salesperson data is nested in Commissions.SalesPersons array
+  const salespersons = invoice.Commissions?.SalesPersons
+  if (!salespersons || salespersons.length === 0) {
+    return null
+  }
+
+  // Use the first salesperson if multiple exist
+  const salespersonId = salespersons[0]?.SalespersonID?.value
   if (!salespersonId) {
     return null
   }
@@ -617,7 +624,7 @@ export async function syncAcumaticaInvoices() {
         const baseExternalData = {
           externalInvoiceRef: invoice.ReferenceNbr?.value,
           externalInvoiceDate: invoiceDate,
-          externalBranch: invoice.Branch?.value,
+          externalBranch: invoice.FinancialDetails?.Branch?.value,
         }
 
         if (integration.importLevel === 'LINE_LEVEL') {

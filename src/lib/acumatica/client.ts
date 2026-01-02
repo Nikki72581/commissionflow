@@ -474,9 +474,9 @@ export class AcumaticaClient {
 
     const params: Record<string, string> = {
       $select:
-        'ReferenceNbr,Type,Status,Date,CustomerID,SalespersonID',
+        'ReferenceNbr,Type,Status,Date,CustomerID',
       $expand:
-        'Details',
+        'Details,Commissions,FinancialDetails',
       $filter: filterParts.join(' and '),
     };
 
