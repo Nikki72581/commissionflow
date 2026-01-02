@@ -682,8 +682,8 @@ export async function syncAcumaticaInvoices() {
                 externalQuantity: integration.storeQtyAndPrice ? line.Qty?.value : null,
                 externalUnitPrice: integration.storeQtyAndPrice ? line.UnitPrice?.value : null,
                 rawExternalData: integration.storeQtyAndPrice || integration.storeItemDescription
-                  ? line
-                  : null,
+                  ? (line ?? undefined)
+                  : undefined,
               },
             })
 
