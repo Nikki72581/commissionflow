@@ -432,19 +432,35 @@ async function buildTransactionUser({
   invoice: AcumaticaInvoice
   salespersonMap: Map<string, User>
 }) {
+  const invoiceRef = invoice.ReferenceNbr?.value || 'Unknown'
+
   // Salesperson data is nested in Commissions.SalesPersons array
   const salespersons = invoice.Commissions?.SalesPersons
   if (!salespersons || salespersons.length === 0) {
+    console.log(`[${invoiceRef}] No salespersons found in invoice.Commissions.SalesPersons`)
+    console.log(`[${invoiceRef}] Invoice Commissions structure:`, JSON.stringify(invoice.Commissions, null, 2))
     return null
   }
 
   // Use the first salesperson if multiple exist
   const salespersonId = salespersons[0]?.SalespersonID?.value
   if (!salespersonId) {
+    console.log(`[${invoiceRef}] SalespersonID is null or undefined`)
+    console.log(`[${invoiceRef}] First salesperson data:`, JSON.stringify(salespersons[0], null, 2))
     return null
   }
 
-  return salespersonMap.get(salespersonId) ?? null
+  console.log(`[${invoiceRef}] Looking for SalespersonID: "${salespersonId}"`)
+  console.log(`[${invoiceRef}] Available salesperson IDs in map:`, Array.from(salespersonMap.keys()))
+
+  const user = salespersonMap.get(salespersonId)
+  if (!user) {
+    console.log(`[${invoiceRef}] No user found for SalespersonID: "${salespersonId}"`)
+  } else {
+    console.log(`[${invoiceRef}] Found user:`, { id: user.id, email: user.email, salespersonId: user.salespersonId })
+  }
+
+  return user ?? null
 }
 
 function filterInvoiceLines(lines: AcumaticaInvoiceLine[], mode: string, values: string[]) {
@@ -531,7 +547,15 @@ export async function syncAcumaticaInvoices() {
       },
     })
 
+    console.log(`[Sync] Found ${placeholderMappings.length} placeholder mappings without users`)
     if (placeholderMappings.length > 0) {
+      console.log('[Sync] Placeholder mappings:', placeholderMappings.map(m => ({
+        id: m.id,
+        salespersonId: m.acumaticaSalespersonId,
+        name: m.acumaticaSalespersonName,
+        email: m.acumaticaEmail
+      })))
+
       const createdUsers = await prisma.$transaction(
         placeholderMappings.map((mapping) =>
           prisma.user.create({
@@ -550,6 +574,8 @@ export async function syncAcumaticaInvoices() {
         )
       )
 
+      console.log(`[Sync] Created ${createdUsers.length} placeholder users`)
+
       await Promise.all(
         placeholderMappings.map((mapping, index) =>
           prisma.acumaticaSalespersonMapping.update({
@@ -561,6 +587,8 @@ export async function syncAcumaticaInvoices() {
           })
         )
       )
+
+      console.log('[Sync] Updated placeholder mappings with user IDs')
     }
 
     const salespersonMap = new Map<string, User>()
@@ -573,8 +601,18 @@ export async function syncAcumaticaInvoices() {
       select: {
         acumaticaSalespersonId: true,
         userId: true,
+        status: true,
+        matchType: true,
       },
     })
+
+    console.log(`[Sync] Found ${mappingsWithUsers.length} salesperson mappings with users`)
+    console.log('[Sync] Mappings:', mappingsWithUsers.map(m => ({
+      salespersonId: m.acumaticaSalespersonId,
+      userId: m.userId,
+      status: m.status,
+      matchType: m.matchType
+    })))
 
     const mappedUserIds = mappingsWithUsers
       .map((mapping) => mapping.userId)
@@ -583,6 +621,14 @@ export async function syncAcumaticaInvoices() {
     const mappedUsers = await prisma.user.findMany({
       where: { id: { in: mappedUserIds } },
     })
+
+    console.log(`[Sync] Found ${mappedUsers.length} users for mappings`)
+    console.log('[Sync] Users:', mappedUsers.map(u => ({
+      id: u.id,
+      email: u.email,
+      salespersonId: u.salespersonId,
+      isPlaceholder: u.isPlaceholder
+    })))
 
     const mappedUserLookup = new Map(mappedUsers.map((mappedUser) => [mappedUser.id, mappedUser]))
 
@@ -594,6 +640,9 @@ export async function syncAcumaticaInvoices() {
         }
       }
     })
+
+    console.log(`[Sync] Built salesperson map with ${salespersonMap.size} entries`)
+    console.log('[Sync] Salesperson map keys:', Array.from(salespersonMap.keys()))
 
     const clientCache = new Map<string, Client>()
     const projectCache = new Map<string, Project>()
@@ -617,7 +666,72 @@ export async function syncAcumaticaInvoices() {
     for (const invoice of invoices) {
       const invoiceRef = invoice.ReferenceNbr?.value || 'Unknown'
       try {
-        const transactionUser = await buildTransactionUser({ invoice, salespersonMap })
+        let transactionUser = await buildTransactionUser({ invoice, salespersonMap })
+
+        // If no user found, check if we can create a mapping on the fly
+        if (!transactionUser) {
+          const salespersons = invoice.Commissions?.SalesPersons
+          const salespersonId = salespersons?.[0]?.SalespersonID?.value
+
+          if (salespersonId) {
+            console.log(`[${invoiceRef}] No existing mapping for ${salespersonId}, creating on-the-fly...`)
+
+            // Check if a mapping exists but wasn't loaded (e.g., IGNORED status)
+            const existingMapping = await prisma.acumaticaSalespersonMapping.findUnique({
+              where: {
+                integrationId_acumaticaSalespersonId: {
+                  integrationId: integration.id,
+                  acumaticaSalespersonId: salespersonId,
+                },
+              },
+            })
+
+            if (existingMapping && existingMapping.status === 'IGNORED') {
+              console.log(`[${invoiceRef}] Salesperson ${salespersonId} is IGNORED, skipping invoice`)
+              summary.invoicesSkipped += 1
+              skipped.push({ invoiceRef, reason: 'Salesperson is ignored' })
+              continue
+            }
+
+            if (!existingMapping) {
+              // Create a new mapping and placeholder user
+              console.log(`[${invoiceRef}] Creating new mapping for ${salespersonId}`)
+
+              const placeholderUser = await prisma.user.create({
+                data: {
+                  email: `${salespersonId.toLowerCase()}@placeholder.local`,
+                  firstName: salespersonId,
+                  lastName: null,
+                  role: 'SALESPERSON',
+                  organizationId,
+                  isPlaceholder: true,
+                  clerkId: null,
+                  salespersonId: salespersonId,
+                  invitedAt: null,
+                },
+              })
+
+              await prisma.acumaticaSalespersonMapping.create({
+                data: {
+                  integrationId: integration.id,
+                  acumaticaSalespersonId: salespersonId,
+                  acumaticaSalespersonName: salespersonId,
+                  acumaticaEmail: null,
+                  userId: placeholderUser.id,
+                  status: 'PLACEHOLDER',
+                  matchType: 'AUTO_PLACEHOLDER',
+                },
+              })
+
+              // Add to the map so subsequent invoices can use it
+              salespersonMap.set(salespersonId, placeholderUser)
+              transactionUser = placeholderUser
+
+              console.log(`[${invoiceRef}] Created placeholder user for ${salespersonId}`)
+            }
+          }
+        }
+
         if (!transactionUser) {
           summary.invoicesSkipped += 1
           skipped.push({ invoiceRef, reason: 'No mapped salesperson found' })
