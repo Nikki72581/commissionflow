@@ -102,6 +102,7 @@ export default async function IntegrationsPage() {
   // Verify admin access
   await requireAdmin()
 
+  const acumaticaIntegration = await getAcumaticaIntegration()
   const integrations = await getIntegrations()
   const connectedCount = integrations.filter(i => i.status === 'connected').length
   const totalIntegrations = integrations.length
@@ -117,6 +118,19 @@ export default async function IntegrationsPage() {
             Connect your accounting systems to automate commission calculations
           </p>
         </div>
+        {acumaticaIntegration && (
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full"
+                style={{ backgroundColor: acumaticaIntegration.status === 'ACTIVE' ? 'rgba(16,185,129,1)' : 'rgba(107,114,128,1)' }}
+              />
+              <div className="text-sm text-muted-foreground">
+                Acumatica: {acumaticaIntegration.status === 'ACTIVE' ? 'Connected' : acumaticaIntegration.status}
+              </div>
+            </div>
+            <AcumaticaIntegrationActions setupUrl="/dashboard/integrations/acumatica/setup" />
+          </div>
+        )}
       </div>
 
       {/* Stats Overview */}
