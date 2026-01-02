@@ -65,11 +65,12 @@ function getTransactionType(docType: string) {
 }
 
 function getInvoiceAmount(invoice: AcumaticaInvoice, amountField: string) {
-  if (amountField === 'DOC_TOTAL') return invoice.DocTotal.value
-  if (amountField === 'LINES_TOTAL') {
-    return (invoice.Details ?? []).reduce((sum, line) => sum + (line.Amount?.value ?? 0), 0)
+  // Always calculate from line items since Amount and DocTotal fields may not be available
+  if (amountField === 'LINES_TOTAL' || amountField === 'DOC_TOTAL') {
+    return (invoice.Details ?? []).reduce((sum, line) => sum + (line.ExtendedPrice?.value ?? line.Amount?.value ?? 0), 0)
   }
-  return invoice.Amount.value
+  // Default to sum of line amounts
+  return (invoice.Details ?? []).reduce((sum, line) => sum + (line.ExtendedPrice?.value ?? line.Amount?.value ?? 0), 0)
 }
 
 function getLineAmount(line: AcumaticaInvoiceLine, amountField: string) {
