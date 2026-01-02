@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, XCircle, ArrowRight, Search } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, ArrowRight, Search, Pencil } from 'lucide-react';
 import { testAcumaticaConnection, saveAcumaticaConnection, listAcumaticaCompanies, getAcumaticaIntegration } from '@/actions/integrations/acumatica/connection';
 
 const API_VERSIONS = [
@@ -33,6 +33,7 @@ const API_VERSIONS = [
 export default function AcumaticaSetupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     instanceUrl: '',
     apiVersion: '24.200.001',
@@ -102,6 +103,11 @@ export default function AcumaticaSetupPage() {
     if (['instanceUrl', 'apiVersion', 'username', 'password'].includes(field)) {
       setAvailableCompanies(null);
     }
+  };
+
+  const handleEditCredentials = () => {
+    setIsEditing(true);
+    setTestResult(null);
   };
 
   const handleFetchCompanies = async () => {
@@ -228,6 +234,8 @@ export default function AcumaticaSetupPage() {
     formData.password;
 
   const canProceed = testResult?.success === true;
+  const credentialsSaved = testResult?.success && !formData.username && !formData.password;
+  const fieldsDisabled = credentialsSaved && !isEditing;
 
   if (loading) {
     return (
@@ -257,13 +265,52 @@ export default function AcumaticaSetupPage() {
         />
       </div>
 
+      {/* Credentials Already Saved Banner */}
+      {testResult?.success && !formData.username && !formData.password && (
+        <Alert className="border-emerald-500/50 bg-emerald-500/10">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <div className="font-semibold text-emerald-900 dark:text-emerald-100 mb-1">
+                Connection Configured
+              </div>
+              <AlertDescription className="text-emerald-800 dark:text-emerald-200">
+                Your Acumatica credentials are already saved and verified. You can proceed to map your salespeople.
+              </AlertDescription>
+            </div>
+            <Button
+              onClick={() => router.push('/dashboard/integrations/acumatica/setup/salespeople')}
+              className="ml-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 flex-shrink-0"
+            >
+              Continue to Salespeople Mapping
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
+        </Alert>
+      )}
+
       <Card className="border-purple-500/20">
         <CardHeader>
-          <CardTitle>Connection Settings</CardTitle>
-          <CardDescription>
-            Enter your Acumatica instance details. You can find these in your
-            Acumatica admin panel.
-          </CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle>Connection Settings</CardTitle>
+              <CardDescription>
+                Enter your Acumatica instance details. You can find these in your
+                Acumatica admin panel.
+              </CardDescription>
+            </div>
+            {credentialsSaved && !isEditing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditCredentials}
+                className="gap-2"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Instance URL */}
@@ -277,6 +324,7 @@ export default function AcumaticaSetupPage() {
               placeholder="https://yourcompany.acumatica.com"
               value={formData.instanceUrl}
               onChange={(e) => handleInputChange('instanceUrl', e.target.value)}
+              disabled={fieldsDisabled}
               className="font-mono"
             />
             <p className="text-sm text-muted-foreground">
@@ -292,8 +340,9 @@ export default function AcumaticaSetupPage() {
             <Select
               value={formData.apiVersion}
               onValueChange={(value) => handleInputChange('apiVersion', value)}
+              disabled={fieldsDisabled}
             >
-              <SelectTrigger>
+              <SelectTrigger disabled={fieldsDisabled}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -321,6 +370,7 @@ export default function AcumaticaSetupPage() {
                 size="sm"
                 onClick={handleFetchCompanies}
                 disabled={
+                  fieldsDisabled ||
                   !formData.instanceUrl ||
                   !formData.apiVersion ||
                   !formData.username ||
@@ -347,6 +397,7 @@ export default function AcumaticaSetupPage() {
               placeholder="MYCOMPANY"
               value={formData.companyId}
               onChange={(e) => handleInputChange('companyId', e.target.value)}
+              disabled={fieldsDisabled}
             />
             <p className="text-sm text-muted-foreground">
               Your Acumatica tenant/company identifier. Click "Find Company IDs" to try retrieving available companies (may not work on all Acumatica instances).
@@ -410,12 +461,15 @@ export default function AcumaticaSetupPage() {
             <Input
               id="username"
               autoComplete="username"
-              placeholder="admin"
+              placeholder={fieldsDisabled ? '••••••••' : 'admin'}
               value={formData.username}
               onChange={(e) => handleInputChange('username', e.target.value)}
+              disabled={fieldsDisabled}
             />
             <p className="text-sm text-muted-foreground">
-              API user with access to Sales Invoice, Salesperson, and Customer endpoints
+              {fieldsDisabled
+                ? 'Username is securely saved'
+                : 'API user with access to Sales Invoice, Salesperson, and Customer endpoints'}
             </p>
           </div>
 
@@ -428,11 +482,15 @@ export default function AcumaticaSetupPage() {
               id="password"
               type="password"
               autoComplete="current-password"
+              placeholder={fieldsDisabled ? '••••••••' : ''}
               value={formData.password}
               onChange={(e) => handleInputChange('password', e.target.value)}
+              disabled={fieldsDisabled}
             />
             <p className="text-sm text-muted-foreground">
-              Password will be encrypted and stored securely
+              {fieldsDisabled
+                ? 'Password is securely encrypted and saved'
+                : 'Password will be encrypted and stored securely'}
             </p>
           </div>
 
@@ -467,7 +525,7 @@ export default function AcumaticaSetupPage() {
           <div className="flex gap-3 pt-4">
             <Button
               onClick={handleTestConnection}
-              disabled={!isFormValid || testing}
+              disabled={fieldsDisabled || !isFormValid || testing}
               variant="outline"
               className="flex-1"
             >
@@ -483,7 +541,7 @@ export default function AcumaticaSetupPage() {
 
             <Button
               onClick={handleSaveAndContinue}
-              disabled={!canProceed || saving}
+              disabled={(!canProceed && !credentialsSaved) || saving}
               className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
             >
               {saving ? (
@@ -521,6 +579,12 @@ export default function AcumaticaSetupPage() {
           <p>
             <strong>Credentials:</strong> We recommend creating a dedicated API user with read-only access to Sales Invoice, Salesperson, and Customer screens
           </p>
+          <div className="pt-3 mt-3 border-t border-blue-500/20">
+            <p className="text-xs">
+              <strong>Version Compatibility:</strong> This integration was developed and tested with Acumatica 2025 R1 (25.101.0153.5).
+              Other versions may have different field availability or API behaviors. If you experience issues, verify your Acumatica version supports the required API endpoints.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

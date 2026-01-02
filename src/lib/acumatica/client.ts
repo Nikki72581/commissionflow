@@ -11,6 +11,25 @@ import {
   InvoiceQueryFilters,
 } from './types';
 
+/**
+ * Acumatica API Client
+ *
+ * IMPORTANT: This integration was developed and tested against Acumatica version 2025 R1 (25.101.0153.5).
+ * Other versions may have different data structures, available fields, or API behaviors.
+ *
+ * Known version-specific considerations:
+ * - Email field availability on Salesperson endpoint may vary
+ * - IsActive field filtering support may differ
+ * - OData query capabilities may change between versions
+ * - Field names and data structures may be modified in different releases
+ *
+ * If connecting to a different Acumatica version, verify:
+ * 1. Available fields on each endpoint (Salesperson, SalesInvoice, Customer, etc.)
+ * 2. OData filter and select query support
+ * 3. Authentication and session management behavior
+ * 4. Response data structures match expected types
+ */
+
 export class AcumaticaAPIError extends Error {
   constructor(
     message: string,
