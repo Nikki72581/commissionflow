@@ -34,6 +34,7 @@ export default function AcumaticaSetupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [formData, setFormData] = useState({
     instanceUrl: '',
     apiVersion: '24.200.001',
@@ -74,6 +75,7 @@ export default function AcumaticaSetupPage() {
             username: '', // Don't pre-fill for security
             password: '', // User needs to re-enter to make changes
           });
+          setIsConnected(integration.status === 'ACTIVE');
 
           // Show info that credentials are saved
           if (integration.encryptedCredentials) {
@@ -264,6 +266,15 @@ export default function AcumaticaSetupPage() {
           style={{ width: '16.67%' }}
         />
       </div>
+
+      {isConnected && (
+        <Alert className="border-emerald-500/30 bg-emerald-500/10">
+          <CheckCircle className="h-4 w-4 text-emerald-600" />
+          <AlertDescription className="text-emerald-700 dark:text-emerald-400">
+            Acumatica is connected. Update credentials if needed or continue setup.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Credentials Already Saved Banner */}
       {testResult?.success && !formData.username && !formData.password && (

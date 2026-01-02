@@ -315,7 +315,7 @@ export async function saveAcumaticaConnection(
         apiVersion: input.apiVersion,
         companyId: input.companyId,
         encryptedCredentials,
-        status: 'INACTIVE', // Not active until fully configured
+        status: 'ACTIVE',
         lastConnectionTest: new Date(),
         // Set default date range (last 30 days to now)
         invoiceStartDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
@@ -325,6 +325,7 @@ export async function saveAcumaticaConnection(
         apiVersion: input.apiVersion,
         companyId: input.companyId,
         encryptedCredentials,
+        status: 'ACTIVE',
         lastConnectionTest: new Date(),
         connectionErrorMessage: null,
       },

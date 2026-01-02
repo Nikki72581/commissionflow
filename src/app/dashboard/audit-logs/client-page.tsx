@@ -94,6 +94,8 @@ const ACTION_LABELS: Record<string, string> = {
   user_role_changed: 'Role Changed',
   user_removed: 'User Removed',
   settings_updated: 'Settings Updated',
+  integration_sync: 'Integration Sync',
+  integration_sync_reverted: 'Integration Sync Reverted',
 }
 
 const ENTITY_TYPE_LABELS: Record<string, string> = {
@@ -105,6 +107,7 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   project: 'Project',
   organization: 'Organization',
   settings: 'Settings',
+  integration: 'Integration',
 }
 
 export default function AuditLogsClient() {

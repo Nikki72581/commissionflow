@@ -27,6 +27,9 @@ export type AuditAction =
   | 'user_removed'
   // Settings actions
   | 'settings_updated'
+  // Integration actions
+  | 'integration_sync'
+  | 'integration_sync_reverted'
 
 export type EntityType = 
   | 'commission'
@@ -37,6 +40,7 @@ export type EntityType =
   | 'project'
   | 'organization'
   | 'settings'
+  | 'integration'
 
 export interface CreateAuditLogParams {
   // Who
