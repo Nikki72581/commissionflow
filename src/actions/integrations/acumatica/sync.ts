@@ -779,10 +779,14 @@ export async function syncAcumaticaInvoices() {
           summary.invoicesSkipped += 1
 
           // Capture debug data for the skip
+          const salespersonOnInvoice = invoice.Commissions?.SalesPersons?.[0]
           const debugData = {
-            commissionsData: invoice.Commissions,
-            salespersons: invoice.Commissions?.SalesPersons,
-            extractedSalespersonId: invoice.Commissions?.SalesPersons?.[0]?.SalespersonID?.value,
+            invoiceSalesperson: salespersonOnInvoice ? {
+              salespersonId: salespersonOnInvoice.SalespersonID?.value,
+              commissionPercent: salespersonOnInvoice.CommissionPercent?.value,
+              commissionAmount: salespersonOnInvoice.CommissionAmount?.value,
+              commissionableAmount: salespersonOnInvoice.CommissionableAmount?.value,
+            } : null,
             availableMappings: await prisma.acumaticaSalespersonMapping.findMany({
               where: { integrationId: integration.id },
               select: {
