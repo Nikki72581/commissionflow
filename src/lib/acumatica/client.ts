@@ -476,7 +476,7 @@ export class AcumaticaClient {
       $select:
         'ReferenceNbr,Type,Status,Date,CustomerID',
       $expand:
-        'Details,Commissions,FinancialDetails',
+        'Details,Commissions/SalesPersons,FinancialDetails',
       $filter: filterParts.join(' and '),
     };
 
