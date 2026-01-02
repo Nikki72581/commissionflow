@@ -517,7 +517,7 @@ export function EnhancedSidebar({
         </div>
       )}
 
-      <div className="flex-1 py-2">
+      <div className="flex-1 overflow-y-auto py-2 scrollbar-hide">
         <nav className="space-y-1 px-2">
           {navigation.map((item) => renderNavItem(item))}
         </nav>

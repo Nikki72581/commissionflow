@@ -522,6 +522,47 @@ export async function syncAcumaticaInvoices() {
       data: { status: 'IN_PROGRESS' },
     })
 
+    // Auto-create placeholder users for any PLACEHOLDER mappings without users
+    const placeholderMappings = await prisma.acumaticaSalespersonMapping.findMany({
+      where: {
+        integrationId: integration.id,
+        status: 'PLACEHOLDER',
+        userId: null,
+      },
+    })
+
+    if (placeholderMappings.length > 0) {
+      const createdUsers = await prisma.$transaction(
+        placeholderMappings.map((mapping) =>
+          prisma.user.create({
+            data: {
+              email: mapping.acumaticaEmail || `${mapping.acumaticaSalespersonId.toLowerCase()}@placeholder.local`,
+              firstName: mapping.acumaticaSalespersonName.split(' ')[0] || null,
+              lastName: mapping.acumaticaSalespersonName.split(' ').slice(1).join(' ') || null,
+              role: 'SALESPERSON',
+              organizationId,
+              isPlaceholder: true,
+              clerkId: null,
+              salespersonId: mapping.acumaticaSalespersonId,
+              invitedAt: null,
+            },
+          })
+        )
+      )
+
+      await Promise.all(
+        placeholderMappings.map((mapping, index) =>
+          prisma.acumaticaSalespersonMapping.update({
+            where: { id: mapping.id },
+            data: {
+              userId: createdUsers[index].id,
+              matchType: 'AUTO_PLACEHOLDER',
+            },
+          })
+        )
+      )
+    }
+
     const salespersonMap = new Map<string, User>()
     const mappingsWithUsers = await prisma.acumaticaSalespersonMapping.findMany({
       where: {
