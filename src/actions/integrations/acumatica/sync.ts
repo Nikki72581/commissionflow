@@ -757,7 +757,7 @@ export async function syncAcumaticaInvoices() {
               integrationId: integration.id,
               syncLogId: syncLog.id,
               ...baseExternalData,
-              rawExternalData: invoice,
+              rawExternalData: JSON.parse(JSON.stringify(invoice)) as Prisma.InputJsonValue,
             },
           })
 
