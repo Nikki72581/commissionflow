@@ -20,7 +20,7 @@ export function AcumaticaIntegrationActions({ setupUrl }: AcumaticaIntegrationAc
   const handleSync = () => {
     startTransition(async () => {
       const result = await syncAcumaticaInvoices()
-      if (result.success) {
+      if (result.success && result.summary) {
         toast({
           title: 'Sync complete',
           description: `Created ${result.summary.salesCreated} sales, ${result.summary.clientsCreated} clients, ${result.summary.projectsCreated} projects.`,
