@@ -261,7 +261,7 @@ async function resolveClient({
 }) {
   const customerId = invoice.CustomerID.value
   let externalId = customerId
-  let customerName = invoice.Customer?.value || customerId
+  let customerName = customerId
 
   if (customerIdSource === 'CUSTOMER_CD') {
     const customer = await acumaticaClient.fetchCustomer(customerId)
@@ -333,7 +333,7 @@ async function resolveProject({
   acumaticaClient: ReturnType<typeof createAcumaticaClient>
   customerExternalId: string
 }) {
-  const projectRef = invoice.Project?.value
+  const projectRef: string | undefined = undefined
 
   if (projectRef) {
     const cacheKey = `${projectRef}-${ACUMATICA_SYSTEM}`
@@ -607,12 +607,6 @@ export async function syncAcumaticaInvoices() {
           customerExternalId,
         })
 
-        if (invoice.Project?.value && !project && integration.projectAutoCreate === false) {
-          summary.invoicesSkipped += 1
-          skipped.push({ invoiceRef, reason: 'Project missing and auto-create is disabled' })
-          continue
-        }
-
         if (projectCreated) {
           summary.projectsCreated += 1
         }
@@ -749,7 +743,7 @@ export async function syncAcumaticaInvoices() {
               userId: transactionUser.id,
               organizationId,
               transactionDate: invoiceDate,
-              description: invoice.Customer?.value || invoiceRef,
+              description: invoiceRef,
               invoiceNumber: invoiceRef,
               sourceType: 'INTEGRATION',
               externalSystem: ACUMATICA_SYSTEM,

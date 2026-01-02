@@ -35,7 +35,7 @@ interface Integration {
   name: string
   description: string
   logo: string
-  status: 'connected' | 'disconnected' | 'error'
+  status: 'connected' | 'disconnected' | 'configured' | 'error'
   lastSync?: string
   features: string[]
   setupUrl?: string
@@ -51,7 +51,7 @@ async function getIntegrations(): Promise<Integration[]> {
       name: 'Acumatica',
       description: 'Cloud-based ERP and accounting software for growing businesses',
       logo: '/logos/acumatica.svg',
-      status: acumaticaIntegration?.status === 'ACTIVE' ? 'connected' : 'disconnected',
+      status: acumaticaIntegration?.status === 'ACTIVE' ? 'connected' : acumaticaIntegration ? 'configured' : 'disconnected',
       lastSync: acumaticaIntegration?.lastSyncAt
         ? new Date(acumaticaIntegration.lastSyncAt).toLocaleString()
         : undefined,
@@ -105,6 +105,7 @@ export default async function IntegrationsPage() {
   const acumaticaIntegration = await getAcumaticaIntegration()
   const integrations = await getIntegrations()
   const connectedCount = integrations.filter(i => i.status === 'connected').length
+  const configuredCount = integrations.filter(i => i.status === 'configured').length
   const totalIntegrations = integrations.length
 
   return (
@@ -162,6 +163,18 @@ export default async function IntegrationsPage() {
         <div className="rounded-lg border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 p-4 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
             <div className="rounded-full bg-blue-500/20 p-3">
+              <Settings className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Configured</p>
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{configuredCount}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-blue-500/20 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 p-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-blue-500/20 p-3">
               <Database className="h-5 w-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
@@ -182,6 +195,8 @@ export default async function IntegrationsPage() {
             className={`border-2 transition-all hover:shadow-lg ${
               integration.status === 'connected'
                 ? 'border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-transparent'
+                : integration.status === 'configured'
+                ? 'border-blue-500/30 bg-gradient-to-br from-blue-500/5 to-transparent'
                 : 'border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-blue-500/5'
             }`}
           >
@@ -210,6 +225,12 @@ export default async function IntegrationsPage() {
                         <Badge variant="success" className="gap-1">
                           <CheckCircle className="h-3 w-3" />
                           Connected
+                        </Badge>
+                      )}
+                      {integration.status === 'configured' && (
+                        <Badge className="gap-1 bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/30">
+                          <Settings className="h-3 w-3" />
+                          Configured
                         </Badge>
                       )}
                       {integration.status === 'disconnected' && !integration.comingSoon && (
@@ -249,6 +270,14 @@ export default async function IntegrationsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                {/* Configuration Info */}
+                {integration.status === 'configured' && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg bg-blue-500/10 p-3 border border-blue-500/20">
+                    <Settings className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <span>Configuration complete. Ready to sync. <span className="font-medium text-blue-700 dark:text-blue-400">Click 'Sync' to import data</span></span>
+                  </div>
+                )}
+
                 {/* Last Sync Info */}
                 {integration.status === 'connected' && integration.lastSync && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20">

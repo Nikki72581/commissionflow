@@ -13,11 +13,9 @@ export interface AcumaticaInvoice {
   Status: AcumaticaValue<string>;
   Date: AcumaticaValue<string>;
   CustomerID: AcumaticaValue<string>;
-  Customer: AcumaticaValue<string>;
   Amount: AcumaticaValue<number>;
   DocTotal: AcumaticaValue<number>;
   SalespersonID: AcumaticaValue<string>;
-  Project: AcumaticaValue<string | null>;
   Branch: AcumaticaValue<string>;
   Details: AcumaticaInvoiceLine[];
 }
