@@ -56,7 +56,7 @@ interface SyncLogDetails {
   clientsCreated: number
   projectsCreated: number
   errorsCount: number
-  skipDetails: Array<{ invoiceRef: string; reason: string }> | null
+  skipDetails: Array<{ invoiceRef: string; reason: string; debugData?: unknown }> | null
   errorDetails: Array<{ invoiceRef: string; error: string }> | null
 }
 
@@ -650,7 +650,7 @@ export async function syncAcumaticaInvoices() {
     const clientPlanCache = new Map<string, (CommissionPlan & { rules: CommissionRule[] }) | null>()
     const orgPlanCache: { value?: (CommissionPlan & { rules: CommissionRule[] }) | null } = {}
 
-    const skipped: Array<{ invoiceRef: string; reason: string }> = []
+    const skipped: Array<{ invoiceRef: string; reason: string; debugData?: unknown }> = []
     const errors: Array<{ invoiceRef: string; error: string }> = []
 
     const summary: SyncSummary = {
@@ -777,7 +777,28 @@ export async function syncAcumaticaInvoices() {
         if (!transactionUser) {
           console.log(`[${invoiceRef}] ✗ SKIPPING: No transaction user after all attempts`)
           summary.invoicesSkipped += 1
-          skipped.push({ invoiceRef, reason: 'No mapped salesperson found' })
+
+          // Capture debug data for the skip
+          const debugData = {
+            commissionsData: invoice.Commissions,
+            salespersons: invoice.Commissions?.SalesPersons,
+            extractedSalespersonId: invoice.Commissions?.SalesPersons?.[0]?.SalespersonID?.value,
+            availableMappings: await prisma.acumaticaSalespersonMapping.findMany({
+              where: { integrationId: integration.id },
+              select: {
+                acumaticaSalespersonId: true,
+                acumaticaSalespersonName: true,
+                status: true,
+                userId: true,
+              },
+            }),
+          }
+
+          skipped.push({
+            invoiceRef,
+            reason: 'No mapped salesperson found',
+            debugData
+          })
           continue
         }
 
@@ -1017,8 +1038,8 @@ export async function syncAcumaticaInvoices() {
         clientsCreated: summary.clientsCreated,
         projectsCreated: summary.projectsCreated,
         errorsCount: summary.errorsCount,
-        skipDetails: skipped,
-        errorDetails: errors,
+        skipDetails: JSON.parse(JSON.stringify(skipped)) as Prisma.InputJsonValue,
+        errorDetails: JSON.parse(JSON.stringify(errors)) as Prisma.InputJsonValue,
         createdRecords: {
           salesCreated: summary.salesCreated,
           clientsCreated: summary.clientsCreated,
@@ -1137,7 +1158,7 @@ export async function getAcumaticaSyncLogs() {
         clientsCreated: log.clientsCreated,
         projectsCreated: log.projectsCreated,
         errorsCount: log.errorsCount,
-        skipDetails: log.skipDetails as Array<{ invoiceRef: string; reason: string }> | null,
+        skipDetails: log.skipDetails as Array<{ invoiceRef: string; reason: string; debugData?: unknown }> | null,
         errorDetails: log.errorDetails as Array<{ invoiceRef: string; error: string }> | null,
       }
     })

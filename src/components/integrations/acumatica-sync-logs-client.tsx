@@ -30,7 +30,7 @@ interface SyncLogEntry {
   clientsCreated: number
   projectsCreated: number
   errorsCount: number
-  skipDetails: Array<{ invoiceRef: string; reason: string }> | null
+  skipDetails: Array<{ invoiceRef: string; reason: string; debugData?: unknown }> | null
   errorDetails: Array<{ invoiceRef: string; error: string }> | null
 }
 
@@ -50,7 +50,7 @@ function SyncLogDetailsView({
   skipDetails,
   errorDetails
 }: {
-  skipDetails: Array<{ invoiceRef: string; reason: string }> | null
+  skipDetails: Array<{ invoiceRef: string; reason: string; debugData?: unknown }> | null
   errorDetails: Array<{ invoiceRef: string; error: string }> | null
 }) {
   const [skipSearchTerm, setSkipSearchTerm] = useState('')
@@ -163,6 +163,16 @@ function SyncLogDetailsView({
                           <div className="text-sm text-muted-foreground mt-1 break-words">
                             {skip.reason}
                           </div>
+                          {skip.debugData && (
+                            <details className="mt-2">
+                              <summary className="cursor-pointer text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                                Show Debug Data
+                              </summary>
+                              <pre className="mt-2 text-xs bg-slate-50 dark:bg-slate-900 p-2 rounded overflow-x-auto max-h-96 overflow-y-auto border border-slate-200 dark:border-slate-800">
+                                {JSON.stringify(skip.debugData as Record<string, unknown>, null, 2)}
+                              </pre>
+                            </details>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -216,78 +226,89 @@ export function AcumaticaSyncLogsClient({ logs }: AcumaticaSyncLogsClientProps) 
   }
 
   return (
-    <div className="space-y-2">
-      {/* Column Headers */}
-      <div className="grid grid-cols-[auto,1fr,1fr,1fr,1fr,1fr,1fr,auto] gap-4 px-4 py-2 text-sm font-medium text-muted-foreground border-b">
-        <div className="w-8"></div>
-        <div>Started</div>
-        <div>Status</div>
-        <div>Triggered By</div>
-        <div>Processed</div>
-        <div>Created</div>
-        <div>Errors</div>
-        <div className="text-right">Actions</div>
-      </div>
-
+    <div className="space-y-1">
       {logs.map((log) => {
-        const createdSummary = `${log.salesCreated} sales / ${log.clientsCreated} clients / ${log.projectsCreated} projects`
-        const processedSummary = `${log.invoicesProcessed}/${log.invoicesFetched} invoices`
         const isExpanded = expandedLogId === log.id
         const hasDetails = (log.skipDetails?.length ?? 0) > 0 || (log.errorDetails?.length ?? 0) > 0
 
         return (
-          <div key={log.id} className="border rounded-lg overflow-hidden">
-            <div className="grid grid-cols-[auto,1fr,1fr,1fr,1fr,1fr,1fr,auto] gap-4 p-4 items-center hover:bg-muted/50 transition-colors">
-              <div className="flex items-center">
-                {hasDetails && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleExpanded(log.id)}
-                    className="h-8 w-8 p-0"
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </Button>
+          <div key={log.id} className="border rounded-lg overflow-hidden hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
+            <button
+              onClick={() => toggleExpanded(log.id)}
+              className="w-full p-3 flex items-center gap-3 hover:bg-muted/50 transition-colors text-left"
+            >
+              {/* Expand Icon */}
+              <div className="flex-shrink-0">
+                {hasDetails ? (
+                  isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  )
+                ) : (
+                  <div className="h-4 w-4" />
                 )}
               </div>
-              <div>
+
+              {/* Status Badge */}
+              <div className="flex-shrink-0">
+                <Badge variant={STATUS_VARIANT[log.status] || 'outline'} className="text-xs">
+                  {log.status}
+                </Badge>
+              </div>
+
+              {/* Date & Time - Compact */}
+              <div className="flex-shrink-0 min-w-[140px]">
                 <div className="text-sm font-medium">
-                  {format(new Date(log.startedAt), 'PPP p')}
+                  {format(new Date(log.startedAt), 'MMM d, yyyy')}
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {log.completedAt
-                    ? `Completed ${format(new Date(log.completedAt), 'p')}`
-                    : 'In progress'}
+                  {format(new Date(log.startedAt), 'h:mm a')}
                 </div>
               </div>
-              <div>
-                <Badge variant={STATUS_VARIANT[log.status] || 'outline'}>{log.status}</Badge>
-              </div>
-              <div>
-                <div className="text-sm">
-                  {log.triggeredBy?.name || log.triggeredBy?.email || 'System'}
+
+              {/* Stats Summary - Compact */}
+              <div className="flex-1 flex items-center gap-4 text-xs">
+                <div>
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">{log.salesCreated}</span>
+                  <span className="text-muted-foreground"> sales</span>
                 </div>
-                <div className="text-xs text-muted-foreground">{log.syncType}</div>
+                <div className="text-muted-foreground">•</div>
+                <div>
+                  <span className="font-medium">{log.invoicesProcessed}</span>
+                  <span className="text-muted-foreground">/{log.invoicesFetched}</span>
+                </div>
+                {log.invoicesSkipped > 0 && (
+                  <>
+                    <div className="text-muted-foreground">•</div>
+                    <div>
+                      <span className="font-medium text-amber-600 dark:text-amber-400">{log.invoicesSkipped}</span>
+                      <span className="text-muted-foreground"> skipped</span>
+                    </div>
+                  </>
+                )}
+                {log.errorsCount > 0 && (
+                  <>
+                    <div className="text-muted-foreground">•</div>
+                    <div>
+                      <span className="font-medium text-red-600 dark:text-red-400">{log.errorsCount}</span>
+                      <span className="text-muted-foreground"> errors</span>
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="text-sm">
-                {processedSummary}
-                <div className="text-xs text-muted-foreground">Skipped: {log.invoicesSkipped}</div>
+
+              {/* User */}
+              <div className="flex-shrink-0 text-xs text-muted-foreground min-w-[100px] text-right">
+                {log.triggeredBy?.name || log.triggeredBy?.email || 'System'}
               </div>
-              <div className="text-sm">{createdSummary}</div>
-              <div className="text-sm">
-                <span className={log.errorsCount > 0 ? 'text-red-600 dark:text-red-400 font-medium' : ''}>
-                  {log.errorsCount}
-                </span>
-              </div>
-              <div className="flex justify-end">
+
+              {/* Actions */}
+              <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="gap-2"
+                  className="gap-1.5 h-7 text-xs"
                   onClick={() => handleUndo(log.id)}
                   disabled={
                     isPending ||
@@ -295,11 +316,11 @@ export function AcumaticaSyncLogsClient({ logs }: AcumaticaSyncLogsClientProps) 
                     !['SUCCESS', 'PARTIAL_SUCCESS'].includes(log.status)
                   }
                 >
-                  {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                  {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
                   Undo
                 </Button>
               </div>
-            </div>
+            </button>
 
             {isExpanded && hasDetails && (
               <div className="border-t bg-muted/30 p-4">
