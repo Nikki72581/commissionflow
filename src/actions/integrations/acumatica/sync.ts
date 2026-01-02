@@ -56,6 +56,8 @@ interface SyncLogDetails {
   clientsCreated: number
   projectsCreated: number
   errorsCount: number
+  skipDetails: Array<{ invoiceRef: string; reason: string }> | null
+  errorDetails: Array<{ invoiceRef: string; error: string }> | null
 }
 
 function getTransactionType(docType: string) {
@@ -937,6 +939,8 @@ export async function getAcumaticaSyncLogs() {
         clientsCreated: log.clientsCreated,
         projectsCreated: log.projectsCreated,
         errorsCount: log.errorsCount,
+        skipDetails: log.skipDetails as Array<{ invoiceRef: string; reason: string }> | null,
+        errorDetails: log.errorDetails as Array<{ invoiceRef: string; error: string }> | null,
       }
     })
 
