@@ -1,5 +1,5 @@
 // src/app/dashboard/layout.tsx
-import { EnhancedSidebar } from '@/components/navigation/enhanced-sidebar'
+import { SidebarWrapper } from '@/components/navigation/sidebar-wrapper'
 import { EnhancedHeader } from '@/components/navigation/enhanced-header'
 import { MobileBottomNav } from '@/components/navigation/mobile-navigation'
 import { getCurrentUserWithOrg } from '@/lib/auth'
@@ -40,10 +40,10 @@ export default async function DashboardLayout({
         notificationCount={pendingCount}
       />
 
-      <div className="flex flex-1">
-        {/* Desktop Sidebar */}
-        <aside className="hidden w-64 border-r md:block">
-          <EnhancedSidebar
+      <div className="flex flex-1 overflow-hidden">
+        {/* Desktop Sidebar - Now sticky and fixed height */}
+        <aside className="hidden border-r md:block md:sticky md:top-0 md:h-[calc(100vh-4rem)] md:overflow-y-auto transition-all duration-300 ease-in-out">
+          <SidebarWrapper
             userRole={userRole as 'ADMIN' | 'SALESPERSON'}
             pendingCount={pendingCount}
             userName={userName}
