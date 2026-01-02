@@ -163,7 +163,7 @@ function SyncLogDetailsView({
                           <div className="text-sm text-muted-foreground mt-1 break-words">
                             {skip.reason}
                           </div>
-                          {skip.debugData && (
+                          {skip.debugData ? (
                             <details className="mt-2">
                               <summary className="cursor-pointer text-xs text-blue-600 dark:text-blue-400 hover:underline">
                                 Show Debug Data
@@ -172,7 +172,7 @@ function SyncLogDetailsView({
                                 {JSON.stringify(skip.debugData as Record<string, unknown>, null, 2)}
                               </pre>
                             </details>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                     </CardContent>
