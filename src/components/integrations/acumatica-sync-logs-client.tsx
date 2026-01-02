@@ -57,7 +57,7 @@ export function AcumaticaSyncLogsClient({ logs }: AcumaticaSyncLogsClientProps) 
   const handleUndo = (logId: string) => {
     startTransition(async () => {
       const result = await undoAcumaticaSync(logId)
-      if (result.success) {
+      if (result.success && result.data) {
         toast({
           title: 'Sync reverted',
           description: `Removed ${result.data.deletedSales} sales, ${result.data.deletedProjects} projects, ${result.data.deletedClients} clients.`,
