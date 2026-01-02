@@ -119,6 +119,13 @@ export async function fetchAcumaticaSalespeople(): Promise<FetchSalespeopleResul
       const salespersonName = salesperson.Name.value;
       const salespersonEmail = salesperson.Email.value;
 
+      console.log('[Fetch Salespeople] Processing salesperson from Acumatica API:', {
+        SalespersonID: salespersonId,
+        Name: salespersonName,
+        Email: salespersonEmail,
+        fullObject: JSON.stringify(salesperson, null, 2)
+      });
+
       const existingMapping = existingMappingsMap.get(salespersonId);
 
       // Auto-match logic

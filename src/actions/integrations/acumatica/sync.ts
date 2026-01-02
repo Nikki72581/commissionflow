@@ -666,6 +666,10 @@ export async function syncAcumaticaInvoices() {
     for (const invoice of invoices) {
       const invoiceRef = invoice.ReferenceNbr?.value || 'Unknown'
       try {
+        // Log the full invoice commissions data for debugging
+        console.log(`\n========== Processing Invoice ${invoiceRef} ==========`)
+        console.log(`[${invoiceRef}] Full Commissions data:`, JSON.stringify(invoice.Commissions, null, 2))
+
         let transactionUser = await buildTransactionUser({ invoice, salespersonMap })
 
         // If no user found, check if we can create a mapping on the fly
@@ -673,8 +677,30 @@ export async function syncAcumaticaInvoices() {
           const salespersons = invoice.Commissions?.SalesPersons
           const salespersonId = salespersons?.[0]?.SalespersonID?.value
 
+          console.log(`[${invoiceRef}] === SALESPERSON MATCHING FAILED ===`)
+          console.log(`[${invoiceRef}] SalesPersons array:`, JSON.stringify(salespersons, null, 2))
+          console.log(`[${invoiceRef}] Extracted SalespersonID: "${salespersonId}"`)
+          console.log(`[${invoiceRef}] Available mappings in database:`)
+
+          // Show what mappings exist for debugging
+          const allMappings = await prisma.acumaticaSalespersonMapping.findMany({
+            where: { integrationId: integration.id },
+            select: {
+              acumaticaSalespersonId: true,
+              acumaticaSalespersonName: true,
+              status: true,
+              userId: true,
+            },
+          })
+          console.log(`[${invoiceRef}] All mappings:`, allMappings.map(m => ({
+            id: m.acumaticaSalespersonId,
+            name: m.acumaticaSalespersonName,
+            status: m.status,
+            hasUser: !!m.userId
+          })))
+
           if (salespersonId) {
-            console.log(`[${invoiceRef}] No existing mapping for ${salespersonId}, creating on-the-fly...`)
+            console.log(`[${invoiceRef}] Attempting to create on-the-fly mapping for: "${salespersonId}"`)
 
             // Check if a mapping exists but wasn't loaded (e.g., IGNORED status)
             const existingMapping = await prisma.acumaticaSalespersonMapping.findUnique({
@@ -686,6 +712,16 @@ export async function syncAcumaticaInvoices() {
               },
             })
 
+            if (existingMapping) {
+              console.log(`[${invoiceRef}] Found existing mapping:`, {
+                id: existingMapping.acumaticaSalespersonId,
+                name: existingMapping.acumaticaSalespersonName,
+                status: existingMapping.status,
+                userId: existingMapping.userId,
+                matchType: existingMapping.matchType
+              })
+            }
+
             if (existingMapping && existingMapping.status === 'IGNORED') {
               console.log(`[${invoiceRef}] Salesperson ${salespersonId} is IGNORED, skipping invoice`)
               summary.invoicesSkipped += 1
@@ -695,7 +731,7 @@ export async function syncAcumaticaInvoices() {
 
             if (!existingMapping) {
               // Create a new mapping and placeholder user
-              console.log(`[${invoiceRef}] Creating new mapping for ${salespersonId}`)
+              console.log(`[${invoiceRef}] No existing mapping found, creating new placeholder for: "${salespersonId}"`)
 
               const placeholderUser = await prisma.user.create({
                 data: {
@@ -727,12 +763,19 @@ export async function syncAcumaticaInvoices() {
               salespersonMap.set(salespersonId, placeholderUser)
               transactionUser = placeholderUser
 
-              console.log(`[${invoiceRef}] Created placeholder user for ${salespersonId}`)
+              console.log(`[${invoiceRef}] ✓ Created placeholder user for ${salespersonId}`)
+            } else {
+              console.log(`[${invoiceRef}] Existing mapping found but userId is null - this shouldn't happen after placeholder creation!`)
             }
+          } else {
+            console.log(`[${invoiceRef}] No SalespersonID found in invoice data`)
           }
+        } else {
+          console.log(`[${invoiceRef}] ✓ Successfully matched to user: ${transactionUser.email}`)
         }
 
         if (!transactionUser) {
+          console.log(`[${invoiceRef}] ✗ SKIPPING: No transaction user after all attempts`)
           summary.invoicesSkipped += 1
           skipped.push({ invoiceRef, reason: 'No mapped salesperson found' })
           continue
