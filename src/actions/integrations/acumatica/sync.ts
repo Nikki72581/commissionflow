@@ -1,0 +1,1054 @@
+'use server'
+
+import { auth } from '@clerk/nextjs/server'
+import { revalidatePath } from 'next/cache'
+import { prisma } from '@/lib/db'
+import { createAcumaticaClient } from '@/lib/acumatica/client'
+import { decryptPasswordCredentials } from '@/lib/acumatica/encryption'
+import { createAuditLog } from '@/lib/audit-log'
+import { calculateNetSalesAmount } from '@/lib/net-sales-calculator'
+import {
+  calculateCommissionWithPrecedence,
+  type CalculationContext,
+  type ScopedCommissionRule,
+} from '@/lib/commission-calculator'
+import type {
+  AcumaticaInvoice,
+  AcumaticaInvoiceLine,
+  InvoiceQueryFilters,
+} from '@/lib/acumatica/types'
+import type { CommissionPlan, CommissionRule, Client, Project, User } from '@prisma/client'
+
+const ACUMATICA_SYSTEM = 'ACUMATICA'
+
+interface SyncSummary {
+  invoicesFetched: number
+  invoicesProcessed: number
+  invoicesSkipped: number
+  salesCreated: number
+  clientsCreated: number
+  projectsCreated: number
+  errorsCount: number
+}
+
+interface SyncLogDetails {
+  id: string
+  syncType: string
+  status: string
+  startedAt: string
+  completedAt: string | null
+  triggeredBy: {
+    id: string
+    name: string | null
+    email: string | null
+  } | null
+  invoicesFetched: number
+  invoicesProcessed: number
+  invoicesSkipped: number
+  salesCreated: number
+  clientsCreated: number
+  projectsCreated: number
+  errorsCount: number
+}
+
+function getTransactionType(docType: string) {
+  if (docType === 'Credit Memo') return 'RETURN'
+  if (docType === 'Debit Memo') return 'ADJUSTMENT'
+  return 'SALE'
+}
+
+function getInvoiceAmount(invoice: AcumaticaInvoice, amountField: string) {
+  if (amountField === 'DOC_TOTAL') return invoice.DocTotal.value
+  if (amountField === 'LINES_TOTAL') {
+    return (invoice.Details ?? []).reduce((sum, line) => sum + (line.Amount?.value ?? 0), 0)
+  }
+  return invoice.Amount.value
+}
+
+function getLineAmount(line: AcumaticaInvoiceLine, amountField: string) {
+  if (amountField === 'AMOUNT') return line.Amount?.value ?? 0
+  return line.ExtendedPrice?.value ?? 0
+}
+
+async function getCurrentUser() {
+  const { userId } = await auth()
+  if (!userId) {
+    throw new Error('Not authenticated')
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId: userId },
+    include: { organization: true },
+  })
+
+  if (!user || !user.organization) {
+    throw new Error('User organization not found')
+  }
+
+  if (user.role !== 'ADMIN') {
+    throw new Error('Only admins can sync integrations')
+  }
+
+  return user
+}
+
+async function resolveCommissionPlan({
+  organizationId,
+  projectId,
+  clientId,
+  projectPlanCache,
+  clientPlanCache,
+  orgPlanCache,
+}: {
+  organizationId: string
+  projectId?: string | null
+  clientId?: string | null
+  projectPlanCache: Map<string, (CommissionPlan & { rules: CommissionRule[] }) | null>
+  clientPlanCache: Map<string, (CommissionPlan & { rules: CommissionRule[] }) | null>
+  orgPlanCache: { value?: (CommissionPlan & { rules: CommissionRule[] }) | null }
+}) {
+  if (projectId) {
+    if (!projectPlanCache.has(projectId)) {
+      const project = await prisma.project.findFirst({
+        where: { id: projectId, organizationId },
+        include: {
+          commissionPlans: {
+            where: { isActive: true },
+            include: { rules: true },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      })
+
+      projectPlanCache.set(projectId, project?.commissionPlans?.[0] ?? null)
+    }
+
+    const plan = projectPlanCache.get(projectId) ?? null
+    if (plan) return plan
+  }
+
+  if (clientId) {
+    if (!clientPlanCache.has(clientId)) {
+      const clientPlan = await prisma.commissionPlan.findFirst({
+        where: {
+          organizationId,
+          isActive: true,
+          project: {
+            clientId,
+          },
+        },
+        include: { rules: true },
+        orderBy: { createdAt: 'desc' },
+      })
+      clientPlanCache.set(clientId, clientPlan ?? null)
+    }
+
+    const plan = clientPlanCache.get(clientId) ?? null
+    if (plan) return plan
+  }
+
+  if (orgPlanCache.value === undefined) {
+    const orgPlan = await prisma.commissionPlan.findFirst({
+      where: { organizationId, isActive: true, projectId: null },
+      include: { rules: true },
+      orderBy: { createdAt: 'desc' },
+    })
+    orgPlanCache.value = orgPlan ?? null
+  }
+
+  return orgPlanCache.value ?? null
+}
+
+async function createCommissionCalculation({
+  transactionId,
+  transactionAmount,
+  transactionDate,
+  projectId,
+  client,
+  userId,
+  organizationId,
+  commissionPlan,
+}: {
+  transactionId: string
+  transactionAmount: number
+  transactionDate: Date
+  projectId?: string | null
+  client?: Client | null
+  userId: string
+  organizationId: string
+  commissionPlan: (CommissionPlan & { rules: CommissionRule[] }) | null
+}) {
+  if (!commissionPlan || commissionPlan.rules.length === 0) {
+    return null
+  }
+
+  const netAmount = await calculateNetSalesAmount(transactionId)
+
+  const context: CalculationContext = {
+    grossAmount: transactionAmount,
+    netAmount,
+    transactionDate,
+    customerId: client?.id,
+    customerTier: client?.tier,
+    projectId: projectId || undefined,
+    productCategoryId: undefined,
+    territoryId: client?.territoryId || undefined,
+    commissionBasis: commissionPlan.commissionBasis,
+  }
+
+  const result = calculateCommissionWithPrecedence(
+    context,
+    commissionPlan.rules as ScopedCommissionRule[]
+  )
+
+  const metadata = {
+    basis: result.basis,
+    basisAmount: result.basisAmount,
+    grossAmount: transactionAmount,
+    netAmount,
+    context: {
+      customerTier: client?.tier,
+      customerId: client?.id,
+      customerName: client?.name,
+      projectId,
+    },
+    selectedRule: result.selectedRule,
+    matchedRules: result.matchedRules,
+    appliedRules: result.appliedRules,
+    calculatedAt: new Date().toISOString(),
+  }
+
+  return prisma.commissionCalculation.create({
+    data: {
+      salesTransactionId: transactionId,
+      userId,
+      commissionPlanId: commissionPlan.id,
+      amount: result.finalAmount,
+      metadata,
+      calculatedAt: new Date(),
+      status: 'PENDING',
+      organizationId,
+    },
+  })
+}
+
+async function resolveClient({
+  integrationId,
+  syncLogId,
+  organizationId,
+  customerIdSource,
+  customerHandling,
+  invoice,
+  clientCache,
+  acumaticaClient,
+}: {
+  integrationId: string
+  syncLogId: string
+  organizationId: string
+  customerIdSource: string
+  customerHandling: string
+  invoice: AcumaticaInvoice
+  clientCache: Map<string, Client>
+  acumaticaClient: ReturnType<typeof createAcumaticaClient>
+}) {
+  const customerId = invoice.CustomerID.value
+  let externalId = customerId
+  let customerName = invoice.Customer?.value || customerId
+
+  if (customerIdSource === 'CUSTOMER_CD') {
+    const customer = await acumaticaClient.fetchCustomer(customerId)
+    externalId = customer.CustomerCD.value
+    customerName = customer.CustomerName.value || customer.CustomerCD.value
+  }
+
+  const cacheKey = `${externalId}-${ACUMATICA_SYSTEM}`
+  if (clientCache.has(cacheKey)) {
+    return { client: clientCache.get(cacheKey)!, created: false, externalId }
+  }
+
+  const existingClient = await prisma.client.findUnique({
+    where: {
+      organizationId_externalId_externalSystem: {
+        organizationId,
+        externalId,
+        externalSystem: ACUMATICA_SYSTEM,
+      },
+    },
+  })
+
+  if (existingClient) {
+    clientCache.set(cacheKey, existingClient)
+    return { client: existingClient, created: false, externalId }
+  }
+
+  if (customerHandling === 'SKIP') {
+    return { client: null, created: false, externalId }
+  }
+
+  const createdClient = await prisma.client.create({
+    data: {
+      name: customerName,
+      organizationId,
+      clientId: externalId,
+      externalId,
+      externalSystem: ACUMATICA_SYSTEM,
+      sourceType: 'INTEGRATION',
+      createdByIntegrationId: integrationId,
+      createdBySyncLogId: syncLogId,
+    },
+  })
+
+  clientCache.set(cacheKey, createdClient)
+  return { client: createdClient, created: true, externalId }
+}
+
+async function resolveProject({
+  integrationId,
+  syncLogId,
+  organizationId,
+  projectAutoCreate,
+  noProjectHandling,
+  invoice,
+  client,
+  projectCache,
+  acumaticaClient,
+  customerExternalId,
+}: {
+  integrationId: string
+  syncLogId: string
+  organizationId: string
+  projectAutoCreate: boolean
+  noProjectHandling: string
+  invoice: AcumaticaInvoice
+  client: Client | null
+  projectCache: Map<string, Project>
+  acumaticaClient: ReturnType<typeof createAcumaticaClient>
+  customerExternalId: string
+}) {
+  const projectRef = invoice.Project?.value
+
+  if (projectRef) {
+    const cacheKey = `${projectRef}-${ACUMATICA_SYSTEM}`
+    if (projectCache.has(cacheKey)) {
+      return { project: projectCache.get(cacheKey)!, created: false }
+    }
+
+    const existingProject = await prisma.project.findUnique({
+      where: {
+        organizationId_externalId_externalSystem: {
+          organizationId,
+          externalId: projectRef,
+          externalSystem: ACUMATICA_SYSTEM,
+        },
+      },
+    })
+
+    if (existingProject) {
+      projectCache.set(cacheKey, existingProject)
+      return { project: existingProject, created: false }
+    }
+
+    if (!projectAutoCreate || !client) {
+      return { project: null, created: false }
+    }
+
+    const projectDetails = await acumaticaClient.fetchProject(projectRef)
+    const projectName = projectDetails.Description.value || projectDetails.ProjectCD.value
+
+    const createdProject = await prisma.project.create({
+      data: {
+        name: projectName,
+        clientId: client.id,
+        organizationId,
+        externalId: projectRef,
+        externalSystem: ACUMATICA_SYSTEM,
+        sourceType: 'INTEGRATION',
+        createdByIntegrationId: integrationId,
+        createdBySyncLogId: syncLogId,
+      },
+    })
+
+    projectCache.set(cacheKey, createdProject)
+    return { project: createdProject, created: true }
+  }
+
+  if (noProjectHandling !== 'DEFAULT_PROJECT' || !client) {
+    return { project: null, created: false }
+  }
+
+  const defaultExternalId = `DEFAULT:${customerExternalId}`
+  const cacheKey = `${defaultExternalId}-${ACUMATICA_SYSTEM}`
+  if (projectCache.has(cacheKey)) {
+    return { project: projectCache.get(cacheKey)!, created: false }
+  }
+
+  const existingDefault = await prisma.project.findUnique({
+    where: {
+      organizationId_externalId_externalSystem: {
+        organizationId,
+        externalId: defaultExternalId,
+        externalSystem: ACUMATICA_SYSTEM,
+      },
+    },
+  })
+
+  if (existingDefault) {
+    projectCache.set(cacheKey, existingDefault)
+    return { project: existingDefault, created: false }
+  }
+
+  const createdDefault = await prisma.project.create({
+    data: {
+      name: `${client.name} - Default Project`,
+      clientId: client.id,
+      organizationId,
+      externalId: defaultExternalId,
+      externalSystem: ACUMATICA_SYSTEM,
+      sourceType: 'INTEGRATION',
+      createdByIntegrationId: integrationId,
+      createdBySyncLogId: syncLogId,
+    },
+  })
+
+  projectCache.set(cacheKey, createdDefault)
+  return { project: createdDefault, created: true }
+}
+
+async function buildTransactionUser({
+  invoice,
+  salespersonMap,
+}: {
+  invoice: AcumaticaInvoice
+  salespersonMap: Map<string, User>
+}) {
+  const salespersonId = invoice.SalespersonID?.value
+  if (!salespersonId) {
+    return null
+  }
+
+  return salespersonMap.get(salespersonId) ?? null
+}
+
+function filterInvoiceLines(lines: AcumaticaInvoiceLine[], mode: string, values: string[]) {
+  if (mode === 'ALL') return lines
+  if (mode === 'ITEM_CLASS') {
+    return lines.filter((line) => values.includes(line.ItemClass?.value))
+  }
+  if (mode === 'GL_ACCOUNT') {
+    return lines.filter((line) => values.includes(line.Account?.value))
+  }
+  return lines
+}
+
+export async function syncAcumaticaInvoices() {
+  let syncLogId: string | null = null
+  let acumaticaClient: ReturnType<typeof createAcumaticaClient> | null = null
+
+  try {
+    const user = await getCurrentUser()
+    const organizationId = user.organizationId
+
+    const integration = await prisma.acumaticaIntegration.findUnique({
+      where: { organizationId },
+    })
+
+    if (!integration) {
+      return { success: false, error: 'Acumatica integration not found' }
+    }
+
+    if (!integration.encryptedCredentials) {
+      return { success: false, error: 'Acumatica credentials are missing' }
+    }
+
+    const credentials = decryptPasswordCredentials(integration.encryptedCredentials)
+    acumaticaClient = createAcumaticaClient({
+      instanceUrl: integration.instanceUrl,
+      apiVersion: integration.apiVersion,
+      companyId: integration.companyId,
+      credentials: {
+        type: 'password',
+        username: credentials.username,
+        password: credentials.password,
+      },
+    })
+
+    const syncLog = await prisma.integrationSyncLog.create({
+      data: {
+        integrationId: integration.id,
+        syncType: 'MANUAL',
+        status: 'STARTED',
+        triggeredById: user.id,
+      },
+    })
+
+    syncLogId = syncLog.id
+
+    await acumaticaClient.authenticate()
+
+    const filters: InvoiceQueryFilters = {
+      startDate: integration.invoiceStartDate,
+      endDate: integration.invoiceEndDate ?? undefined,
+      includeInvoices: integration.includeInvoices,
+      includeCreditMemos: integration.includeCreditMemos,
+      includeDebitMemos: integration.includeDebitMemos,
+      branches:
+        integration.branchFilterMode === 'SELECTED'
+          ? ((integration.selectedBranches as string[]) || [])
+          : [],
+    }
+
+    const invoices = await acumaticaClient.fetchInvoices(filters)
+
+    await prisma.integrationSyncLog.update({
+      where: { id: syncLog.id },
+      data: { status: 'IN_PROGRESS' },
+    })
+
+    const salespersonMap = new Map<string, User>()
+    const mappingsWithUsers = await prisma.acumaticaSalespersonMapping.findMany({
+      where: {
+        integrationId: integration.id,
+        status: { not: 'IGNORED' },
+        userId: { not: null },
+      },
+      select: {
+        acumaticaSalespersonId: true,
+        userId: true,
+      },
+    })
+
+    const mappedUserIds = mappingsWithUsers
+      .map((mapping) => mapping.userId)
+      .filter((id): id is string => Boolean(id))
+
+    const mappedUsers = await prisma.user.findMany({
+      where: { id: { in: mappedUserIds } },
+    })
+
+    const mappedUserLookup = new Map(mappedUsers.map((mappedUser) => [mappedUser.id, mappedUser]))
+
+    mappingsWithUsers.forEach((mapping) => {
+      if (mapping.userId) {
+        const mappedUser = mappedUserLookup.get(mapping.userId)
+        if (mappedUser) {
+          salespersonMap.set(mapping.acumaticaSalespersonId, mappedUser)
+        }
+      }
+    })
+
+    const clientCache = new Map<string, Client>()
+    const projectCache = new Map<string, Project>()
+    const projectPlanCache = new Map<string, (CommissionPlan & { rules: CommissionRule[] }) | null>()
+    const clientPlanCache = new Map<string, (CommissionPlan & { rules: CommissionRule[] }) | null>()
+    const orgPlanCache: { value?: (CommissionPlan & { rules: CommissionRule[] }) | null } = {}
+
+    const skipped: Array<{ invoiceRef: string; reason: string }> = []
+    const errors: Array<{ invoiceRef: string; error: string }> = []
+
+    const summary: SyncSummary = {
+      invoicesFetched: invoices.length,
+      invoicesProcessed: 0,
+      invoicesSkipped: 0,
+      salesCreated: 0,
+      clientsCreated: 0,
+      projectsCreated: 0,
+      errorsCount: 0,
+    }
+
+    for (const invoice of invoices) {
+      const invoiceRef = invoice.ReferenceNbr?.value || 'Unknown'
+      try {
+        const transactionUser = await buildTransactionUser({ invoice, salespersonMap })
+        if (!transactionUser) {
+          summary.invoicesSkipped += 1
+          skipped.push({ invoiceRef, reason: 'No mapped salesperson found' })
+          continue
+        }
+
+        const { client, created: clientCreated, externalId: customerExternalId } = await resolveClient({
+          integrationId: integration.id,
+          syncLogId: syncLog.id,
+          organizationId,
+          customerIdSource: integration.customerIdSource,
+          customerHandling: integration.customerHandling,
+          invoice,
+          clientCache,
+          acumaticaClient,
+        })
+
+        if (!client) {
+          summary.invoicesSkipped += 1
+          skipped.push({ invoiceRef, reason: 'Customer was skipped or not found' })
+          continue
+        }
+
+        if (clientCreated) {
+          summary.clientsCreated += 1
+        }
+
+        const { project, created: projectCreated } = await resolveProject({
+          integrationId: integration.id,
+          syncLogId: syncLog.id,
+          organizationId,
+          projectAutoCreate: integration.projectAutoCreate,
+          noProjectHandling: integration.noProjectHandling,
+          invoice,
+          client,
+          projectCache,
+          acumaticaClient,
+          customerExternalId,
+        })
+
+        if (invoice.Project?.value && !project && integration.projectAutoCreate === false) {
+          summary.invoicesSkipped += 1
+          skipped.push({ invoiceRef, reason: 'Project missing and auto-create is disabled' })
+          continue
+        }
+
+        if (projectCreated) {
+          summary.projectsCreated += 1
+        }
+
+        const transactionType = getTransactionType(invoice.Type?.value)
+        const invoiceDate = new Date(invoice.Date?.value || new Date())
+        const baseExternalData = {
+          externalInvoiceRef: invoice.ReferenceNbr?.value,
+          externalInvoiceDate: invoiceDate,
+          externalBranch: invoice.Branch?.value,
+        }
+
+        if (integration.importLevel === 'LINE_LEVEL') {
+          const filteredLines = filterInvoiceLines(
+            invoice.Details || [],
+            integration.lineFilterMode,
+            (integration.lineFilterValues as string[]) || []
+          )
+
+          if (filteredLines.length === 0) {
+            summary.invoicesSkipped += 1
+            skipped.push({ invoiceRef, reason: 'No invoice lines matched filters' })
+            continue
+          }
+
+          let lineNumber = 0
+          for (const line of filteredLines) {
+            lineNumber += 1
+            const amount = getLineAmount(line, integration.lineAmountField)
+            const normalizedAmount =
+              transactionType === 'RETURN' ? -Math.abs(amount) : amount
+            const externalId = `${invoiceRef}-${lineNumber}`
+
+            const existing = await prisma.salesTransaction.findUnique({
+              where: {
+                organizationId_externalId_externalSystem: {
+                  organizationId,
+                  externalId,
+                  externalSystem: ACUMATICA_SYSTEM,
+                },
+              },
+            })
+
+            if (existing) {
+              summary.invoicesSkipped += 1
+              skipped.push({ invoiceRef, reason: `Line ${lineNumber} already synced` })
+              continue
+            }
+
+            const transaction = await prisma.salesTransaction.create({
+              data: {
+                amount: normalizedAmount,
+                transactionType,
+                projectId: project?.id || null,
+                clientId: project ? null : client.id,
+                userId: transactionUser.id,
+                organizationId,
+                transactionDate: invoiceDate,
+                description: line.Description?.value || invoiceRef,
+                invoiceNumber: invoiceRef,
+                sourceType: 'INTEGRATION',
+                externalSystem: ACUMATICA_SYSTEM,
+                externalId,
+                integrationId: integration.id,
+                syncLogId: syncLog.id,
+                ...baseExternalData,
+                externalLineNumber: lineNumber,
+                externalItemId: integration.storeItemId ? line.InventoryID?.value : null,
+                externalItemDescription: integration.storeItemDescription
+                  ? line.Description?.value
+                  : null,
+                externalItemClass: integration.storeItemClass ? line.ItemClass?.value : null,
+                externalGLAccount: integration.storeGLAccount ? line.Account?.value : null,
+                externalQuantity: integration.storeQtyAndPrice ? line.Qty?.value : null,
+                externalUnitPrice: integration.storeQtyAndPrice ? line.UnitPrice?.value : null,
+                rawExternalData: integration.storeQtyAndPrice || integration.storeItemDescription
+                  ? line
+                  : null,
+              },
+            })
+
+            const commissionPlan = await resolveCommissionPlan({
+              organizationId,
+              projectId: project?.id,
+              clientId: client.id,
+              projectPlanCache,
+              clientPlanCache,
+              orgPlanCache,
+            })
+
+            await createCommissionCalculation({
+              transactionId: transaction.id,
+              transactionAmount: normalizedAmount,
+              transactionDate: invoiceDate,
+              projectId: project?.id,
+              client,
+              userId: transactionUser.id,
+              organizationId,
+              commissionPlan,
+            })
+
+            summary.salesCreated += 1
+          }
+        } else {
+          const amount = getInvoiceAmount(invoice, integration.invoiceAmountField)
+          const normalizedAmount =
+            transactionType === 'RETURN' ? -Math.abs(amount) : amount
+          const externalId = invoiceRef
+
+          const existing = await prisma.salesTransaction.findUnique({
+            where: {
+              organizationId_externalId_externalSystem: {
+                organizationId,
+                externalId,
+                externalSystem: ACUMATICA_SYSTEM,
+              },
+            },
+          })
+
+          if (existing) {
+            summary.invoicesSkipped += 1
+            skipped.push({ invoiceRef, reason: 'Invoice already synced' })
+            continue
+          }
+
+          const transaction = await prisma.salesTransaction.create({
+            data: {
+              amount: normalizedAmount,
+              transactionType,
+              projectId: project?.id || null,
+              clientId: project ? null : client.id,
+              userId: transactionUser.id,
+              organizationId,
+              transactionDate: invoiceDate,
+              description: invoice.Customer?.value || invoiceRef,
+              invoiceNumber: invoiceRef,
+              sourceType: 'INTEGRATION',
+              externalSystem: ACUMATICA_SYSTEM,
+              externalId,
+              integrationId: integration.id,
+              syncLogId: syncLog.id,
+              ...baseExternalData,
+              rawExternalData: invoice,
+            },
+          })
+
+          const commissionPlan = await resolveCommissionPlan({
+            organizationId,
+            projectId: project?.id,
+            clientId: client.id,
+            projectPlanCache,
+            clientPlanCache,
+            orgPlanCache,
+          })
+
+          await createCommissionCalculation({
+            transactionId: transaction.id,
+            transactionAmount: normalizedAmount,
+            transactionDate: invoiceDate,
+            projectId: project?.id,
+            client,
+            userId: transactionUser.id,
+            organizationId,
+            commissionPlan,
+          })
+
+          summary.salesCreated += 1
+        }
+
+        summary.invoicesProcessed += 1
+      } catch (error) {
+        summary.errorsCount += 1
+        errors.push({
+          invoiceRef,
+          error: error instanceof Error ? error.message : 'Sync error',
+        })
+      }
+    }
+
+    summary.invoicesSkipped = skipped.length
+
+    const status =
+      errors.length > 0
+        ? summary.invoicesProcessed > 0
+          ? 'PARTIAL_SUCCESS'
+          : 'FAILED'
+        : 'SUCCESS'
+
+    await prisma.integrationSyncLog.update({
+      where: { id: syncLog.id },
+      data: {
+        status,
+        completedAt: new Date(),
+        invoicesFetched: summary.invoicesFetched,
+        invoicesProcessed: summary.invoicesProcessed,
+        invoicesSkipped: summary.invoicesSkipped,
+        salesCreated: summary.salesCreated,
+        clientsCreated: summary.clientsCreated,
+        projectsCreated: summary.projectsCreated,
+        errorsCount: summary.errorsCount,
+        skipDetails: skipped,
+        errorDetails: errors,
+        createdRecords: {
+          salesCreated: summary.salesCreated,
+          clientsCreated: summary.clientsCreated,
+          projectsCreated: summary.projectsCreated,
+        },
+      },
+    })
+
+    await prisma.acumaticaIntegration.update({
+      where: { id: integration.id },
+      data: {
+        lastSyncAt: new Date(),
+        status: 'ACTIVE',
+      },
+    })
+
+    await createAuditLog({
+      userId: user.id,
+      userName: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
+      userEmail: user.email,
+      action: 'integration_sync',
+      entityType: 'integration',
+      entityId: integration.id,
+      description: `Acumatica sync completed: ${summary.salesCreated} sales created, ${summary.clientsCreated} clients created, ${summary.projectsCreated} projects created`,
+      metadata: {
+        invoicesFetched: summary.invoicesFetched,
+        invoicesProcessed: summary.invoicesProcessed,
+        invoicesSkipped: summary.invoicesSkipped,
+        errorsCount: summary.errorsCount,
+        salesCreated: summary.salesCreated,
+        clientsCreated: summary.clientsCreated,
+        projectsCreated: summary.projectsCreated,
+      },
+      organizationId,
+    })
+
+    revalidatePath('/dashboard/integrations')
+    revalidatePath('/dashboard/sales')
+    revalidatePath('/dashboard/commissions')
+    revalidatePath('/dashboard/integrations/acumatica/sync-logs')
+
+    return { success: true, summary }
+  } catch (error) {
+    if (syncLogId) {
+      await prisma.integrationSyncLog.update({
+        where: { id: syncLogId },
+        data: {
+          status: 'FAILED',
+          completedAt: new Date(),
+        },
+      })
+    }
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to sync Acumatica',
+    }
+  } finally {
+    if (acumaticaClient) {
+      await acumaticaClient.logout()
+    }
+  }
+}
+
+export async function getAcumaticaSyncLogs() {
+  try {
+    const user = await getCurrentUser()
+    const organizationId = user.organizationId
+
+    const integration = await prisma.acumaticaIntegration.findUnique({
+      where: { organizationId },
+    })
+
+    if (!integration) {
+      return { success: false, error: 'Acumatica integration not found' }
+    }
+
+    const logs = await prisma.integrationSyncLog.findMany({
+      where: { integrationId: integration.id },
+      orderBy: { startedAt: 'desc' },
+      take: 25,
+    })
+
+    const userIds = logs
+      .map((log) => log.triggeredById)
+      .filter((id): id is string => Boolean(id))
+
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, firstName: true, lastName: true, email: true },
+    })
+
+    const userMap = new Map(
+      users.map((u) => [u.id, u])
+    )
+
+    const formatted: SyncLogDetails[] = logs.map((log) => {
+      const triggeredBy = log.triggeredById ? userMap.get(log.triggeredById) : null
+      return {
+        id: log.id,
+        syncType: log.syncType,
+        status: log.status,
+        startedAt: log.startedAt.toISOString(),
+        completedAt: log.completedAt ? log.completedAt.toISOString() : null,
+        triggeredBy: triggeredBy
+          ? {
+              id: triggeredBy.id,
+              name: `${triggeredBy.firstName ?? ''} ${triggeredBy.lastName ?? ''}`.trim() || null,
+              email: triggeredBy.email,
+            }
+          : null,
+        invoicesFetched: log.invoicesFetched,
+        invoicesProcessed: log.invoicesProcessed,
+        invoicesSkipped: log.invoicesSkipped,
+        salesCreated: log.salesCreated,
+        clientsCreated: log.clientsCreated,
+        projectsCreated: log.projectsCreated,
+        errorsCount: log.errorsCount,
+      }
+    })
+
+    return { success: true, logs: formatted }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to load sync logs',
+    }
+  }
+}
+
+export async function undoAcumaticaSync(syncLogId: string) {
+  try {
+    const user = await getCurrentUser()
+    const organizationId = user.organizationId
+
+    const syncLog = await prisma.integrationSyncLog.findUnique({
+      where: { id: syncLogId },
+    })
+
+    if (!syncLog) {
+      return { success: false, error: 'Sync log not found' }
+    }
+
+    const integration = await prisma.acumaticaIntegration.findUnique({
+      where: { id: syncLog.integrationId },
+    })
+
+    if (!integration || integration.organizationId !== organizationId) {
+      return { success: false, error: 'Sync log does not belong to your organization' }
+    }
+
+    const transactions = await prisma.salesTransaction.findMany({
+      where: {
+        organizationId,
+        syncLogId: syncLog.id,
+        sourceType: 'INTEGRATION',
+      },
+      select: { id: true, createdAt: true, updatedAt: true },
+    })
+
+    const deletableTransactionIds = transactions
+      .filter((transaction) => transaction.createdAt.getTime() === transaction.updatedAt.getTime())
+      .map((transaction) => transaction.id)
+
+    const skippedTransactions = transactions.length - deletableTransactionIds.length
+
+    const deletedSales = await prisma.salesTransaction.deleteMany({
+      where: { id: { in: deletableTransactionIds } },
+    })
+
+    const projects = await prisma.project.findMany({
+      where: {
+        organizationId,
+        createdBySyncLogId: syncLog.id,
+        sourceType: 'INTEGRATION',
+      },
+      include: { salesTransactions: true },
+    })
+
+    const deletableProjectIds = projects
+      .filter((project) => project.createdAt.getTime() === project.updatedAt.getTime())
+      .filter((project) => project.salesTransactions.length === 0)
+      .map((project) => project.id)
+
+    const deletedProjects = await prisma.project.deleteMany({
+      where: { id: { in: deletableProjectIds } },
+    })
+
+    const clients = await prisma.client.findMany({
+      where: {
+        organizationId,
+        createdBySyncLogId: syncLog.id,
+        sourceType: 'INTEGRATION',
+      },
+      include: { projects: true, salesTransactions: true },
+    })
+
+    const deletableClientIds = clients
+      .filter((client) => client.createdAt.getTime() === client.updatedAt.getTime())
+      .filter((client) => client.projects.length === 0 && client.salesTransactions.length === 0)
+      .map((client) => client.id)
+
+    const deletedClients = await prisma.client.deleteMany({
+      where: { id: { in: deletableClientIds } },
+    })
+
+    await createAuditLog({
+      userId: user.id,
+      userName: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.email,
+      userEmail: user.email,
+      action: 'integration_sync_reverted',
+      entityType: 'integration',
+      entityId: integration.id,
+      description: `Reverted Acumatica sync ${syncLog.id}: ${deletedSales.count} sales removed`,
+      metadata: {
+        deletedSales: deletedSales.count,
+        deletedProjects: deletedProjects.count,
+        deletedClients: deletedClients.count,
+        skippedTransactions,
+      },
+      organizationId,
+    })
+
+    revalidatePath('/dashboard/integrations')
+    revalidatePath('/dashboard/sales')
+    revalidatePath('/dashboard/commissions')
+    revalidatePath('/dashboard/integrations/acumatica/sync-logs')
+
+    return {
+      success: true,
+      data: {
+        deletedSales: deletedSales.count,
+        deletedProjects: deletedProjects.count,
+        deletedClients: deletedClients.count,
+        skippedTransactions,
+      },
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to undo sync',
+    }
+  }
+}

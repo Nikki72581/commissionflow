@@ -4,8 +4,6 @@ import {
   CheckCircle,
   AlertCircle,
   ExternalLink,
-  Settings,
-  RefreshCw,
   Calendar,
   Database,
   Clock
@@ -22,6 +20,7 @@ import {
 import Link from 'next/link'
 import Image from 'next/image'
 import { getAcumaticaIntegration } from '@/actions/integrations/acumatica/connection'
+import { AcumaticaIntegrationActions } from '@/components/integrations/acumatica-integration-actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -211,20 +210,12 @@ export default async function IntegrationsPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {integration.status === 'connected' ? (
-                    <>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <RefreshCw className="h-4 w-4" />
-                        Sync Now
-                      </Button>
-                      <Button variant="outline" size="sm" className="gap-2">
-                        <Settings className="h-4 w-4" />
-                        Configure
-                      </Button>
-                      <Button variant="destructive" size="sm">
-                        Disconnect
-                      </Button>
-                    </>
+                  {integration.status === 'connected' && integration.id === 'acumatica' ? (
+                    <AcumaticaIntegrationActions setupUrl={integration.setupUrl || '/dashboard/integrations/acumatica/setup'} />
+                  ) : integration.status === 'connected' ? (
+                    <Button variant="outline" size="sm" className="gap-2">
+                      Manage
+                    </Button>
                   ) : integration.comingSoon ? (
                     <Button disabled className="gap-2">
                       <Clock className="h-4 w-4" />
