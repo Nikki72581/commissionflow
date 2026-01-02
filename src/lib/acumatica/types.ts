@@ -16,7 +16,7 @@ export interface AcumaticaInvoice {
   Amount: AcumaticaValue<number>;
   DocTotal: AcumaticaValue<number>;
   SalespersonID: AcumaticaValue<string>;
-  Branch: AcumaticaValue<string>;
+  Branch?: AcumaticaValue<string>; // Optional - not available in all Acumatica versions
   Details: AcumaticaInvoiceLine[];
 }
 

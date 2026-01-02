@@ -462,17 +462,19 @@ export class AcumaticaClient {
       filterParts.push(`(${docTypes.join(' or ')})`);
     }
 
-    // Branch filter
-    if (filters.branches && filters.branches.length > 0) {
-      const branchFilters = filters.branches
-        .map((b) => `Branch eq '${b}'`)
-        .join(' or ');
-      filterParts.push(`(${branchFilters})`);
-    }
+    // Branch filter - disabled because Branch field is not available in the SalesInvoice endpoint
+    // Note: If you need branch filtering, you may need to filter the results after fetching them
+    // or check if your Acumatica version has a different field name for branch filtering
+    // if (filters.branches && filters.branches.length > 0) {
+    //   const branchFilters = filters.branches
+    //     .map((b) => `Branch eq '${b}'`)
+    //     .join(' or ');
+    //   filterParts.push(`(${branchFilters})`);
+    // }
 
     const params: Record<string, string> = {
       $select:
-        'ReferenceNbr,Type,Status,Date,CustomerID,SalespersonID,Branch',
+        'ReferenceNbr,Type,Status,Date,CustomerID,SalespersonID',
       $expand:
         'Details',
       $filter: filterParts.join(' and '),
