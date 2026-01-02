@@ -617,7 +617,7 @@ export async function syncAcumaticaInvoices() {
         const baseExternalData = {
           externalInvoiceRef: invoice.ReferenceNbr?.value,
           externalInvoiceDate: invoiceDate,
-          externalBranch: invoice.BranchID?.value,
+          externalBranch: invoice.Branch?.value,
         }
 
         if (integration.importLevel === 'LINE_LEVEL') {
