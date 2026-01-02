@@ -17,7 +17,14 @@ import type {
   AcumaticaInvoiceLine,
   InvoiceQueryFilters,
 } from '@/lib/acumatica/types'
-import type { CommissionPlan, CommissionRule, Client, Project, User } from '@prisma/client'
+import type {
+  CommissionPlan,
+  CommissionRule,
+  Client,
+  Project,
+  User,
+  Prisma,
+} from '@prisma/client'
 
 const ACUMATICA_SYSTEM = 'ACUMATICA'
 
@@ -682,7 +689,9 @@ export async function syncAcumaticaInvoices() {
                 externalQuantity: integration.storeQtyAndPrice ? line.Qty?.value : null,
                 externalUnitPrice: integration.storeQtyAndPrice ? line.UnitPrice?.value : null,
                 rawExternalData: integration.storeQtyAndPrice || integration.storeItemDescription
-                  ? (line ?? undefined)
+                  ? line
+                    ? (JSON.parse(JSON.stringify(line)) as Prisma.InputJsonValue)
+                    : undefined
                   : undefined,
               },
             })
