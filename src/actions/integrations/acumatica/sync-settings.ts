@@ -1,7 +1,7 @@
 'use server';
 
-import { auth } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { auth } from '@clerk/nextjs/server';
+import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 export interface SyncSettingsData {
@@ -51,13 +51,23 @@ export interface SyncSettingsData {
  */
 export async function getSyncSettings() {
   try {
-    const session = await auth();
-    if (!session?.user?.organizationId) {
+    const { userId } = await auth();
+    if (!userId) {
       return { success: false, error: 'Not authenticated' };
     }
 
+    // Get user and organization from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { organizationId: true },
+    });
+
+    if (!user?.organizationId) {
+      return { success: false, error: 'Organization not found' };
+    }
+
     const integration = await prisma.acumaticaIntegration.findUnique({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: user.organizationId },
       select: {
         invoiceStartDate: true,
         invoiceEndDate: true,
@@ -162,9 +172,19 @@ export async function getSyncSettings() {
  */
 export async function saveSyncSettings(data: SyncSettingsData) {
   try {
-    const session = await auth();
-    if (!session?.user?.organizationId) {
+    const { userId } = await auth();
+    if (!userId) {
       return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get user and organization from database
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      select: { organizationId: true },
+    });
+
+    if (!user?.organizationId) {
+      return { success: false, error: 'Organization not found' };
     }
 
     // Validate required fields
@@ -197,12 +217,12 @@ export async function saveSyncSettings(data: SyncSettingsData) {
 
     // Update the integration
     await prisma.acumaticaIntegration.update({
-      where: { organizationId: session.user.organizationId },
+      where: { organizationId: user.organizationId },
       data: {
         invoiceStartDate: new Date(data.invoiceStartDate),
         invoiceEndDate: data.invoiceEndDate ? new Date(data.invoiceEndDate) : null,
         branchFilterMode: data.branchFilterMode,
-        selectedBranches: data.branchFilterMode === 'SELECTED' ? data.selectedBranches : null,
+        selectedBranches: data.branchFilterMode === 'SELECTED' ? data.selectedBranches || [] : [],
         includeInvoices: data.includeInvoices,
         includeCreditMemos: data.includeCreditMemos,
         includeDebitMemos: data.includeDebitMemos,
@@ -214,7 +234,7 @@ export async function saveSyncSettings(data: SyncSettingsData) {
         invoiceAmountField: data.invoiceAmountField,
         lineAmountField: data.lineAmountField,
         lineFilterMode: data.lineFilterMode,
-        lineFilterValues: data.lineFilterMode !== 'ALL' ? data.lineFilterValues : null,
+        lineFilterValues: data.lineFilterMode !== 'ALL' ? data.lineFilterValues || [] : [],
         storeItemId: data.storeItemId,
         storeItemDescription: data.storeItemDescription,
         storeItemClass: data.storeItemClass,
