@@ -131,6 +131,17 @@ enum LineFilterMode {
   GL_ACCOUNT
 }
 
+enum DataSourceType {
+  REST_API // Standard Invoice/SalesInvoice/SalesOrder entities
+  GENERIC_INQUIRY // Custom Generic Inquiry via OData
+  DAC_ODATA // Direct DAC access (advanced)
+}
+
+enum UnmappedAction {
+  SKIP // Don't import records without mapped salesperson
+  DEFAULT_USER // Assign to defaultSalespersonUserId
+}
+
 enum SalespersonMappingStatus {
   PENDING // Needs action from admin
   MATCHED // Successfully mapped to a user
@@ -453,6 +464,9 @@ model SalesTransaction {
   // Raw data for debugging
   rawExternalData Json?
 
+  // NEW v2: Custom field values from external systems
+  customFieldValues Json? // Key-value pairs of custom fields (e.g., {"sales_region": "WEST", "product_line": "Software"})
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -578,6 +592,25 @@ model AcumaticaIntegration {
   lastConnectionTest     DateTime?
   connectionErrorMessage String?
 
+  // NEW v2: Data Source Configuration
+  dataSourceType     DataSourceType @default(REST_API)
+  dataSourceEntity   String         @default("Invoice") // e.g., "Invoice", "SalesInvoice", or GI name
+  dataSourceEndpoint String? // Full endpoint URL for queries
+
+  // NEW v2: Discovered Schema (cached)
+  discoveredSchema  Json? // Cached field schema from Acumatica
+  schemaLastUpdated DateTime?
+
+  // NEW v2: Dynamic Field Mappings (replaces hardcoded enums)
+  fieldMappings Json? // FieldMappingConfig - required + optional + custom mappings
+
+  // NEW v2: Dynamic Filter Configuration (replaces individual filter fields)
+  filterConfig Json? // FilterConfig - status, date range, document types, branches
+
+  // NEW v2: Unmapped Salesperson Handling
+  unmappedSalespersonAction UnmappedAction @default(SKIP)
+  defaultSalespersonUserId  String?
+
   // Sync Schedule
   syncFrequency     SyncFrequency @default(MANUAL)
   syncTime          String? // e.g., "02:00" for daily sync time
@@ -585,40 +618,35 @@ model AcumaticaIntegration {
   lastSyncAt        DateTime?
   nextScheduledSync DateTime?
 
-  // Date Range Filtering
-  invoiceStartDate DateTime // Required - don't import before this date
-  invoiceEndDate   DateTime? // Optional - null means ongoing
+  // DEPRECATED v1 Fields (kept for backward compatibility during migration)
+  // These will be migrated to fieldMappings and filterConfig JSON
+  invoiceStartDate DateTime? // DEPRECATED - moved to filterConfig.dateRange
+  invoiceEndDate   DateTime? // DEPRECATED - moved to filterConfig.dateRange
 
-  // Branch Filtering
-  branchFilterMode BranchFilterMode @default(ALL)
-  selectedBranches Json? // Array of branch IDs if mode is SELECTED
+  branchFilterMode BranchFilterMode? @default(ALL) // DEPRECATED - moved to filterConfig.branch
+  selectedBranches Json? // DEPRECATED - moved to filterConfig.branch
 
-  // Document Type Filtering
-  includeInvoices    Boolean @default(true)
-  includeCreditMemos Boolean @default(false)
-  includeDebitMemos  Boolean @default(false)
+  includeInvoices    Boolean? @default(true) // DEPRECATED - moved to filterConfig.documentType
+  includeCreditMemos Boolean? @default(false) // DEPRECATED - moved to filterConfig.documentType
+  includeDebitMemos  Boolean? @default(false) // DEPRECATED - moved to filterConfig.documentType
 
-  // Customer Handling
-  customerHandling CustomerHandling @default(AUTO_CREATE)
-  customerIdSource CustomerIdSource @default(CUSTOMER_CD)
+  customerHandling CustomerHandling? @default(AUTO_CREATE) // DEPRECATED - moved to fieldMappings
+  customerIdSource CustomerIdSource? @default(CUSTOMER_CD) // DEPRECATED - moved to fieldMappings.customer
 
-  // Project Handling
-  projectAutoCreate Boolean           @default(true)
-  noProjectHandling NoProjectHandling @default(NO_PROJECT)
+  projectAutoCreate Boolean?           @default(true) // DEPRECATED - kept for now
+  noProjectHandling NoProjectHandling? @default(NO_PROJECT) // DEPRECATED - kept for now
 
-  // Invoice Import Settings
-  importLevel        ImportLevel        @default(INVOICE_TOTAL)
-  invoiceAmountField InvoiceAmountField @default(AMOUNT)
-  lineAmountField    LineAmountField    @default(EXTENDED_PRICE)
-  lineFilterMode     LineFilterMode     @default(ALL)
-  lineFilterValues   Json? // Array of item classes or GL accounts
+  importLevel        ImportLevel?        @default(INVOICE_TOTAL) // DEPRECATED - moved to fieldMappings
+  invoiceAmountField InvoiceAmountField? @default(AMOUNT) // DEPRECATED - moved to fieldMappings.amount
+  lineAmountField    LineAmountField?    @default(EXTENDED_PRICE) // DEPRECATED - moved to fieldMappings
+  lineFilterMode     LineFilterMode?     @default(ALL) // DEPRECATED - moved to filterConfig
+  lineFilterValues   Json? // DEPRECATED - moved to filterConfig
 
-  // Additional Line Data Storage
-  storeItemId          Boolean @default(true)
-  storeItemDescription Boolean @default(true)
-  storeItemClass       Boolean @default(false)
-  storeGLAccount       Boolean @default(false)
-  storeQtyAndPrice     Boolean @default(false)
+  storeItemId          Boolean? @default(true) // DEPRECATED - kept for now
+  storeItemDescription Boolean? @default(true) // DEPRECATED - kept for now
+  storeItemClass       Boolean? @default(false) // DEPRECATED - kept for now
+  storeGLAccount       Boolean? @default(false) // DEPRECATED - kept for now
+  storeQtyAndPrice     Boolean? @default(false) // DEPRECATED - kept for now
 
   // Timestamps
   createdAt DateTime @default(now())

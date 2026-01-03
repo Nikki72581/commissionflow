@@ -40,26 +40,34 @@ async function testInvoiceStructure() {
     await client.authenticate()
     console.log('✓ Authenticated successfully\n')
 
-    // Fetch just one invoice
-    console.log('Fetching a single invoice...')
-    const invoices = await client.fetchInvoices({
-      startDate: new Date('2024-01-01'),
-      endDate: new Date(),
-      includeInvoices: true,
-      includeCreditMemos: false,
-      includeDebitMemos: false,
-    })
+    // Fetch specific invoice by reference number
+    const targetInvoiceRef = '128339'
+    console.log(`Fetching invoice ${targetInvoiceRef}...`)
 
-    if (invoices.length === 0) {
-      console.log('No invoices found in the date range')
+    const invoice = await client.fetchInvoiceByRef(targetInvoiceRef)
+
+    if (!invoice) {
+      console.log(`Invoice ${targetInvoiceRef} not found`)
       return
     }
-
-    const invoice = invoices[0]
     console.log('\n=== INVOICE STRUCTURE ===')
     console.log('Reference Number:', invoice.ReferenceNbr?.value)
-    console.log('\n--- Full Invoice JSON ---')
-    console.log(JSON.stringify(invoice, null, 2))
+
+    console.log('\n--- ALL FIELD NAMES ---')
+    const allKeys = Object.keys(invoice)
+    console.log('Total fields:', allKeys.length)
+    console.log('All keys:', allKeys.sort())
+
+    console.log('\n--- SEARCHING FOR SALESPERSON FIELDS ---')
+    const salespersonKeys = allKeys.filter(key =>
+      key.toLowerCase().includes('sales') ||
+      key.toLowerCase().includes('person') ||
+      key.toLowerCase().includes('owner')
+    )
+    console.log('Salesperson-related fields:', salespersonKeys)
+    salespersonKeys.forEach(key => {
+      console.log(`  ${key}:`, JSON.stringify((invoice as any)[key], null, 2))
+    })
 
     console.log('\n--- Commissions Field ---')
     console.log(JSON.stringify(invoice.Commissions, null, 2))
@@ -72,12 +80,15 @@ async function testInvoiceStructure() {
       console.log('First salesperson:', JSON.stringify(invoice.Commissions.SalesPersons[0], null, 2))
     } else {
       console.log('\n✗ No salespersons found in Commissions.SalesPersons')
-      console.log('\nChecking if salesperson data might be elsewhere...')
-      console.log('Keys in invoice:', Object.keys(invoice))
       if (invoice.Commissions) {
         console.log('Keys in Commissions:', Object.keys(invoice.Commissions))
       }
     }
+
+    console.log('\n--- Full Invoice JSON (first 500 lines) ---')
+    const fullJson = JSON.stringify(invoice, null, 2)
+    const lines = fullJson.split('\n').slice(0, 500)
+    console.log(lines.join('\n'))
 
   } catch (error) {
     console.error('Error:', error)

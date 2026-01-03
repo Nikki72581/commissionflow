@@ -45,11 +45,15 @@ export class AcumaticaClient {
   private config: AcumaticaConnectionConfig;
   private baseUrl: string;
   private cookies: string[] = [];
+  public readonly apiVersion: string;
+  public readonly instanceUrl: string;
 
   constructor(config: AcumaticaConnectionConfig) {
     this.config = config;
+    this.apiVersion = config.apiVersion;
     // Ensure instanceUrl doesn't have trailing slash
     const instanceUrl = config.instanceUrl.replace(/\/$/, '');
+    this.instanceUrl = instanceUrl;
     this.baseUrl = `${instanceUrl}/entity/Default/${config.apiVersion}`;
   }
 
@@ -435,6 +439,20 @@ export class AcumaticaClient {
   }
 
   /**
+   * Fetch a single invoice by reference number
+   */
+  async fetchInvoiceByRef(referenceNbr: string): Promise<AcumaticaInvoice | null> {
+    const params: Record<string, string> = {
+      $filter: `ReferenceNbr eq '${referenceNbr}'`,
+      $expand: 'Details,Commissions,FinancialDetails',
+      $top: '1',
+    };
+
+    const invoices = await this.get<AcumaticaInvoice[]>('SalesInvoice', params);
+    return invoices.length > 0 ? invoices[0] : null;
+  }
+
+  /**
    * Fetch invoices with filters
    */
   async fetchInvoices(filters: InvoiceQueryFilters): Promise<AcumaticaInvoice[]> {
@@ -473,14 +491,52 @@ export class AcumaticaClient {
     // }
 
     const params: Record<string, string> = {
-      $select:
-        'ReferenceNbr,Type,Status,Date,CustomerID',
+      // Remove $select to get ALL fields
       $expand:
-        'Details,Commissions/SalesPersons,FinancialDetails',
+        'Details,Commissions,FinancialDetails',
       $filter: filterParts.join(' and '),
     };
 
     return this.get<AcumaticaInvoice[]>('SalesInvoice', params);
+  }
+
+  /**
+   * Make a generic authenticated request to Acumatica
+   * This is used by the schema discovery service for flexible API access
+   */
+  async makeRequest(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    endpoint: string,
+    body?: any
+  ): Promise<Response> {
+    // Handle full URLs or relative paths
+    let url: string;
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+      url = endpoint;
+    } else {
+      // Remove leading slash if present
+      const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+      url = `${this.instanceUrl}/${cleanEndpoint}`;
+    }
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.cookies.length > 0) {
+      headers['Cookie'] = this.cookies.join('; ');
+    }
+
+    const options: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (body && (method === 'POST' || method === 'PUT')) {
+      options.body = JSON.stringify(body);
+    }
+
+    return fetch(url, options);
   }
 
   /**
