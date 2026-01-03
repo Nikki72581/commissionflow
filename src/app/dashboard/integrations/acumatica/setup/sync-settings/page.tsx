@@ -156,7 +156,7 @@ export default function SyncSettingsPage() {
               Sync Settings
             </h1>
             <p className="text-muted-foreground mt-1">
-              Step 3 of 6: Configure data synchronization settings
+              Step 7 of 7: Configure data synchronization settings
             </p>
           </div>
         </div>
@@ -166,7 +166,7 @@ export default function SyncSettingsPage() {
       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
-          style={{ width: '50%' }}
+          style={{ width: '100%' }}
         />
       </div>
 

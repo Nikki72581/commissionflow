@@ -201,7 +201,7 @@ export default function SalespersonMappingPage() {
               Map Salespeople
             </h1>
             <p className="text-muted-foreground mt-1">
-              Step 2 of 6: Connect Acumatica salespeople to CommissionFlow users
+              Step 6 of 7: Connect Acumatica salespeople to CommissionFlow users
             </p>
           </div>
           <Button

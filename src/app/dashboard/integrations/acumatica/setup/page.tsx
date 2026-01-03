@@ -202,7 +202,7 @@ export default function AcumaticaSetupPage() {
       // just navigate to the next step
       if (testResult?.success && !formData.username && !formData.password) {
         console.log('[Client] Credentials already saved, proceeding to next step');
-        router.push('/dashboard/integrations/acumatica/setup/salespeople');
+        router.push('/dashboard/integrations/acumatica/setup/data-source');
         return;
       }
 
@@ -210,8 +210,8 @@ export default function AcumaticaSetupPage() {
       const result = await saveAcumaticaConnection(formData);
 
       if (result.success) {
-        // Navigate to next step (salesperson mapping)
-        router.push('/dashboard/integrations/acumatica/setup/salespeople');
+        // Navigate to next step (data source selection)
+        router.push('/dashboard/integrations/acumatica/setup/data-source');
       } else {
         setTestResult({
           success: false,
@@ -255,7 +255,7 @@ export default function AcumaticaSetupPage() {
           Connect to Acumatica
         </h1>
         <p className="text-muted-foreground mt-2">
-          Step 1 of 6: Enter your Acumatica instance credentials
+          Step 1 of 7: Enter your Acumatica instance credentials
         </p>
       </div>
 
@@ -263,7 +263,7 @@ export default function AcumaticaSetupPage() {
       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
-          style={{ width: '16.67%' }}
+          style={{ width: '14.29%' }}
         />
       </div>
 
@@ -286,14 +286,14 @@ export default function AcumaticaSetupPage() {
                 Connection Configured
               </div>
               <AlertDescription className="text-emerald-800 dark:text-emerald-200">
-                Your Acumatica credentials are already saved and verified. You can proceed to map your salespeople.
+                Your Acumatica credentials are already saved and verified. You can proceed to configure your data source.
               </AlertDescription>
             </div>
             <Button
-              onClick={() => router.push('/dashboard/integrations/acumatica/setup/salespeople')}
+              onClick={() => router.push('/dashboard/integrations/acumatica/setup/data-source')}
               className="ml-auto bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 flex-shrink-0"
             >
-              Continue to Salespeople Mapping
+              Continue to Data Source
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </div>
