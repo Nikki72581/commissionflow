@@ -532,6 +532,11 @@ function FieldSelector({
             <SelectItem key={field.name} value={field.name}>
               <div className="flex items-center gap-2">
                 <span className="font-mono text-sm">{field.name}</span>
+                {field.isNested && field.parentEntity && (
+                  <span className="px-1.5 py-0.5 text-xs bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded">
+                    {field.parentEntity}
+                  </span>
+                )}
                 {field.isCustom && (
                   <span className="px-1.5 py-0.5 text-xs bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
                     Custom

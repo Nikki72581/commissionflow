@@ -15,6 +15,7 @@ import {
   AcumaticaFieldType,
 } from "./config-types";
 import { prisma } from "@/lib/prisma";
+import { enrichRecords } from "./data-enrichment";
 
 // ============================================
 // Schema Discovery Service
@@ -85,6 +86,162 @@ export class SchemaDiscoveryService {
       console.error(`Error fetching REST API schema for ${entityName}:`, error);
       throw error;
     }
+  }
+
+  /**
+   * Get expanded fields from nested sections for specific entities
+   */
+  static async getExpandedFields(
+    client: AcumaticaClient,
+    entityName: string
+  ): Promise<FieldInfo[]> {
+    const expandedFields: FieldInfo[] = [];
+
+    // Define which sections to expand for each entity
+    const expansionMap: Record<string, string[]> = {
+      SalesOrder: ['FinancialSettings', 'Commissions', 'Details'],
+      SalesInvoice: ['Commissions', 'FinancialDetails', 'BillingSettings'],
+      Invoice: ['Details', 'TaxDetails'],
+    };
+
+    const sectionsToExpand = expansionMap[entityName];
+    if (!sectionsToExpand || sectionsToExpand.length === 0) {
+      return expandedFields;
+    }
+
+    try {
+      // Fetch a sample record with expanded sections
+      const expandQuery = `$expand=${sectionsToExpand.join(',')}`;
+      const url = `/entity/Default/${client.apiVersion}/${entityName}?$top=1&${expandQuery}`;
+
+      const response = await client.makeRequest('GET', url);
+      if (!response.ok) {
+        console.warn(`Failed to fetch expanded fields for ${entityName}`);
+        return expandedFields;
+      }
+
+      const data = await response.json();
+      if (!data || data.length === 0) {
+        return expandedFields;
+      }
+
+      const sampleRecord = data[0];
+
+      // Extract fields from expanded sections
+      for (const section of sectionsToExpand) {
+        const sectionData = sampleRecord[section];
+        if (!sectionData || typeof sectionData !== 'object') {
+          continue;
+        }
+
+        // Process section fields
+        for (const [fieldName, fieldValue] of Object.entries(sectionData)) {
+          // Skip metadata fields
+          if (['id', 'rowNumber', 'note', '_links', 'custom'].includes(fieldName)) {
+            continue;
+          }
+
+          // Create nested field path
+          const nestedFieldName = `${section}/${fieldName}`;
+
+          // Extract the actual value if wrapped
+          let sampleValue = fieldValue;
+          if (fieldValue && typeof fieldValue === 'object' && 'value' in fieldValue) {
+            sampleValue = (fieldValue as any).value;
+          }
+
+          // Skip empty objects
+          if (sampleValue && typeof sampleValue === 'object' && Object.keys(sampleValue).length === 0) {
+            sampleValue = null;
+          }
+
+          // Infer type from sample value
+          const inferredType = sampleValue !== null && sampleValue !== undefined
+            ? this.inferTypeFromValue(sampleValue, fieldName)
+            : 'string';
+
+          expandedFields.push({
+            name: nestedFieldName,
+            displayName: `${section} - ${fieldName}`,
+            type: inferredType,
+            description: `From ${section} section`,
+            isRequired: false,
+            isCustom: false,
+            isNested: true,
+            parentEntity: section,
+            sampleValue: sampleValue !== undefined && sampleValue !== null ? sampleValue : null,
+          });
+        }
+      }
+
+      console.log(`[Schema Discovery] Added ${expandedFields.length} expanded fields from ${sectionsToExpand.join(', ')} for ${entityName}`);
+    } catch (error) {
+      console.error(`Error fetching expanded fields for ${entityName}:`, error);
+    }
+
+    // Add special enriched fields for SalesInvoice (from related SalesOrder)
+    if (entityName === 'SalesInvoice') {
+      try {
+        const enrichedSampleUrl = `/entity/Default/${client.apiVersion}/SalesInvoice?$top=1`;
+        const invoiceResponse = await client.makeRequest('GET', enrichedSampleUrl);
+
+        if (invoiceResponse.ok) {
+          const invoices = await invoiceResponse.json();
+          if (invoices && invoices.length > 0) {
+            const invoice = invoices[0];
+            const orderNbr = invoice.CustomerOrder?.value || invoice.OrderNbr?.value;
+
+            if (orderNbr) {
+              // Fetch the related sales order
+              const soQuery = `/entity/Default/${client.apiVersion}/SalesOrder?$filter=OrderNbr eq '${orderNbr}'&$expand=FinancialSettings,Commissions&$top=1`;
+              const soResponse = await client.makeRequest('GET', soQuery);
+
+              if (soResponse.ok) {
+                const salesOrders = await soResponse.json();
+                if (salesOrders && salesOrders.length > 0) {
+                  const so = salesOrders[0];
+
+                  // Add enriched fields
+                  if (so.FinancialSettings?.Owner) {
+                    expandedFields.push({
+                      name: 'SalesOrder_Owner',
+                      displayName: 'Sales Order - Owner',
+                      type: 'string',
+                      description: 'Owner from the related Sales Order',
+                      isRequired: false,
+                      isCustom: false,
+                      isNested: true,
+                      parentEntity: 'SalesOrder',
+                      sampleValue: so.FinancialSettings.Owner.value || so.FinancialSettings.Owner,
+                    });
+                  }
+
+                  if (so.Commissions?.DefaultSalesperson) {
+                    expandedFields.push({
+                      name: 'SalesOrder_DefaultSalesperson',
+                      displayName: 'Sales Order - Default Salesperson',
+                      type: 'string',
+                      description: 'Default Salesperson from the related Sales Order',
+                      isRequired: false,
+                      isCustom: false,
+                      isNested: true,
+                      parentEntity: 'SalesOrder',
+                      sampleValue: so.Commissions.DefaultSalesperson.value || so.Commissions.DefaultSalesperson,
+                    });
+                  }
+
+                  console.log('[Schema Discovery] Added enriched SalesOrder fields to SalesInvoice schema');
+                }
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[Schema Discovery] Error adding enriched SalesOrder fields:', error);
+      }
+    }
+
+    return expandedFields;
   }
 
   /**
@@ -371,7 +528,17 @@ export class SchemaDiscoveryService {
       let query = "";
 
       if (dataSource.type === "REST_API") {
-        query = `/entity/Default/${client.apiVersion}/${dataSource.entity}?$top=${limit}`;
+        // Add expand query for entities with nested sections
+        const expansionMap: Record<string, string[]> = {
+          SalesOrder: ['FinancialSettings', 'Commissions', 'Details'],
+          SalesInvoice: ['Commissions', 'FinancialDetails', 'BillingSettings'],
+          Invoice: ['Details', 'TaxDetails'],
+        };
+
+        const sectionsToExpand = expansionMap[dataSource.entity];
+        const expandQuery = sectionsToExpand ? `&$expand=${sectionsToExpand.join(',')}` : '';
+
+        query = `/entity/Default/${client.apiVersion}/${dataSource.entity}?$top=${limit}${expandQuery}`;
       } else if (dataSource.type === "GENERIC_INQUIRY") {
         query = `/api/odata/gi/${dataSource.entity}?$top=${limit}`;
       } else if (dataSource.type === "DAC_ODATA") {
@@ -389,13 +556,21 @@ export class SchemaDiscoveryService {
       const data = await response.json();
 
       // Handle different response formats
+      let records: any[] = [];
       if (data.value) {
-        return data.value;
+        records = data.value;
       } else if (Array.isArray(data)) {
-        return data;
+        records = data;
       } else {
-        return [data];
+        records = [data];
       }
+
+      // Enrich records with related data if needed (e.g., SalesInvoice with SalesOrder)
+      if (dataSource.type === "REST_API") {
+        records = await enrichRecords(client, dataSource.entity, records);
+      }
+
+      return records;
     } catch (error) {
       console.error("Error fetching sample data:", error);
       throw error;
@@ -453,6 +628,10 @@ export class SchemaDiscoveryService {
     if (dataSourceType === "REST_API") {
       fields = await this.getRestApiEntitySchema(client, entityName);
       endpoint = `/entity/Default/${client.apiVersion}/${entityName}`;
+
+      // Add nested fields from expandable sections for specific entities
+      const expandedFields = await this.getExpandedFields(client, entityName);
+      fields = [...fields, ...expandedFields];
     } else if (dataSourceType === "GENERIC_INQUIRY") {
       fields = await this.getGenericInquirySchema(client, entityName);
       endpoint = `/api/odata/gi/${entityName}`;
