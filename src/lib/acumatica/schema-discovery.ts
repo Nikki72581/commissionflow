@@ -518,6 +518,54 @@ export class SchemaDiscoveryService {
   }
 
   /**
+   * Infer field type from a sample value
+   */
+  private static inferTypeFromValue(value: any, fieldName?: string): AcumaticaFieldType {
+    if (value === null || value === undefined) {
+      return "string";
+    }
+
+    // Check for boolean
+    if (typeof value === "boolean") {
+      return "boolean";
+    }
+
+    // Check for number types
+    if (typeof value === "number") {
+      // Financial/monetary fields should always be treated as decimal
+      const monetaryFieldNames = ['amount', 'total', 'balance', 'price', 'cost', 'tax', 'discount', 'payment', 'fee'];
+      const isMonetaryField = fieldName && monetaryFieldNames.some(name =>
+        fieldName.toLowerCase().includes(name)
+      );
+
+      if (isMonetaryField) {
+        return "decimal";
+      }
+
+      // Otherwise check if it's an integer or decimal
+      return Number.isInteger(value) ? "int" : "decimal";
+    }
+
+    // Check for date/datetime strings
+    if (typeof value === "string") {
+      // ISO 8601 datetime format: 2021-01-27T15:45:09.593+00:00
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
+        return "datetime";
+      }
+      // Date-only format: 2021-01-27
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return "date";
+      }
+      // GUID format
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)) {
+        return "guid";
+      }
+    }
+
+    return "string";
+  }
+
+  /**
    * Extract parent entity from nested field path
    */
   private static getParentEntity(fieldPath: string): string | undefined {
@@ -544,11 +592,30 @@ export class SchemaDiscoveryService {
 
     return fields.map((field) => {
       // Get sample value from first record
-      const sampleValue = this.getNestedValue(firstRecord, field.name);
+      const rawValue = this.getNestedValue(firstRecord, field.name);
+
+      // Acumatica REST API returns values in format: { value: actualValue }
+      // Extract the actual value from this wrapper
+      let sampleValue = rawValue;
+      if (rawValue && typeof rawValue === 'object' && 'value' in rawValue) {
+        sampleValue = rawValue.value;
+      }
+
+      // Skip empty objects that have no value property
+      if (sampleValue && typeof sampleValue === 'object' && Object.keys(sampleValue).length === 0) {
+        sampleValue = null;
+      }
+
+      // Infer the actual type from the sample value if we only have 'string' type
+      let inferredType = field.type;
+      if (field.type === 'string' && sampleValue !== null && sampleValue !== undefined) {
+        inferredType = this.inferTypeFromValue(sampleValue, field.name);
+      }
 
       return {
         ...field,
-        sampleValue: sampleValue !== undefined ? sampleValue : null,
+        type: inferredType,
+        sampleValue: sampleValue !== undefined && sampleValue !== null ? sampleValue : null,
       };
     });
   }
