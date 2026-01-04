@@ -25,6 +25,8 @@ import type {
   User,
   Prisma,
 } from '@prisma/client'
+import { syncAcumaticaInvoicesV2 } from './sync-v2'
+import type { FieldMappingConfig, FilterConfig } from '@/lib/acumatica/config-types'
 
 const ACUMATICA_SYSTEM = 'ACUMATICA'
 
@@ -474,7 +476,11 @@ function filterInvoiceLines(lines: AcumaticaInvoiceLine[], mode: string, values:
   return lines
 }
 
-export async function syncAcumaticaInvoices() {
+/**
+ * V1 Sync Function - Legacy hardcoded sync
+ * This is kept for backward compatibility with existing v1 integrations.
+ */
+async function syncAcumaticaInvoicesV1() {
   let syncLogId: string | null = null
   let acumaticaClient: ReturnType<typeof createAcumaticaClient> | null = null
 
@@ -1287,6 +1293,60 @@ export async function undoAcumaticaSync(syncLogId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to undo sync',
+    }
+  }
+}
+
+/**
+ * Smart Sync Router - Automatically chooses v2 or v1 sync based on integration configuration
+ *
+ * This is the main entry point for syncing Acumatica invoices. It detects whether the
+ * integration has been configured with v2 (discovery-driven) or v1 (hardcoded) and
+ * routes to the appropriate sync function.
+ */
+export async function syncAcumaticaInvoices() {
+  try {
+    const { userId } = await auth()
+    if (!userId) {
+      throw new Error('Not authenticated')
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId: userId },
+      include: { organization: true },
+    })
+
+    if (!user || !user.organization) {
+      throw new Error('User organization not found')
+    }
+
+    const integration = await prisma.acumaticaIntegration.findUnique({
+      where: { organizationId: user.organizationId },
+    })
+
+    if (!integration) {
+      return { success: false, error: 'Acumatica integration not found' }
+    }
+
+    // Check if v2 configuration exists
+    const fieldMappings = integration.fieldMappings as FieldMappingConfig | null
+    const filterConfig = integration.filterConfig as FilterConfig | null
+    const hasV2Config = fieldMappings && filterConfig
+
+    console.log(`[Sync Router] Using ${hasV2Config ? 'v2' : 'v1'} sync engine`)
+
+    if (hasV2Config) {
+      // Use v2 discovery-driven sync
+      return await syncAcumaticaInvoicesV2()
+    } else {
+      // Fall back to v1 hardcoded sync
+      return await syncAcumaticaInvoicesV1()
+    }
+  } catch (error) {
+    console.error('[Sync Router] Error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to sync Acumatica',
     }
   }
 }
