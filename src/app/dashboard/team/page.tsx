@@ -125,16 +125,53 @@ async function TeamTable({ searchQuery, isAdmin }: { searchQuery?: string; isAdm
     )
   }
 
-  // Fetch commission stats for all users
-  const usersWithStats = await Promise.all(
-    users.map(async (user) => {
-      const stats = await getUserCommissionStats(user.id)
-      return {
-        ...user,
-        ...stats,
-      }
-    })
-  )
+  // Fetch commission stats for all users in a single query (fixes N+1 problem)
+  const userIds = users.map(u => u.id);
+  const [commissionStats, pendingCounts] = await Promise.all([
+    db.commissionCalculation.groupBy({
+      by: ['userId'],
+      where: {
+        userId: { in: userIds },
+        status: { in: ['APPROVED', 'PAID'] },
+      },
+      _sum: {
+        amount: true,
+      },
+    }),
+    db.commissionCalculation.groupBy({
+      by: ['userId'],
+      where: {
+        userId: { in: userIds },
+        status: 'PENDING',
+      },
+      _count: {
+        _all: true,
+      },
+    }),
+  ]);
+
+  // Create lookup maps for O(1) access
+  const statsMap = new Map(
+    commissionStats
+      .filter(s => s._sum.amount !== null)
+      .map(s => [
+        s.userId,
+        {
+          totalEarned: s._sum.amount || 0,
+        },
+      ])
+  );
+
+  const pendingMap = new Map(
+    pendingCounts.map(p => [p.userId, p._count._all])
+  );
+
+  // Combine user data with stats
+  const usersWithStats = users.map(user => ({
+    ...user,
+    totalEarned: statsMap.get(user.id)?.totalEarned || 0,
+    pendingCount: pendingMap.get(user.id) || 0,
+  }));
 
   return (
     <div className="rounded-lg border border-orange-500/20 bg-gradient-to-br from-orange-500/5 via-transparent to-amber-500/5 shadow-sm">

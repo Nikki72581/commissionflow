@@ -423,7 +423,7 @@ export class SchemaDiscoveryService {
       return null;
     }
 
-    return integration.discoveredSchema as DiscoveredSchema;
+    return integration.discoveredSchema as unknown as DiscoveredSchema;
   }
 
   /**

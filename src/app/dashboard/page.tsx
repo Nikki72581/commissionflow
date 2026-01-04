@@ -1,10 +1,10 @@
-import { DashboardClient } from '@/components/dashboard/dashboard-client'
-export const dynamic = 'force-dynamic'
+import { DashboardServer } from '@/components/dashboard/dashboard-server'
+
 export const metadata = {
   title: 'Dashboard | CommissionFlow',
   description: 'Sales and commission analytics dashboard',
 }
 
 export default function DashboardPage() {
-  return <DashboardClient />
+  return <DashboardServer />
 }

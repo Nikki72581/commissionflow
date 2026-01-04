@@ -33,7 +33,7 @@ export async function discoverRestApiEntities(integrationId: string): Promise<En
       throw new Error("Integration not found");
     }
 
-    const client = await createAuthenticatedClient(integration.id);
+    const client = await createAuthenticatedClient(integration);
 
     try {
       return await SchemaDiscoveryService.discoverRestApiEntities(client);
@@ -64,7 +64,7 @@ export async function discoverGenericInquiries(integrationId: string): Promise<I
       throw new Error("Integration not found");
     }
 
-    const client = await createAuthenticatedClient(integration.id);
+    const client = await createAuthenticatedClient(integration);
 
     try {
       return await SchemaDiscoveryService.discoverGenericInquiries(client);
@@ -100,7 +100,7 @@ export async function selectDataSource(
       throw new Error("Integration not found");
     }
 
-    const client = await createAuthenticatedClient(integration.id);
+    const client = await createAuthenticatedClient(integration);
 
     try {
       // Build the discovered schema

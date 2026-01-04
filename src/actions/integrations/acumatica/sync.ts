@@ -500,6 +500,10 @@ async function syncAcumaticaInvoicesV1() {
       return { success: false, error: 'Acumatica credentials are missing' }
     }
 
+    if (!integration.invoiceStartDate) {
+      return { success: false, error: 'Invoice start date is not configured' }
+    }
+
     const credentials = decryptPasswordCredentials(integration.encryptedCredentials)
     acumaticaClient = createAcumaticaClient({
       instanceUrl: integration.instanceUrl,
@@ -528,9 +532,9 @@ async function syncAcumaticaInvoicesV1() {
     const filters: InvoiceQueryFilters = {
       startDate: integration.invoiceStartDate,
       endDate: integration.invoiceEndDate ?? undefined,
-      includeInvoices: integration.includeInvoices,
-      includeCreditMemos: integration.includeCreditMemos,
-      includeDebitMemos: integration.includeDebitMemos,
+      includeInvoices: integration.includeInvoices ?? true,
+      includeCreditMemos: integration.includeCreditMemos ?? false,
+      includeDebitMemos: integration.includeDebitMemos ?? false,
       branches:
         integration.branchFilterMode === 'SELECTED'
           ? ((integration.selectedBranches as string[]) || [])
@@ -816,8 +820,8 @@ async function syncAcumaticaInvoicesV1() {
           integrationId: integration.id,
           syncLogId: syncLog.id,
           organizationId,
-          customerIdSource: integration.customerIdSource,
-          customerHandling: integration.customerHandling,
+          customerIdSource: integration.customerIdSource ?? 'ID',
+          customerHandling: integration.customerHandling ?? 'CREATE',
           invoice,
           clientCache,
           acumaticaClient,
@@ -837,8 +841,8 @@ async function syncAcumaticaInvoicesV1() {
           integrationId: integration.id,
           syncLogId: syncLog.id,
           organizationId,
-          projectAutoCreate: integration.projectAutoCreate,
-          noProjectHandling: integration.noProjectHandling,
+          projectAutoCreate: integration.projectAutoCreate ?? false,
+          noProjectHandling: integration.noProjectHandling ?? 'SKIP',
           invoice,
           client,
           projectCache,
@@ -861,7 +865,7 @@ async function syncAcumaticaInvoicesV1() {
         if (integration.importLevel === 'LINE_LEVEL') {
           const filteredLines = filterInvoiceLines(
             invoice.Details || [],
-            integration.lineFilterMode,
+            integration.lineFilterMode ?? 'NONE',
             (integration.lineFilterValues as string[]) || []
           )
 
@@ -874,7 +878,7 @@ async function syncAcumaticaInvoicesV1() {
           let lineNumber = 0
           for (const line of filteredLines) {
             lineNumber += 1
-            const amount = getLineAmount(line, integration.lineAmountField)
+            const amount = getLineAmount(line, integration.lineAmountField ?? 'ExtendedPrice')
             const normalizedAmount =
               transactionType === 'RETURN' ? -Math.abs(amount) : amount
             const externalId = `${invoiceRef}-${lineNumber}`
@@ -952,7 +956,7 @@ async function syncAcumaticaInvoicesV1() {
             summary.salesCreated += 1
           }
         } else {
-          const amount = getInvoiceAmount(invoice, integration.invoiceAmountField)
+          const amount = getInvoiceAmount(invoice, integration.invoiceAmountField ?? 'Balance')
           const normalizedAmount =
             transactionType === 'RETURN' ? -Math.abs(amount) : amount
           const externalId = invoiceRef

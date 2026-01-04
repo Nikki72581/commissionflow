@@ -63,7 +63,7 @@ export async function previewAcumaticaData(
     }
 
     // Create authenticated client
-    const client = await createAuthenticatedClient(integration.id);
+    const client = await createAuthenticatedClient(integration);
 
     try {
       // Build preview query
@@ -267,7 +267,7 @@ export async function getAcumaticaRecordCount(integrationId: string): Promise<nu
       throw new Error("Field mappings and filter configuration must be set first");
     }
 
-    const client = await createAuthenticatedClient(integration.id);
+    const client = await createAuthenticatedClient(integration);
 
     try {
       const countQuery = AcumaticaQueryBuilder.buildCountQuery(

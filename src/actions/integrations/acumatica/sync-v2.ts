@@ -380,7 +380,7 @@ export async function syncAcumaticaInvoicesV2() {
     syncLogId = syncLog.id;
 
     // Create authenticated client
-    const client = await createAuthenticatedClient(integration.id);
+    const client = await createAuthenticatedClient(integration);
 
     try {
       // Build dynamic query
@@ -499,7 +499,7 @@ export async function syncAcumaticaInvoicesV2() {
             continue;
           }
 
-          const transactionUser = salespersonMap.get(invoiceData.salespersonId);
+          let transactionUser = salespersonMap.get(invoiceData.salespersonId);
 
           if (!transactionUser) {
             if (integration.unmappedSalespersonAction === 'SKIP') {
@@ -526,7 +526,8 @@ export async function syncAcumaticaInvoicesV2() {
                 continue;
               }
 
-              // Use default user (will be set below)
+              // Use default user
+              transactionUser = defaultUser;
             } else {
               summary.invoicesSkipped += 1;
               skipped.push({
@@ -585,7 +586,7 @@ export async function syncAcumaticaInvoicesV2() {
               externalInvoiceRef: invoiceRef,
               externalInvoiceDate: invoiceData.date,
               externalBranch: invoiceData.branch,
-              customFieldValues: invoiceData.customFields || null,
+              customFieldValues: invoiceData.customFields || undefined,
               rawExternalData: rawInvoice,
             },
           });
@@ -627,7 +628,7 @@ export async function syncAcumaticaInvoicesV2() {
       await prisma.integrationSyncLog.update({
         where: { id: syncLog.id },
         data: {
-          status: 'COMPLETED',
+          status: 'SUCCESS',
           completedAt: new Date(),
           invoicesFetched: summary.invoicesFetched,
           invoicesProcessed: summary.invoicesProcessed,
@@ -636,8 +637,8 @@ export async function syncAcumaticaInvoicesV2() {
           clientsCreated: summary.clientsCreated,
           projectsCreated: summary.projectsCreated,
           errorsCount: summary.errorsCount,
-          skipDetails: skipped.length > 0 ? skipped : null,
-          errorDetails: errors.length > 0 ? errors : null,
+          skipDetails: skipped.length > 0 ? (skipped as any) : undefined,
+          errorDetails: errors.length > 0 ? (errors as any) : undefined,
         },
       });
 
