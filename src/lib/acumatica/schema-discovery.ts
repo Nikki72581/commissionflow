@@ -303,9 +303,21 @@ export class SchemaDiscoveryService {
       const response = await client.makeRequest("GET", metadataUrl);
 
       if (!response.ok) {
-        throw new Error(
-          `Failed to fetch Generic Inquiry metadata: ${response.status} ${response.statusText}`
+        // Log the error but don't throw - Generic Inquiry OData might not be configured
+        console.warn(
+          `[Schema Discovery] Generic Inquiry OData not available: ${response.status} ${response.statusText}`
         );
+
+        if (response.status === 404) {
+          console.warn(
+            '[Schema Discovery] Generic Inquiry OData endpoint not found. This typically means:\n' +
+            '  1. Generic Inquiry OData is not enabled in Acumatica\n' +
+            '  2. No Generic Inquiries have been published via OData\n' +
+            '  3. The OData endpoint is not configured for this Acumatica instance'
+          );
+        }
+
+        return [];
       }
 
       const metadataXml = await response.text();
@@ -313,7 +325,7 @@ export class SchemaDiscoveryService {
       // Parse the OData metadata XML
       return this.parseGenericInquiryMetadata(metadataXml, client.apiVersion);
     } catch (error) {
-      console.error("Error fetching Generic Inquiry metadata:", error);
+      console.error("[Schema Discovery] Error fetching Generic Inquiry metadata:", error);
       // Return empty array on error (GI might not be configured)
       return [];
     }

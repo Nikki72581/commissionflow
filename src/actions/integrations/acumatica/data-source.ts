@@ -67,13 +67,35 @@ export async function discoverGenericInquiries(integrationId: string): Promise<I
     const client = await createAuthenticatedClient(integration);
 
     try {
-      return await SchemaDiscoveryService.discoverGenericInquiries(client);
+      const inquiries = await SchemaDiscoveryService.discoverGenericInquiries(client);
+
+      if (inquiries.length === 0) {
+        console.warn(
+          "[Discover Generic Inquiries] No Generic Inquiries found. " +
+          "Please ensure Generic Inquiry OData is enabled and at least one Generic Inquiry is published."
+        );
+      } else {
+        console.log(`[Discover Generic Inquiries] Found ${inquiries.length} Generic Inquiries`);
+      }
+
+      return inquiries;
     } finally {
       await client.logout();
     }
   } catch (error) {
     console.error("[Discover Generic Inquiries] Error:", error);
+
+    // Provide helpful error message based on the error type
+    if (error instanceof Error) {
+      // Log the full error for debugging
+      console.error("[Discover Generic Inquiries] Full error details:", {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+
     // Return empty array on error (GI might not be configured)
+    // The UI will handle displaying appropriate messages to the user
     return [];
   }
 }

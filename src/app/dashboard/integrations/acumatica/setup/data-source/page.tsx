@@ -100,13 +100,18 @@ export default function DataSourceSelectionPage() {
       setDataSourceType('GENERIC_INQUIRY');
 
       if (inquiries.length === 0) {
-        setError('No Generic Inquiries found. Please create a Generic Inquiry in Acumatica and publish it via OData.');
+        setError(
+          'No Generic Inquiries found. Please ensure:\n' +
+          '1. Generic Inquiry OData is enabled in Acumatica (System > Integration > Configure > Enable Generic Inquiry)\n' +
+          '2. At least one Generic Inquiry has been created and published via OData\n' +
+          '3. Your Acumatica user has permissions to access Generic Inquiry OData endpoints'
+        );
       }
     } catch (error) {
       console.error('Failed to discover Generic Inquiries:', error);
       setError(
         error instanceof Error
-          ? error.message
+          ? `Error: ${error.message}`
           : 'Failed to discover Generic Inquiries. Make sure Generic Inquiry OData is enabled in your Acumatica instance.'
       );
     } finally {
