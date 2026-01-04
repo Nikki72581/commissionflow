@@ -102,8 +102,21 @@ export class SchemaDiscoveryService {
 
     const properties = schemaData.fields || schemaData.properties || schemaData;
 
+    // Fields to skip - these are metadata fields, not actual data fields
+    const skipFields = new Set(['id', 'rowNumber', 'note', '_links', 'custom']);
+
     for (const [fieldName, fieldDef] of Object.entries(properties)) {
       const def = fieldDef as any;
+
+      // Skip null or undefined field definitions
+      if (def === null || def === undefined) {
+        continue;
+      }
+
+      // Skip metadata fields
+      if (skipFields.has(fieldName)) {
+        continue;
+      }
 
       fields.push({
         name: fieldName,
