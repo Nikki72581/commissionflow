@@ -13,9 +13,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, Database, FileText, Code2 } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, FileText } from 'lucide-react';
 import {
-  discoverRestApiEntities,
   discoverGenericInquiries,
   selectDataSource,
   getDataSourceConfig,
@@ -34,13 +33,12 @@ export default function DataSourceSelectionPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [integrationId, setIntegrationId] = useState<string | null>(null);
-  const [dataSourceType, setDataSourceType] = useState<DataSourceType>('REST_API');
+  const [dataSourceType, setDataSourceType] = useState<DataSourceType>('GENERIC_INQUIRY');
   const [selectedEntity, setSelectedEntity] = useState<string>('');
 
   const [discovering, setDiscovering] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [restApiEntities, setRestApiEntities] = useState<EntityOption[]>([]);
   const [genericInquiries, setGenericInquiries] = useState<EntityOption[]>([]);
 
   const [error, setError] = useState<string | null>(null);
@@ -88,45 +86,28 @@ export default function DataSourceSelectionPage() {
     setError(null);
 
     try {
-      // Always discover REST API entities (they're standard)
-      const entities = await discoverRestApiEntities(integrationId);
-      setRestApiEntities(
-        entities.map((e) => ({
-          name: e.name,
-          displayName: e.displayName || e.name,
-          description: e.description || '',
-          screenId: e.screenId,
+      // Discover Generic Inquiries (the primary data source)
+      const inquiries = await discoverGenericInquiries(integrationId);
+      setGenericInquiries(
+        inquiries.map((gi) => ({
+          name: gi.name,
+          displayName: gi.displayName || gi.name,
+          description: gi.description || '',
         }))
       );
 
-      // Try to discover Generic Inquiries
-      try {
-        const inquiries = await discoverGenericInquiries(integrationId);
-        setGenericInquiries(
-          inquiries.map((gi) => ({
-            name: gi.name,
-            displayName: gi.displayName || gi.name,
-            description: gi.description || '',
-          }))
-        );
-      } catch (error) {
-        console.warn('Generic Inquiries not available:', error);
-        // This is okay - not all Acumatica instances have GI configured
-      }
+      // Auto-select GENERIC_INQUIRY type
+      setDataSourceType('GENERIC_INQUIRY');
 
-      // Auto-select Invoice if nothing is selected
-      if (!selectedEntity && entities.length > 0) {
-        const invoiceEntity = entities.find((e) => e.name === 'Invoice');
-        if (invoiceEntity) {
-          setSelectedEntity(invoiceEntity.name);
-        }
+      if (inquiries.length === 0) {
+        setError('No Generic Inquiries found. Please create a Generic Inquiry in Acumatica and publish it via OData.');
       }
     } catch (error) {
-      console.error('Failed to discover data sources:', error);
+      console.error('Failed to discover Generic Inquiries:', error);
       setError(
         error instanceof Error
           ? error.message
-          : 'Failed to discover data sources'
+          : 'Failed to discover Generic Inquiries. Make sure Generic Inquiry OData is enabled in your Acumatica instance.'
       );
     } finally {
       setDiscovering(false);
@@ -154,11 +135,10 @@ export default function DataSourceSelectionPage() {
     }
   };
 
-  const availableEntities =
-    dataSourceType === 'REST_API' ? restApiEntities : genericInquiries;
+  const availableEntities = genericInquiries;
 
   const canContinue = selectedEntity !== '';
-  const hasDiscovered = restApiEntities.length > 0;
+  const hasDiscovered = genericInquiries.length > 0;
 
   if (loading) {
     return (
@@ -206,131 +186,46 @@ export default function DataSourceSelectionPage() {
         </Alert>
       )}
 
-      {/* Data Source Type Selection */}
+      {/* Generic Inquiry Setup */}
       <Card className="border-purple-500/20">
         <CardHeader>
-          <CardTitle>Data Source Type</CardTitle>
+          <div className="flex items-center gap-2 mb-2">
+            <FileText className="h-6 w-6 text-blue-600" />
+            <CardTitle>Generic Inquiry (OData)</CardTitle>
+          </div>
           <CardDescription>
-            Choose how you want to retrieve invoice data from Acumatica
+            CommissionFlow uses Generic Inquiries to retrieve invoice data from Acumatica.
+            This provides maximum flexibility to match your specific Acumatica configuration.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <RadioGroup
-            value={dataSourceType}
-            onValueChange={(value) => {
-              setDataSourceType(value as DataSourceType);
-              setSelectedEntity(''); // Reset entity selection when changing type
-            }}
-          >
-            {/* REST API Option */}
-            <div
-              className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                dataSourceType === 'REST_API'
-                  ? 'border-purple-500 bg-purple-500/5'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-purple-500/50'
-              }`}
-              onClick={() => {
-                setDataSourceType('REST_API');
-                setSelectedEntity('');
-              }}
-            >
-              <RadioGroupItem value="REST_API" id="rest-api" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Database className="h-5 w-5 text-purple-600" />
-                  <Label
-                    htmlFor="rest-api"
-                    className="text-base font-semibold cursor-pointer"
-                  >
-                    Standard REST API Entities
-                  </Label>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-full">
-                    Recommended
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Use Acumatica's built-in Invoice, SalesInvoice, or SalesOrder entities
-                </p>
-                <ul className="mt-2 text-xs text-muted-foreground space-y-1">
-                  <li>✓ Works out-of-the-box for most configurations</li>
-                  <li>✓ Includes standard fields + custom fields</li>
-                  <li>✓ Best for: Standard Acumatica implementations</li>
-                </ul>
-              </div>
-            </div>
+          <div className="p-4 rounded-lg border border-blue-500/20 bg-blue-500/5">
+            <h4 className="font-semibold text-sm mb-2">What you'll need:</h4>
+            <ul className="text-sm text-muted-foreground space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 font-bold">1.</span>
+                <span>Create a Generic Inquiry in Acumatica that returns your invoice/commission data</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 font-bold">2.</span>
+                <span>Publish the Generic Inquiry via OData in Acumatica</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600 font-bold">3.</span>
+                <span>Click "Discover Generic Inquiries" below to see available inquiries</span>
+              </li>
+            </ul>
+          </div>
 
-            {/* Generic Inquiry Option */}
-            <div
-              className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                dataSourceType === 'GENERIC_INQUIRY'
-                  ? 'border-purple-500 bg-purple-500/5'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-purple-500/50'
-              }`}
-              onClick={() => {
-                setDataSourceType('GENERIC_INQUIRY');
-                setSelectedEntity('');
-              }}
-            >
-              <RadioGroupItem value="GENERIC_INQUIRY" id="generic-inquiry" />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
-                  <Label
-                    htmlFor="generic-inquiry"
-                    className="text-base font-semibold cursor-pointer"
-                  >
-                    Generic Inquiry (OData)
-                  </Label>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Use a pre-configured Generic Inquiry from Acumatica
-                </p>
-                <ul className="mt-2 text-xs text-muted-foreground space-y-1">
-                  <li>✓ Maximum flexibility - any fields, any joins</li>
-                  <li>✓ Requires Acumatica admin to create the inquiry</li>
-                  <li>✓ Best for: Complex or custom implementations</li>
-                </ul>
-                {genericInquiries.length === 0 && hasDiscovered && (
-                  <Alert className="mt-3 border-yellow-500/50 bg-yellow-500/10">
-                    <AlertDescription className="text-xs">
-                      No Generic Inquiries found. They must be created in Acumatica and
-                      exposed via OData.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            </div>
-
-            {/* DAC OData Option (Advanced) */}
-            <div
-              className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer opacity-50 ${
-                dataSourceType === 'DAC_ODATA'
-                  ? 'border-purple-500 bg-purple-500/5'
-                  : 'border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              <RadioGroupItem value="DAC_ODATA" id="dac-odata" disabled />
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <Code2 className="h-5 w-5 text-gray-500" />
-                  <Label htmlFor="dac-odata" className="text-base font-semibold">
-                    Direct DAC Access (Advanced)
-                  </Label>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded-full">
-                    Coming Soon
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Query Acumatica's data access classes directly
-                </p>
-                <ul className="mt-2 text-xs text-muted-foreground space-y-1">
-                  <li>✓ Most flexible, requires technical knowledge</li>
-                  <li>✓ Can access any data in the system</li>
-                  <li>✓ Best for: Technical users with complex requirements</li>
-                </ul>
-              </div>
-            </div>
-          </RadioGroup>
+          {genericInquiries.length === 0 && hasDiscovered && (
+            <Alert className="border-yellow-500/50 bg-yellow-500/10">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-sm">
+                No Generic Inquiries found. Make sure you've created a Generic Inquiry in Acumatica and
+                exposed it via OData. Check that Generic Inquiry OData is enabled in your Acumatica instance.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Discover Button */}
           {!hasDiscovered && (
@@ -342,30 +237,23 @@ export default function DataSourceSelectionPage() {
               {discovering ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Discovering Data Sources...
+                  Discovering Generic Inquiries...
                 </>
               ) : (
-                'Discover Available Data Sources'
+                'Discover Generic Inquiries'
               )}
             </Button>
           )}
         </CardContent>
       </Card>
 
-      {/* Entity Selection */}
+      {/* Generic Inquiry Selection */}
       {hasDiscovered && availableEntities.length > 0 && (
         <Card className="border-purple-500/20">
           <CardHeader>
-            <CardTitle>
-              Select{' '}
-              {dataSourceType === 'REST_API' ? 'Entity' : 'Generic Inquiry'}
-            </CardTitle>
+            <CardTitle>Select Generic Inquiry</CardTitle>
             <CardDescription>
-              Choose which{' '}
-              {dataSourceType === 'REST_API'
-                ? 'Acumatica entity'
-                : 'Generic Inquiry'}{' '}
-              to use as your data source
+              Choose which Generic Inquiry to use as your data source
             </CardDescription>
           </CardHeader>
           <CardContent>
