@@ -167,18 +167,18 @@ export default function FieldMappingPage() {
         },
         customer: {
           idField: customerIdField,
-          nameField: customerNameField || undefined,
+          nameField: customerNameField && customerNameField !== '__UNMAPPED__' ? customerNameField : undefined,
         },
       };
 
-      // Add optional mappings
-      if (projectField) {
+      // Add optional mappings (skip if unmapped)
+      if (projectField && projectField !== '__UNMAPPED__') {
         fieldMappings.project = { sourceField: projectField };
       }
-      if (descriptionField) {
+      if (descriptionField && descriptionField !== '__UNMAPPED__') {
         fieldMappings.description = { sourceField: descriptionField };
       }
-      if (branchField) {
+      if (branchField && branchField !== '__UNMAPPED__') {
         fieldMappings.branch = { sourceField: branchField };
       }
 
@@ -524,7 +524,7 @@ function FieldSelector({
         </SelectTrigger>
         <SelectContent className="max-h-[300px]">
           {!required && (
-            <SelectItem value="">
+            <SelectItem value="__UNMAPPED__">
               <span className="text-muted-foreground">(Not mapped)</span>
             </SelectItem>
           )}
