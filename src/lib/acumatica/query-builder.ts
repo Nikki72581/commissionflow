@@ -47,7 +47,7 @@ export class AcumaticaQueryBuilder {
     }
 
     if (filterClause) {
-      queryParts.push(`$filter=${filterClause}`);
+      queryParts.push(`$filter=${encodeURIComponent(filterClause)}`);
     }
 
     const queryString = queryParts.join("&");
@@ -357,7 +357,7 @@ export class AcumaticaQueryBuilder {
 
     const filterClause = this.buildFilterClause(filterConfig, fieldMappings);
 
-    return `${baseEndpoint}/$count${filterClause ? "?$filter=" + filterClause : ""}`;
+    return `${baseEndpoint}/$count${filterClause ? "?$filter=" + encodeURIComponent(filterClause) : ""}`;
   }
 
   /**
