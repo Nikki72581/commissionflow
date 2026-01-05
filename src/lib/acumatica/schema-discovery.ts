@@ -313,19 +313,26 @@ export class SchemaDiscoveryService {
           console.log(`[Schema Discovery] Successfully connected to ${metadataUrl}`);
           const metadataXml = await response.text();
 
+          console.log(`[Schema Discovery] Metadata XML length: ${metadataXml.length} characters`);
+          console.log(`[Schema Discovery] Metadata XML preview: ${metadataXml.substring(0, 500)}...`);
+
           // Parse the OData metadata XML
           const inquiries = this.parseGenericInquiryMetadata(metadataXml, client.apiVersion);
 
           if (inquiries.length > 0) {
             console.log(`[Schema Discovery] Found ${inquiries.length} Generic Inquiries using endpoint: ${metadataUrl}`);
+            console.log(`[Schema Discovery] Inquiry names: ${inquiries.map(i => i.name).join(', ')}`);
             return inquiries;
           } else {
             console.warn(`[Schema Discovery] Endpoint ${metadataUrl} returned no Generic Inquiries`);
+            console.warn(`[Schema Discovery] This could mean: No EntitySet elements found in metadata, or parsing failed`);
           }
         } else {
+          const errorText = await response.text();
           console.warn(
             `[Schema Discovery] Endpoint ${metadataUrl} returned: ${response.status} ${response.statusText}`
           );
+          console.warn(`[Schema Discovery] Error response body: ${errorText.substring(0, 500)}`);
         }
       } catch (error) {
         console.warn(`[Schema Discovery] Failed to fetch from ${metadataUrl}:`, error);

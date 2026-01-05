@@ -519,12 +519,17 @@ export class AcumaticaClient {
       url = `${this.instanceUrl}/${cleanEndpoint}`;
     }
 
+    console.log(`[Acumatica Client] makeRequest: ${method} ${url}`);
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
 
     if (this.cookies.length > 0) {
       headers['Cookie'] = this.cookies.join('; ');
+      console.log(`[Acumatica Client] Using ${this.cookies.length} cookies for request`);
+    } else {
+      console.warn(`[Acumatica Client] No cookies available for request to ${url}`);
     }
 
     const options: RequestInit = {
@@ -536,7 +541,11 @@ export class AcumaticaClient {
       options.body = JSON.stringify(body);
     }
 
-    return fetch(url, options);
+    const response = await fetch(url, options);
+
+    console.log(`[Acumatica Client] Response: ${response.status} ${response.statusText}`);
+
+    return response;
   }
 
   /**
