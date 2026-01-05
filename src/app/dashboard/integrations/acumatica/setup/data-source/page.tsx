@@ -385,6 +385,26 @@ export default function DataSourceSelectionPage() {
                     </p>
                   )}
 
+                  {endpoint.entitySetCount !== undefined && (
+                    <div className="mb-2">
+                      <p className="text-xs font-semibold mb-1">
+                        Found {endpoint.entitySetCount} EntitySet{endpoint.entitySetCount !== 1 ? 's' : ''}
+                      </p>
+                      {endpoint.entitySetsFound && endpoint.entitySetsFound.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {endpoint.entitySetsFound.map((name: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 text-xs bg-blue-500/10 text-blue-600 rounded"
+                            >
+                              {name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {endpoint.error && (
                     <p className="text-xs text-red-600 mb-2">Error: {endpoint.error}</p>
                   )}

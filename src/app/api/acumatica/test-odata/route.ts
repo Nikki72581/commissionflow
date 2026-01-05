@@ -52,6 +52,8 @@ export async function POST(request: NextRequest) {
         success: boolean;
         contentPreview?: string;
         contentLength?: number;
+        entitySetsFound?: string[];
+        entitySetCount?: number;
         error?: string;
       }>,
     };
@@ -70,16 +72,29 @@ export async function POST(request: NextRequest) {
 
         const contentText = await response.text();
 
+        // Parse EntitySet names from the metadata
+        const entitySetRegex = /<EntitySet Name="([^"]+)"/g;
+        const entitySets: string[] = [];
+        let match;
+        while ((match = entitySetRegex.exec(contentText)) !== null) {
+          entitySets.push(match[1]);
+        }
+
         results.endpoints.push({
           url: endpoint,
           status: response.status,
           statusText: response.statusText,
           success: response.ok,
           contentLength: contentText.length,
-          contentPreview: contentText.substring(0, 500),
+          contentPreview: contentText.substring(0, 1000),
+          entitySetsFound: entitySets,
+          entitySetCount: entitySets.length,
         });
 
-        console.log(`[OData Test] ${endpoint} - Status: ${response.status}, Length: ${contentText.length}`);
+        console.log(`[OData Test] ${endpoint} - Status: ${response.status}, Length: ${contentText.length}, EntitySets: ${entitySets.length}`);
+        if (entitySets.length > 0) {
+          console.log(`[OData Test] EntitySets found: ${entitySets.join(', ')}`);
+        }
       } catch (error) {
         console.error(`[OData Test] Error testing ${endpoint}:`, error);
         results.endpoints.push({

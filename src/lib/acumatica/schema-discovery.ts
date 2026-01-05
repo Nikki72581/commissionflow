@@ -303,6 +303,9 @@ export class SchemaDiscoveryService {
       `/odatav4/$metadata`,                // OData v4 DAC-based (not typically for GI, but worth trying)
     ];
 
+    const allInquiriesFound: InquiryInfo[] = [];
+    let successfulEndpoint: string | null = null;
+
     for (const metadataUrl of endpointFormats) {
       try {
         console.log(`[Schema Discovery] Trying Generic Inquiry OData endpoint: ${metadataUrl}`);
@@ -322,10 +325,22 @@ export class SchemaDiscoveryService {
           if (inquiries.length > 0) {
             console.log(`[Schema Discovery] Found ${inquiries.length} Generic Inquiries using endpoint: ${metadataUrl}`);
             console.log(`[Schema Discovery] Inquiry names: ${inquiries.map(i => i.name).join(', ')}`);
-            return inquiries;
+
+            // Update the endpoint for each inquiry to match the successful endpoint
+            const updatedInquiries = inquiries.map(inq => ({
+              ...inq,
+              endpoint: `${metadataUrl.replace('/$metadata', '')}/${inq.name}`,
+            }));
+
+            allInquiriesFound.push(...updatedInquiries);
+            successfulEndpoint = metadataUrl;
+
+            // Return immediately when we find inquiries
+            return updatedInquiries;
           } else {
-            console.warn(`[Schema Discovery] Endpoint ${metadataUrl} returned no Generic Inquiries`);
-            console.warn(`[Schema Discovery] This could mean: No EntitySet elements found in metadata, or parsing failed`);
+            console.warn(`[Schema Discovery] Endpoint ${metadataUrl} returned no Generic Inquiries (200 OK but 0 EntitySets found)`);
+            console.warn(`[Schema Discovery] Continuing to try next endpoint...`);
+            // Continue to try next endpoint instead of returning empty
           }
         } else {
           const errorText = await response.text();
@@ -340,16 +355,18 @@ export class SchemaDiscoveryService {
       }
     }
 
-    // All endpoint formats failed
-    console.error(
-      '[Schema Discovery] All Generic Inquiry OData endpoint formats failed. This typically means:\n' +
-      '  1. Generic Inquiry OData is not enabled in Acumatica\n' +
-      '  2. No Generic Inquiries have been published via OData (check "Expose via OData" in SM208000)\n' +
-      '  3. Your Acumatica user lacks permissions to access OData endpoints\n' +
-      `  Tried endpoints: ${endpointFormats.join(', ')}`
-    );
+    // All endpoint formats failed or returned no inquiries
+    if (allInquiriesFound.length === 0) {
+      console.error(
+        '[Schema Discovery] All Generic Inquiry OData endpoint formats failed or returned no inquiries. This typically means:\n' +
+        '  1. Generic Inquiry OData is not enabled in Acumatica\n' +
+        '  2. No Generic Inquiries have been published via OData (check "Expose via OData" in SM208000)\n' +
+        '  3. Your Acumatica user lacks permissions to access OData endpoints\n' +
+        `  Tried endpoints: ${endpointFormats.join(', ')}`
+      );
+    }
 
-    return [];
+    return allInquiriesFound;
   }
 
   /**
