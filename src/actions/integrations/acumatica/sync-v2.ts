@@ -547,50 +547,55 @@ export async function syncAcumaticaInvoicesV2() {
             console.log(`[Sync V2] Invoice ${invoiceRef} - MISMATCH: Salesperson "${invoiceData.salespersonId}" not found in map`);
             console.log(`[Sync V2] Invoice ${invoiceRef} - Checking for case-insensitive or trimmed matches...`);
 
-            // Try to find a case-insensitive match for debugging
+            // Try to find a case-insensitive or trimmed match and USE it
             const trimmedId = invoiceData.salespersonId.trim();
             const lowerCaseId = trimmedId.toLowerCase();
-            for (const [mapKey] of salespersonMap.entries()) {
+            for (const [mapKey, mapUser] of salespersonMap.entries()) {
               if (mapKey.trim().toLowerCase() === lowerCaseId) {
-                console.log(`[Sync V2] Invoice ${invoiceRef} - Found case-insensitive match: "${mapKey}" matches "${invoiceData.salespersonId}"`);
+                console.log(`[Sync V2] Invoice ${invoiceRef} - Found case-insensitive/trimmed match: "${mapKey}" matches "${invoiceData.salespersonId}" - using this mapping`);
+                transactionUser = mapUser;
+                break;
               }
             }
 
-            console.log(`[Sync V2] Invoice ${invoiceRef} - Raw invoice salesperson data:`, JSON.stringify(rawInvoice.Commissions || rawInvoice.SalesPersons || 'No commission data', null, 2));
+            // If still no match after case-insensitive search, handle unmapped salesperson
+            if (!transactionUser) {
+              console.log(`[Sync V2] Invoice ${invoiceRef} - Raw invoice salesperson data:`, JSON.stringify(rawInvoice.Commissions || rawInvoice.SalesPersons || 'No commission data', null, 2));
 
-            if (integration.unmappedSalespersonAction === 'SKIP') {
-              summary.invoicesSkipped += 1;
-              skipped.push({
-                invoiceRef,
-                reason: `Unmapped salesperson: ${invoiceData.salespersonId}`,
-              });
-              continue;
-            }
-
-            // Handle DEFAULT_USER action if configured
-            if (integration.unmappedSalespersonAction === 'DEFAULT_USER' && integration.defaultSalespersonUserId) {
-              const defaultUser = await prisma.user.findUnique({
-                where: { id: integration.defaultSalespersonUserId },
-              });
-
-              if (!defaultUser) {
+              if (integration.unmappedSalespersonAction === 'SKIP') {
                 summary.invoicesSkipped += 1;
                 skipped.push({
                   invoiceRef,
-                  reason: 'Default user not found',
+                  reason: `Unmapped salesperson: ${invoiceData.salespersonId}`,
                 });
                 continue;
               }
 
-              // Use default user
-              transactionUser = defaultUser;
-            } else {
-              summary.invoicesSkipped += 1;
-              skipped.push({
-                invoiceRef,
-                reason: `Unmapped salesperson: ${invoiceData.salespersonId}`,
-              });
-              continue;
+              // Handle DEFAULT_USER action if configured
+              if (integration.unmappedSalespersonAction === 'DEFAULT_USER' && integration.defaultSalespersonUserId) {
+                const defaultUser = await prisma.user.findUnique({
+                  where: { id: integration.defaultSalespersonUserId },
+                });
+
+                if (!defaultUser) {
+                  summary.invoicesSkipped += 1;
+                  skipped.push({
+                    invoiceRef,
+                    reason: 'Default user not found',
+                  });
+                  continue;
+                }
+
+                // Use default user
+                transactionUser = defaultUser;
+              } else {
+                summary.invoicesSkipped += 1;
+                skipped.push({
+                  invoiceRef,
+                  reason: `Unmapped salesperson: ${invoiceData.salespersonId}`,
+                });
+                continue;
+              }
             }
           }
 
