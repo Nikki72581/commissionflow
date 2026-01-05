@@ -549,6 +549,56 @@ export class AcumaticaClient {
   }
 
   /**
+   * Make a request using Basic Authentication (required for OData endpoints)
+   */
+  async makeBasicAuthRequest(
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    endpoint: string,
+    body?: any
+  ): Promise<Response> {
+    if (this.config.credentials.type !== 'password') {
+      throw new Error('Basic Auth requires password credentials');
+    }
+
+    // Handle full URLs or relative paths
+    let url: string;
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+      url = endpoint;
+    } else {
+      // Remove leading slash if present
+      const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+      url = `${this.instanceUrl}/${cleanEndpoint}`;
+    }
+
+    console.log(`[Acumatica Client] makeBasicAuthRequest: ${method} ${url}`);
+
+    // Create Basic Auth header
+    const { username, password } = this.config.credentials;
+    const authString = Buffer.from(`${username}:${password}`).toString('base64');
+
+    const headers: HeadersInit = {
+      'Authorization': `Basic ${authString}`,
+      'Accept': 'application/xml, application/json',
+    };
+
+    const options: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (body && (method === 'POST' || method === 'PUT')) {
+      options.body = JSON.stringify(body);
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const response = await fetch(url, options);
+
+    console.log(`[Acumatica Client] Basic Auth Response: ${response.status} ${response.statusText}`);
+
+    return response;
+  }
+
+  /**
    * Logout from Acumatica
    */
   async logout(): Promise<void> {

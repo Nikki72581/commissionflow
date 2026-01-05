@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, FileText, Wrench } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, FileText } from 'lucide-react';
 import {
   discoverGenericInquiries,
   selectDataSource,
@@ -38,13 +38,10 @@ export default function DataSourceSelectionPage() {
 
   const [discovering, setDiscovering] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testingBasicAuth, setTestingBasicAuth] = useState(false);
 
   const [genericInquiries, setGenericInquiries] = useState<EntityOption[]>([]);
 
   const [error, setError] = useState<string | null>(null);
-  const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
   const [currentConfig, setCurrentConfig] = useState<{
     dataSourceType: DataSourceType;
     dataSourceEntity: string;
@@ -112,12 +109,12 @@ export default function DataSourceSelectionPage() {
       if (inquiries.length === 0) {
         console.warn('[Data Source Page] No Generic Inquiries found');
         setError(
-          'No Generic Inquiries found. Please check:\n\n' +
-          '1. Browser Console (F12) for detailed logs\n' +
-          '2. Server terminal for error messages\n' +
-          '3. Acumatica Web Service Endpoints (SM207045) - ensure Generic Inquiry OData is enabled\n' +
-          '4. Your Generic Inquiry has "Expose via OData" checked and is SAVED\n' +
-          '5. Try accessing https://your-instance/api/odata/gi/$metadata in your browser'
+          'No Generic Inquiries found. Please ensure:\n\n' +
+          '1. Generic Inquiry OData is enabled in Acumatica (SM207045)\n' +
+          '2. You have created a Generic Inquiry in Acumatica (SM208000)\n' +
+          '3. The "Expose via OData" checkbox is checked on your Generic Inquiry\n' +
+          '4. You have saved the Generic Inquiry after checking the box\n' +
+          '5. Your Acumatica user has permissions to access Generic Inquiries'
         );
       } else {
         console.log('[Data Source Page] Successfully found Generic Inquiries:',
@@ -132,8 +129,8 @@ export default function DataSourceSelectionPage() {
 
       setError(
         error instanceof Error
-          ? `Error: ${error.message}\n\nCheck browser console (F12) for detailed logs.`
-          : 'Failed to discover Generic Inquiries. Check browser console (F12) for details.'
+          ? `Error: ${error.message}`
+          : 'Failed to discover Generic Inquiries'
       );
     } finally {
       setDiscovering(false);
@@ -161,95 +158,6 @@ export default function DataSourceSelectionPage() {
     }
   };
 
-  const handleTestOData = async () => {
-    if (!integrationId) return;
-
-    setTesting(true);
-    setError(null);
-    setDiagnosticResults(null);
-
-    try {
-      console.log('[Data Source Page] Running OData diagnostic test...');
-
-      const response = await fetch('/api/acumatica/test-odata', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ integrationId }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Diagnostic test failed');
-      }
-
-      const results = await response.json();
-      console.log('[Data Source Page] Diagnostic results:', results);
-      setDiagnosticResults(results);
-
-      // Check if any endpoint succeeded
-      const successfulEndpoint = results.endpoints.find((e: any) => e.success);
-      if (successfulEndpoint) {
-        console.log('[Data Source Page] Found working OData endpoint:', successfulEndpoint.url);
-      } else {
-        console.warn('[Data Source Page] No OData endpoints are accessible');
-        setError('No OData endpoints are accessible. See diagnostic results below.');
-      }
-    } catch (error) {
-      console.error('[Data Source Page] Diagnostic test failed:', error);
-      setError(
-        error instanceof Error
-          ? `Diagnostic test failed: ${error.message}`
-          : 'Diagnostic test failed'
-      );
-    } finally {
-      setTesting(false);
-    }
-  };
-
-  const handleTestODataBasicAuth = async () => {
-    if (!integrationId) return;
-
-    setTestingBasicAuth(true);
-    setError(null);
-    setDiagnosticResults(null);
-
-    try {
-      console.log('[Data Source Page] Running OData Basic Auth diagnostic test...');
-
-      const response = await fetch('/api/acumatica/test-odata-basic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ integrationId }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Diagnostic test failed');
-      }
-
-      const results = await response.json();
-      console.log('[Data Source Page] Basic Auth diagnostic results:', results);
-      setDiagnosticResults(results);
-
-      // Check if any endpoint succeeded
-      const successfulEndpoint = results.endpoints.find((e: any) => e.success);
-      if (successfulEndpoint) {
-        console.log('[Data Source Page] Found working OData endpoint with Basic Auth:', successfulEndpoint.url);
-      } else {
-        console.warn('[Data Source Page] No OData endpoints are accessible with Basic Auth');
-        setError('No OData endpoints are accessible with Basic Auth. See diagnostic results below.');
-      }
-    } catch (error) {
-      console.error('[Data Source Page] Basic Auth diagnostic test failed:', error);
-      setError(
-        error instanceof Error
-          ? `Basic Auth diagnostic test failed: ${error.message}`
-          : 'Basic Auth diagnostic test failed'
-      );
-    } finally {
-      setTestingBasicAuth(false);
-    }
-  };
 
   const availableEntities = genericInquiries;
 
@@ -345,173 +253,23 @@ export default function DataSourceSelectionPage() {
 
           {/* Discover Button */}
           {!hasDiscovered && (
-            <div className="space-y-2">
-              <Button
-                onClick={handleDiscoverDataSources}
-                disabled={discovering}
-                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              >
-                {discovering ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Discovering Generic Inquiries...
-                  </>
-                ) : (
-                  'Discover Generic Inquiries'
-                )}
-              </Button>
-
-              {/* Diagnostic Test Buttons */}
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  onClick={handleTestOData}
-                  disabled={testing || testingBasicAuth}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {testing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Testing...
-                    </>
-                  ) : (
-                    <>
-                      <Wrench className="mr-2 h-4 w-4" />
-                      Test (Cookies)
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  onClick={handleTestODataBasicAuth}
-                  disabled={testing || testingBasicAuth}
-                  variant="outline"
-                  className="w-full"
-                >
-                  {testingBasicAuth ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Testing...
-                    </>
-                  ) : (
-                    <>
-                      <Wrench className="mr-2 h-4 w-4" />
-                      Test (Basic Auth)
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
+            <Button
+              onClick={handleDiscoverDataSources}
+              disabled={discovering}
+              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            >
+              {discovering ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Discovering Generic Inquiries...
+                </>
+              ) : (
+                'Discover Generic Inquiries'
+              )}
+            </Button>
           )}
         </CardContent>
       </Card>
-
-      {/* Diagnostic Results */}
-      {diagnosticResults && (
-        <Card className="border-blue-500/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-blue-600" />
-              OData Diagnostic Results
-            </CardTitle>
-            <CardDescription>
-              Tested at {new Date(diagnosticResults.timestamp).toLocaleString()}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <p className="text-sm font-medium">Instance: {diagnosticResults.instanceUrl}</p>
-              <p className="text-sm font-medium">API Version: {diagnosticResults.apiVersion}</p>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="font-semibold text-sm">Endpoint Test Results:</h4>
-              {diagnosticResults.endpoints.map((endpoint: any, index: number) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border ${
-                    endpoint.success
-                      ? 'border-emerald-500/30 bg-emerald-500/5'
-                      : 'border-red-500/30 bg-red-500/5'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex-1">
-                      <code className="text-xs font-mono">{endpoint.url}</code>
-                      {endpoint.authMethod && (
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          Auth: {endpoint.authMethod}
-                        </div>
-                      )}
-                    </div>
-                    <span
-                      className={`text-xs font-semibold ${
-                        endpoint.success ? 'text-emerald-600' : 'text-red-600'
-                      }`}
-                    >
-                      {endpoint.status} {endpoint.statusText}
-                    </span>
-                  </div>
-
-                  {endpoint.success && endpoint.contentLength && (
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Received {endpoint.contentLength} characters of metadata
-                    </p>
-                  )}
-
-                  {endpoint.entitySetCount !== undefined && (
-                    <div className="mb-2">
-                      <p className="text-xs font-semibold mb-1">
-                        Found {endpoint.entitySetCount} EntitySet{endpoint.entitySetCount !== 1 ? 's' : ''}
-                      </p>
-                      {endpoint.entitySetsFound && endpoint.entitySetsFound.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {endpoint.entitySetsFound.map((name: string, idx: number) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 text-xs bg-blue-500/10 text-blue-600 rounded"
-                            >
-                              {name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {endpoint.error && (
-                    <p className="text-xs text-red-600 mb-2">Error: {endpoint.error}</p>
-                  )}
-
-                  {endpoint.contentPreview && (
-                    <details className="text-xs">
-                      <summary className="cursor-pointer text-blue-600 hover:text-blue-700">
-                        Show response preview
-                      </summary>
-                      <pre className="mt-2 p-2 bg-gray-900 text-gray-100 rounded overflow-x-auto">
-                        {endpoint.contentPreview}
-                      </pre>
-                    </details>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <Alert className="border-blue-500/30 bg-blue-500/10">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-xs">
-                <strong>What to check:</strong>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li>If all endpoints show 404: Generic Inquiry OData is not enabled in Acumatica</li>
-                  <li>If endpoints show 401/403: Authentication or permission issues</li>
-                  <li>If endpoint succeeds but no inquiries found: No Generic Inquiries are published via OData</li>
-                  <li>Check the response preview for EntitySet elements containing your inquiry names</li>
-                </ul>
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Generic Inquiry Selection */}
       {hasDiscovered && availableEntities.length > 0 && (
