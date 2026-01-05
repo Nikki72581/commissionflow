@@ -296,39 +296,53 @@ export class SchemaDiscoveryService {
   static async discoverGenericInquiries(
     client: AcumaticaClient
   ): Promise<InquiryInfo[]> {
-    try {
-      // Fetch the OData metadata for Generic Inquiries
-      const metadataUrl = `/api/odata/gi/$metadata`;
+    // Try multiple OData endpoint formats for compatibility with different Acumatica versions
+    const endpointFormats = [
+      `/api/odata/gi/$metadata`,           // New format (24R2+) without tenant in path
+      `/odata/$metadata`,                  // Legacy format (OData v3)
+      `/odatav4/$metadata`,                // OData v4 DAC-based (not typically for GI, but worth trying)
+    ];
 
-      const response = await client.makeRequest("GET", metadataUrl);
+    for (const metadataUrl of endpointFormats) {
+      try {
+        console.log(`[Schema Discovery] Trying Generic Inquiry OData endpoint: ${metadataUrl}`);
 
-      if (!response.ok) {
-        // Log the error but don't throw - Generic Inquiry OData might not be configured
-        console.warn(
-          `[Schema Discovery] Generic Inquiry OData not available: ${response.status} ${response.statusText}`
-        );
+        const response = await client.makeRequest("GET", metadataUrl);
 
-        if (response.status === 404) {
+        if (response.ok) {
+          console.log(`[Schema Discovery] Successfully connected to ${metadataUrl}`);
+          const metadataXml = await response.text();
+
+          // Parse the OData metadata XML
+          const inquiries = this.parseGenericInquiryMetadata(metadataXml, client.apiVersion);
+
+          if (inquiries.length > 0) {
+            console.log(`[Schema Discovery] Found ${inquiries.length} Generic Inquiries using endpoint: ${metadataUrl}`);
+            return inquiries;
+          } else {
+            console.warn(`[Schema Discovery] Endpoint ${metadataUrl} returned no Generic Inquiries`);
+          }
+        } else {
           console.warn(
-            '[Schema Discovery] Generic Inquiry OData endpoint not found. This typically means:\n' +
-            '  1. Generic Inquiry OData is not enabled in Acumatica\n' +
-            '  2. No Generic Inquiries have been published via OData\n' +
-            '  3. The OData endpoint is not configured for this Acumatica instance'
+            `[Schema Discovery] Endpoint ${metadataUrl} returned: ${response.status} ${response.statusText}`
           );
         }
-
-        return [];
+      } catch (error) {
+        console.warn(`[Schema Discovery] Failed to fetch from ${metadataUrl}:`, error);
+        // Continue to next endpoint format
       }
-
-      const metadataXml = await response.text();
-
-      // Parse the OData metadata XML
-      return this.parseGenericInquiryMetadata(metadataXml, client.apiVersion);
-    } catch (error) {
-      console.error("[Schema Discovery] Error fetching Generic Inquiry metadata:", error);
-      // Return empty array on error (GI might not be configured)
-      return [];
     }
+
+    // All endpoint formats failed
+    console.error(
+      '[Schema Discovery] All Generic Inquiry OData endpoint formats failed. This typically means:\n' +
+      '  1. Generic Inquiry OData is not enabled in Acumatica\n' +
+      '  2. No Generic Inquiries have been published via OData (check "Expose via OData" in SM208000)\n' +
+      '  3. Your Acumatica user lacks permissions to access OData endpoints\n' +
+      `  Tried endpoints: ${endpointFormats.join(', ')}`
+    );
+
+    return [];
   }
 
   /**
