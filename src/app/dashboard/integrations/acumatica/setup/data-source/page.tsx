@@ -39,6 +39,7 @@ export default function DataSourceSelectionPage() {
   const [discovering, setDiscovering] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testingBasicAuth, setTestingBasicAuth] = useState(false);
 
   const [genericInquiries, setGenericInquiries] = useState<EntityOption[]>([]);
 
@@ -205,6 +206,51 @@ export default function DataSourceSelectionPage() {
     }
   };
 
+  const handleTestODataBasicAuth = async () => {
+    if (!integrationId) return;
+
+    setTestingBasicAuth(true);
+    setError(null);
+    setDiagnosticResults(null);
+
+    try {
+      console.log('[Data Source Page] Running OData Basic Auth diagnostic test...');
+
+      const response = await fetch('/api/acumatica/test-odata-basic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ integrationId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Diagnostic test failed');
+      }
+
+      const results = await response.json();
+      console.log('[Data Source Page] Basic Auth diagnostic results:', results);
+      setDiagnosticResults(results);
+
+      // Check if any endpoint succeeded
+      const successfulEndpoint = results.endpoints.find((e: any) => e.success);
+      if (successfulEndpoint) {
+        console.log('[Data Source Page] Found working OData endpoint with Basic Auth:', successfulEndpoint.url);
+      } else {
+        console.warn('[Data Source Page] No OData endpoints are accessible with Basic Auth');
+        setError('No OData endpoints are accessible with Basic Auth. See diagnostic results below.');
+      }
+    } catch (error) {
+      console.error('[Data Source Page] Basic Auth diagnostic test failed:', error);
+      setError(
+        error instanceof Error
+          ? `Basic Auth diagnostic test failed: ${error.message}`
+          : 'Basic Auth diagnostic test failed'
+      );
+    } finally {
+      setTestingBasicAuth(false);
+    }
+  };
+
   const availableEntities = genericInquiries;
 
   const canContinue = selectedEntity !== '';
@@ -315,25 +361,46 @@ export default function DataSourceSelectionPage() {
                 )}
               </Button>
 
-              {/* Diagnostic Test Button */}
-              <Button
-                onClick={handleTestOData}
-                disabled={testing}
-                variant="outline"
-                className="w-full"
-              >
-                {testing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Running Diagnostics...
-                  </>
-                ) : (
-                  <>
-                    <Wrench className="mr-2 h-4 w-4" />
-                    Test OData Connection (Debug)
-                  </>
-                )}
-              </Button>
+              {/* Diagnostic Test Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  onClick={handleTestOData}
+                  disabled={testing || testingBasicAuth}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {testing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <Wrench className="mr-2 h-4 w-4" />
+                      Test (Cookies)
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={handleTestODataBasicAuth}
+                  disabled={testing || testingBasicAuth}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {testingBasicAuth ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <Wrench className="mr-2 h-4 w-4" />
+                      Test (Basic Auth)
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -369,7 +436,14 @@ export default function DataSourceSelectionPage() {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <code className="text-xs font-mono">{endpoint.url}</code>
+                    <div className="flex-1">
+                      <code className="text-xs font-mono">{endpoint.url}</code>
+                      {endpoint.authMethod && (
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          Auth: {endpoint.authMethod}
+                        </div>
+                      )}
+                    </div>
                     <span
                       className={`text-xs font-semibold ${
                         endpoint.success ? 'text-emerald-600' : 'text-red-600'

@@ -1,13 +1,13 @@
 /**
- * Diagnostic endpoint to test OData connectivity
- * This helps debug Generic Inquiry discovery issues
+ * Test OData with Basic Authentication
+ * Some Acumatica versions require Basic Auth for OData instead of session cookies
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/session';
 import { UserRole } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { createAuthenticatedClient } from '@/lib/acumatica/auth';
+import { decrypt } from '@/lib/encryption';
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,7 +39,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const client = await createAuthenticatedClient(integration);
+    // Decrypt credentials
+    const username = decrypt(integration.encryptedUsername);
+    const password = decrypt(integration.encryptedPassword);
+
+    // Create Basic Auth header
+    const authString = Buffer.from(`${username}:${password}`).toString('base64');
 
     const results = {
       timestamp: new Date().toISOString(),
@@ -55,10 +60,10 @@ export async function POST(request: NextRequest) {
         entitySetsFound?: string[];
         entitySetCount?: number;
         error?: string;
+        authMethod: string;
       }>,
     };
 
-    // Test different OData endpoints
     const endpointsToTest = [
       '/api/odata/gi/$metadata',
       '/odata/$metadata',
@@ -67,19 +72,26 @@ export async function POST(request: NextRequest) {
 
     for (const endpoint of endpointsToTest) {
       try {
-        console.log(`[OData Test] Testing endpoint: ${endpoint}`);
-        console.log(`[OData Test] Full URL will be: ${integration.instanceUrl}${endpoint}`);
+        const url = `${integration.instanceUrl}${endpoint}`;
+        console.log(`[OData Basic Auth Test] Testing: ${url}`);
 
-        const response = await client.makeRequest('GET', endpoint);
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Basic ${authString}`,
+            'Accept': 'application/xml',
+          },
+        });
 
         const contentText = await response.text();
-        console.log(`[OData Test] Response content type: ${response.headers.get('content-type')}`);
+        console.log(`[OData Basic Auth Test] ${endpoint} - Status: ${response.status}`);
+        console.log(`[OData Basic Auth Test] Content-Type: ${response.headers.get('content-type')}`);
 
         // Check if response is HTML instead of XML
         const isHtml = contentText.trim().toLowerCase().startsWith('<!doctype html') ||
                        contentText.trim().toLowerCase().startsWith('<html');
 
-        // Parse EntitySet names from the metadata (only if it's XML)
+        // Parse EntitySet names
         const entitySetRegex = /<EntitySet Name="([^"]+)"/g;
         const entitySets: string[] = [];
         let match;
@@ -99,30 +111,29 @@ export async function POST(request: NextRequest) {
           contentPreview: contentText.substring(0, 1000),
           entitySetsFound: entitySets,
           entitySetCount: entitySets.length,
-          error: isHtml ? 'Received HTML instead of XML metadata (possible authentication issue or endpoint not found)' : undefined,
+          authMethod: 'Basic Authentication',
+          error: isHtml ? 'Received HTML instead of XML' : undefined,
         });
 
-        console.log(`[OData Test] ${endpoint} - Status: ${response.status}, Length: ${contentText.length}, EntitySets: ${entitySets.length}`);
         if (entitySets.length > 0) {
-          console.log(`[OData Test] EntitySets found: ${entitySets.join(', ')}`);
+          console.log(`[OData Basic Auth Test] Found ${entitySets.length} EntitySets: ${entitySets.join(', ')}`);
         }
       } catch (error) {
-        console.error(`[OData Test] Error testing ${endpoint}:`, error);
+        console.error(`[OData Basic Auth Test] Error testing ${endpoint}:`, error);
         results.endpoints.push({
           url: endpoint,
           status: 0,
           statusText: 'Error',
           success: false,
+          authMethod: 'Basic Authentication',
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
 
-    await client.logout();
-
     return NextResponse.json(results);
   } catch (error) {
-    console.error('[OData Test] Unexpected error:', error);
+    console.error('[OData Basic Auth Test] Unexpected error:', error);
     return NextResponse.json(
       {
         error: error instanceof Error ? error.message : 'Internal server error',
