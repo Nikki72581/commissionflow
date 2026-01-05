@@ -119,12 +119,13 @@ export async function fetchAcumaticaSalespeople(): Promise<FetchSalespeopleResul
       const salespersonName = salesperson.Name.value;
       const salespersonEmail = salesperson.Email.value;
 
-      console.log('[Fetch Salespeople] Processing salesperson from Acumatica API:', {
-        SalespersonID: salespersonId,
-        Name: salespersonName,
-        Email: salespersonEmail,
-        fullObject: JSON.stringify(salesperson, null, 2)
-      });
+      console.log('[Fetch Salespeople] Processing salesperson from Acumatica API:');
+      console.log('[Fetch Salespeople] - SalespersonID.value:', salespersonId);
+      console.log('[Fetch Salespeople] - SalespersonID type:', typeof salespersonId);
+      console.log('[Fetch Salespeople] - Full SalespersonID object:', JSON.stringify(salesperson.SalespersonID, null, 2));
+      console.log('[Fetch Salespeople] - Name:', salespersonName);
+      console.log('[Fetch Salespeople] - Email:', salespersonEmail);
+      console.log('[Fetch Salespeople] - Full salesperson object:', JSON.stringify(salesperson, null, 2));
 
       const existingMapping = existingMappingsMap.get(salespersonId);
 
@@ -155,6 +156,7 @@ export async function fetchAcumaticaSalespeople(): Promise<FetchSalespeopleResul
       if (existingMapping) {
         // Only update if not manually configured
         if (existingMapping.matchType !== 'MANUAL' && existingMapping.matchType !== 'CREATED_NEW') {
+          console.log('[Fetch Salespeople] - Updating existing mapping with acumaticaSalespersonId:', salespersonId);
           await prisma.acumaticaSalespersonMapping.update({
             where: { id: existingMapping.id },
             data: {
@@ -165,8 +167,11 @@ export async function fetchAcumaticaSalespeople(): Promise<FetchSalespeopleResul
               status,
             },
           });
+        } else {
+          console.log('[Fetch Salespeople] - Skipping update (manually configured):', salespersonId);
         }
       } else {
+        console.log('[Fetch Salespeople] - Creating NEW mapping with acumaticaSalespersonId:', salespersonId, 'status:', status, 'userId:', matchedUserId);
         await prisma.acumaticaSalespersonMapping.create({
           data: {
             integrationId: integration.id,

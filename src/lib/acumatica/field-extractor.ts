@@ -145,29 +145,41 @@ export class FieldExtractor {
     record: any,
     fieldMappings: FieldMappingConfig
   ): string | null {
+    console.log('[FieldExtractor] Extracting salesperson from sourceField:', fieldMappings.salesperson.sourceField);
+
     const value = AcumaticaQueryBuilder.extractFieldValue(
       record,
       fieldMappings.salesperson.sourceField
     );
 
+    console.log('[FieldExtractor] Raw extracted value:', JSON.stringify(value, null, 2));
+
     // Handle { value: string } wrapper format
     let salespersonId =
       typeof value === "object" && value?.value !== undefined ? value.value : value;
 
+    console.log('[FieldExtractor] After unwrapping { value } format:', salespersonId);
+
     // If it's an array (from detail tab), take the first salesperson
     if (Array.isArray(salespersonId) && salespersonId.length > 0) {
       const firstSalesperson = salespersonId[0];
+      console.log('[FieldExtractor] Found array, first element:', JSON.stringify(firstSalesperson, null, 2));
       salespersonId =
         typeof firstSalesperson === "object" && firstSalesperson?.SalespersonID
           ? firstSalesperson.SalespersonID.value || firstSalesperson.SalespersonID
           : firstSalesperson;
+      console.log('[FieldExtractor] After extracting from array:', salespersonId);
     }
 
     // Handle nested object like { SalespersonID: { value: "SP001" } }
     if (typeof salespersonId === "object" && salespersonId?.SalespersonID) {
+      console.log('[FieldExtractor] Found nested SalespersonID object:', JSON.stringify(salespersonId, null, 2));
       salespersonId =
         salespersonId.SalespersonID.value || salespersonId.SalespersonID;
+      console.log('[FieldExtractor] After extracting from nested object:', salespersonId);
     }
+
+    console.log('[FieldExtractor] FINAL salespersonId:', salespersonId, 'type:', typeof salespersonId);
 
     return salespersonId || null;
   }

@@ -419,6 +419,25 @@ export async function syncAcumaticaInvoicesV2() {
 
       // Build salesperson map
       const salespersonMap = new Map<string, User>();
+
+      console.log('[Sync V2] Querying salesperson mappings for integration:', integration.id);
+
+      // First, log ALL mappings for debugging
+      const allMappings = await prisma.acumaticaSalespersonMapping.findMany({
+        where: { integrationId: integration.id },
+        select: {
+          acumaticaSalespersonId: true,
+          userId: true,
+          status: true,
+          matchType: true,
+        },
+      });
+      console.log('[Sync V2] Total mappings in database:', allMappings.length);
+      allMappings.forEach((m, i) => {
+        console.log(`[Sync V2] All Mapping ${i + 1}: acumaticaSalespersonId="${m.acumaticaSalespersonId}", userId="${m.userId}", status="${m.status}", matchType="${m.matchType}"`);
+      });
+
+      // Now get only mappings with users (what we actually use)
       const mappingsWithUsers = await prisma.acumaticaSalespersonMapping.findMany({
         where: {
           integrationId: integration.id,
@@ -428,8 +447,15 @@ export async function syncAcumaticaInvoicesV2() {
         select: {
           acumaticaSalespersonId: true,
           userId: true,
+          status: true,
         },
       });
+
+      console.log('[Sync V2] Found', mappingsWithUsers.length, 'salesperson mappings with users (non-IGNORED + has userId)');
+      if (mappingsWithUsers.length === 0 && allMappings.length > 0) {
+        console.warn('[Sync V2] WARNING: There are', allMappings.length, 'total mappings but NONE have userId set!');
+        console.warn('[Sync V2] This likely means saveSalespersonMappings() was never called to create placeholder users.');
+      }
 
       const mappedUserIds = mappingsWithUsers
         .map((mapping) => mapping.userId)
@@ -451,6 +477,12 @@ export async function syncAcumaticaInvoicesV2() {
       });
 
       console.log(`[Sync V2] Built salesperson map with ${salespersonMap.size} entries`);
+      console.log('[Sync V2] Salesperson map keys:', Array.from(salespersonMap.keys()));
+      console.log('[Sync V2] Sample salesperson map entry:',
+        salespersonMap.size > 0
+          ? { id: Array.from(salespersonMap.keys())[0], user: Array.from(salespersonMap.values())[0].email }
+          : 'No entries'
+      );
 
       // Caches
       const clientCache = new Map<string, Client>();
@@ -505,9 +537,27 @@ export async function syncAcumaticaInvoicesV2() {
             continue;
           }
 
+          console.log(`[Sync V2] Invoice ${invoiceRef} - Looking for salesperson: "${invoiceData.salespersonId}"`);
+          console.log(`[Sync V2] Invoice ${invoiceRef} - Salesperson ID type: ${typeof invoiceData.salespersonId}`);
+          console.log(`[Sync V2] Invoice ${invoiceRef} - Available salesperson IDs in map:`, Array.from(salespersonMap.keys()));
+
           let transactionUser = salespersonMap.get(invoiceData.salespersonId);
 
           if (!transactionUser) {
+            console.log(`[Sync V2] Invoice ${invoiceRef} - MISMATCH: Salesperson "${invoiceData.salespersonId}" not found in map`);
+            console.log(`[Sync V2] Invoice ${invoiceRef} - Checking for case-insensitive or trimmed matches...`);
+
+            // Try to find a case-insensitive match for debugging
+            const trimmedId = invoiceData.salespersonId.trim();
+            const lowerCaseId = trimmedId.toLowerCase();
+            for (const [mapKey] of salespersonMap.entries()) {
+              if (mapKey.trim().toLowerCase() === lowerCaseId) {
+                console.log(`[Sync V2] Invoice ${invoiceRef} - Found case-insensitive match: "${mapKey}" matches "${invoiceData.salespersonId}"`);
+              }
+            }
+
+            console.log(`[Sync V2] Invoice ${invoiceRef} - Raw invoice salesperson data:`, JSON.stringify(rawInvoice.Commissions || rawInvoice.SalesPersons || 'No commission data', null, 2));
+
             if (integration.unmappedSalespersonAction === 'SKIP') {
               summary.invoicesSkipped += 1;
               skipped.push({
