@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/session';
 import { UserRole } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { decrypt } from '@/lib/encryption';
+import { decryptPasswordCredentials } from '@/lib/acumatica/encryption';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,8 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Decrypt credentials
-    const username = decrypt(integration.encryptedUsername);
-    const password = decrypt(integration.encryptedPassword);
+    const { username, password } = decryptPasswordCredentials(integration.encryptedCredentials);
 
     // Create Basic Auth header
     const authString = Buffer.from(`${username}:${password}`).toString('base64');
