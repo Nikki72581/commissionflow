@@ -395,7 +395,13 @@ export async function syncAcumaticaInvoicesV2() {
       console.log('[Sync V2] Query:', query);
 
       // Fetch invoices
-      const response = await client.makeRequest('GET', query);
+      // Generic Inquiry and DAC OData endpoints require Basic Auth instead of session cookies
+      const useBasicAuth = integration.dataSourceType === 'GENERIC_INQUIRY' ||
+                          integration.dataSourceType === 'DAC_ODATA';
+
+      const response = useBasicAuth
+        ? await client.makeBasicAuthRequest('GET', query)
+        : await client.makeRequest('GET', query);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch invoices: ${response.status} ${response.statusText}`);

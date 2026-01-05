@@ -409,7 +409,7 @@ export class SchemaDiscoveryService {
       inquiries.push({
         name: inquiryName,
         inquiryName: inquiryName,
-        endpoint: `/api/odata/gi/${inquiryName}`,
+        endpoint: `/odata/${inquiryName}`,
         displayName: inquiryName,
         description: `Generic Inquiry: ${inquiryName}`,
         isODataExposed: true,
@@ -534,7 +534,7 @@ export class SchemaDiscoveryService {
 
       entities.push({
         name: dacName,
-        endpoint: `/api/odata/dac/${dacName}`,
+        endpoint: `/odatav4/${dacName}`,
         displayName: dacName,
         description: `DAC: ${dacName}`,
       });
@@ -679,10 +679,10 @@ export class SchemaDiscoveryService {
       fields = [...fields, ...expandedFields];
     } else if (dataSourceType === "GENERIC_INQUIRY") {
       fields = await this.getGenericInquirySchema(client, entityName);
-      endpoint = `/api/odata/gi/${entityName}`;
+      endpoint = `/odata/${entityName}`;
     } else if (dataSourceType === "DAC_ODATA") {
       fields = await this.getDacEntitySchema(client, entityName);
-      endpoint = `/api/odata/dac/${entityName}`;
+      endpoint = `/odatav4/${entityName}`;
     }
 
     const customFieldCount = fields.filter((f) => f.isCustom).length;

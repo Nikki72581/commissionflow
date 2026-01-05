@@ -79,7 +79,13 @@ export async function previewAcumaticaData(
       console.log("[Preview] Query:", query);
 
       // Fetch sample data
-      const response = await client.makeRequest("GET", query);
+      // Generic Inquiry and DAC OData endpoints require Basic Auth instead of session cookies
+      const useBasicAuth = integration.dataSourceType === "GENERIC_INQUIRY" ||
+                          integration.dataSourceType === "DAC_ODATA";
+
+      const response = useBasicAuth
+        ? await client.makeBasicAuthRequest("GET", query)
+        : await client.makeRequest("GET", query);
 
       if (!response.ok) {
         throw new Error(
@@ -278,7 +284,13 @@ export async function getAcumaticaRecordCount(integrationId: string): Promise<nu
         fieldMappings
       );
 
-      const response = await client.makeRequest("GET", countQuery);
+      // Generic Inquiry and DAC OData endpoints require Basic Auth instead of session cookies
+      const useBasicAuth = integration.dataSourceType === "GENERIC_INQUIRY" ||
+                          integration.dataSourceType === "DAC_ODATA";
+
+      const response = useBasicAuth
+        ? await client.makeBasicAuthRequest("GET", countQuery)
+        : await client.makeRequest("GET", countQuery);
 
       if (!response.ok) {
         throw new Error(`Failed to get record count: ${response.status}`);
