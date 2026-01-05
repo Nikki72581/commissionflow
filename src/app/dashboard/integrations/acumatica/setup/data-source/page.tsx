@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, FileText } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, ArrowRight, ArrowLeft, FileText, Wrench } from 'lucide-react';
 import {
   discoverGenericInquiries,
   selectDataSource,
@@ -38,10 +38,12 @@ export default function DataSourceSelectionPage() {
 
   const [discovering, setDiscovering] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   const [genericInquiries, setGenericInquiries] = useState<EntityOption[]>([]);
 
   const [error, setError] = useState<string | null>(null);
+  const [diagnosticResults, setDiagnosticResults] = useState<any>(null);
   const [currentConfig, setCurrentConfig] = useState<{
     dataSourceType: DataSourceType;
     dataSourceEntity: string;
@@ -86,8 +88,15 @@ export default function DataSourceSelectionPage() {
     setError(null);
 
     try {
+      console.log('[Data Source Page] Starting Generic Inquiry discovery...');
+      console.log('[Data Source Page] Integration ID:', integrationId);
+
       // Discover Generic Inquiries (the primary data source)
       const inquiries = await discoverGenericInquiries(integrationId);
+
+      console.log('[Data Source Page] Discovery completed. Found inquiries:', inquiries.length);
+      console.log('[Data Source Page] Inquiries:', inquiries);
+
       setGenericInquiries(
         inquiries.map((gi) => ({
           name: gi.name,
@@ -100,20 +109,30 @@ export default function DataSourceSelectionPage() {
       setDataSourceType('GENERIC_INQUIRY');
 
       if (inquiries.length === 0) {
+        console.warn('[Data Source Page] No Generic Inquiries found');
         setError(
-          'No Generic Inquiries found. Please ensure:\n' +
-          '1. Create a Generic Inquiry in Acumatica (System > Customization > Generic Inquiry - SM208000)\n' +
-          '2. In the Generic Inquiry screen, check the "Expose via OData" checkbox\n' +
-          '3. Save the Generic Inquiry\n' +
-          '4. Verify your Acumatica user has permissions to access the Generic Inquiry'
+          'No Generic Inquiries found. Please check:\n\n' +
+          '1. Browser Console (F12) for detailed logs\n' +
+          '2. Server terminal for error messages\n' +
+          '3. Acumatica Web Service Endpoints (SM207045) - ensure Generic Inquiry OData is enabled\n' +
+          '4. Your Generic Inquiry has "Expose via OData" checked and is SAVED\n' +
+          '5. Try accessing https://your-instance/api/odata/gi/$metadata in your browser'
         );
+      } else {
+        console.log('[Data Source Page] Successfully found Generic Inquiries:',
+          inquiries.map(i => i.name).join(', '));
       }
     } catch (error) {
-      console.error('Failed to discover Generic Inquiries:', error);
+      console.error('[Data Source Page] Failed to discover Generic Inquiries:', error);
+      console.error('[Data Source Page] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
       setError(
         error instanceof Error
-          ? `Error: ${error.message}`
-          : 'Failed to discover Generic Inquiries. Make sure Generic Inquiry OData is enabled in your Acumatica instance.'
+          ? `Error: ${error.message}\n\nCheck browser console (F12) for detailed logs.`
+          : 'Failed to discover Generic Inquiries. Check browser console (F12) for details.'
       );
     } finally {
       setDiscovering(false);
@@ -138,6 +157,51 @@ export default function DataSourceSelectionPage() {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleTestOData = async () => {
+    if (!integrationId) return;
+
+    setTesting(true);
+    setError(null);
+    setDiagnosticResults(null);
+
+    try {
+      console.log('[Data Source Page] Running OData diagnostic test...');
+
+      const response = await fetch('/api/acumatica/test-odata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ integrationId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Diagnostic test failed');
+      }
+
+      const results = await response.json();
+      console.log('[Data Source Page] Diagnostic results:', results);
+      setDiagnosticResults(results);
+
+      // Check if any endpoint succeeded
+      const successfulEndpoint = results.endpoints.find((e: any) => e.success);
+      if (successfulEndpoint) {
+        console.log('[Data Source Page] Found working OData endpoint:', successfulEndpoint.url);
+      } else {
+        console.warn('[Data Source Page] No OData endpoints are accessible');
+        setError('No OData endpoints are accessible. See diagnostic results below.');
+      }
+    } catch (error) {
+      console.error('[Data Source Page] Diagnostic test failed:', error);
+      setError(
+        error instanceof Error
+          ? `Diagnostic test failed: ${error.message}`
+          : 'Diagnostic test failed'
+      );
+    } finally {
+      setTesting(false);
     }
   };
 
@@ -235,23 +299,125 @@ export default function DataSourceSelectionPage() {
 
           {/* Discover Button */}
           {!hasDiscovered && (
-            <Button
-              onClick={handleDiscoverDataSources}
-              disabled={discovering}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-            >
-              {discovering ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Discovering Generic Inquiries...
-                </>
-              ) : (
-                'Discover Generic Inquiries'
-              )}
-            </Button>
+            <div className="space-y-2">
+              <Button
+                onClick={handleDiscoverDataSources}
+                disabled={discovering}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              >
+                {discovering ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Discovering Generic Inquiries...
+                  </>
+                ) : (
+                  'Discover Generic Inquiries'
+                )}
+              </Button>
+
+              {/* Diagnostic Test Button */}
+              <Button
+                onClick={handleTestOData}
+                disabled={testing}
+                variant="outline"
+                className="w-full"
+              >
+                {testing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Running Diagnostics...
+                  </>
+                ) : (
+                  <>
+                    <Wrench className="mr-2 h-4 w-4" />
+                    Test OData Connection (Debug)
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Diagnostic Results */}
+      {diagnosticResults && (
+        <Card className="border-blue-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-blue-600" />
+              OData Diagnostic Results
+            </CardTitle>
+            <CardDescription>
+              Tested at {new Date(diagnosticResults.timestamp).toLocaleString()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Instance: {diagnosticResults.instanceUrl}</p>
+              <p className="text-sm font-medium">API Version: {diagnosticResults.apiVersion}</p>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm">Endpoint Test Results:</h4>
+              {diagnosticResults.endpoints.map((endpoint: any, index: number) => (
+                <div
+                  key={index}
+                  className={`p-3 rounded-lg border ${
+                    endpoint.success
+                      ? 'border-emerald-500/30 bg-emerald-500/5'
+                      : 'border-red-500/30 bg-red-500/5'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <code className="text-xs font-mono">{endpoint.url}</code>
+                    <span
+                      className={`text-xs font-semibold ${
+                        endpoint.success ? 'text-emerald-600' : 'text-red-600'
+                      }`}
+                    >
+                      {endpoint.status} {endpoint.statusText}
+                    </span>
+                  </div>
+
+                  {endpoint.success && endpoint.contentLength && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Received {endpoint.contentLength} characters of metadata
+                    </p>
+                  )}
+
+                  {endpoint.error && (
+                    <p className="text-xs text-red-600 mb-2">Error: {endpoint.error}</p>
+                  )}
+
+                  {endpoint.contentPreview && (
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-blue-600 hover:text-blue-700">
+                        Show response preview
+                      </summary>
+                      <pre className="mt-2 p-2 bg-gray-900 text-gray-100 rounded overflow-x-auto">
+                        {endpoint.contentPreview}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <Alert className="border-blue-500/30 bg-blue-500/10">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-xs">
+                <strong>What to check:</strong>
+                <ul className="list-disc list-inside mt-1 space-y-1">
+                  <li>If all endpoints show 404: Generic Inquiry OData is not enabled in Acumatica</li>
+                  <li>If endpoints show 401/403: Authentication or permission issues</li>
+                  <li>If endpoint succeeds but no inquiries found: No Generic Inquiries are published via OData</li>
+                  <li>Check the response preview for EntitySet elements containing your inquiry names</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Generic Inquiry Selection */}
       {hasDiscovered && availableEntities.length > 0 && (
