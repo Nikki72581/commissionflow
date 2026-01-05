@@ -13,6 +13,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Loader2,
@@ -27,18 +34,26 @@ import {
   getDefaultFilterConfig,
 } from '@/actions/integrations/acumatica/filters';
 import { getAcumaticaIntegration } from '@/actions/integrations/acumatica/connection';
-import type { FilterConfig } from '@/lib/acumatica/config-types';
+import { getDiscoveredSchema } from '@/actions/integrations/acumatica/data-source';
+import { getFieldMappings } from '@/actions/integrations/acumatica/field-mapping';
+import type { FilterConfig, DiscoveredSchema, FieldInfo } from '@/lib/acumatica/config-types';
 
 export default function FiltersPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [integrationId, setIntegrationId] = useState<string | null>(null);
+  const [schema, setSchema] = useState<DiscoveredSchema | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Status filters
+  // Field selections for filters
+  const [statusField, setStatusField] = useState('Status');
+  const [documentTypeField, setDocumentTypeField] = useState('Type');
+  const [dateField, setDateField] = useState('Date');
+
+  // Status filter values
   const [statusValues, setStatusValues] = useState<string[]>(['Open', 'Closed']);
 
-  // Document type filters
+  // Document type filter values
   const [includeInvoice, setIncludeInvoice] = useState(true);
   const [includeCreditMemo, setIncludeCreditMemo] = useState(false);
   const [includeDebitMemo, setIncludeDebitMemo] = useState(false);
@@ -62,23 +77,45 @@ export default function FiltersPage() {
 
       setIntegrationId(integration.id);
 
+      // Check if field mappings are configured
+      const fieldMappings = await getFieldMappings(integration.id);
+      if (!fieldMappings) {
+        router.push('/dashboard/integrations/acumatica/setup/field-mapping');
+        return;
+      }
+
+      // Load discovered schema
+      const discoveredSchema = await getDiscoveredSchema(integration.id);
+      if (!discoveredSchema) {
+        setError('Schema not discovered. Please go back and configure field mappings.');
+        setLoading(false);
+        return;
+      }
+
+      setSchema(discoveredSchema);
+
       // Load existing filter config or defaults
       const existingConfig = await getFilterConfig(integration.id);
       if (existingConfig) {
+        setStatusField(existingConfig.status.field);
         setStatusValues(existingConfig.status.allowedValues);
 
         if (existingConfig.documentType) {
+          setDocumentTypeField(existingConfig.documentType.field);
           const types = existingConfig.documentType.allowedValues;
           setIncludeInvoice(types.includes('Invoice'));
           setIncludeCreditMemo(types.includes('Credit Memo'));
           setIncludeDebitMemo(types.includes('Debit Memo'));
         }
 
+        setDateField(existingConfig.dateRange.field);
         setStartDate(existingConfig.dateRange.startDate.split('T')[0]);
       } else {
         // Set defaults
         const defaults = await getDefaultFilterConfig();
+        setStatusField(defaults.status.field);
         setStatusValues(defaults.status.allowedValues);
+        setDateField(defaults.dateRange.field);
         setStartDate(defaults.dateRange.startDate.split('T')[0]);
       }
     } catch (error) {
@@ -111,15 +148,15 @@ export default function FiltersPage() {
 
       const filterConfig: FilterConfig = {
         status: {
-          field: 'Status',
+          field: statusField,
           allowedValues: statusValues,
         },
         documentType: {
-          field: 'Type',
+          field: documentTypeField,
           allowedValues: documentTypes,
         },
         dateRange: {
-          field: 'Date',
+          field: dateField,
           startDate: new Date(startDate).toISOString(),
         },
       };
@@ -146,6 +183,27 @@ export default function FiltersPage() {
       </div>
     );
   }
+
+  if (!schema) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6 py-8">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error || 'Schema not available. Please configure field mappings first.'}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={() => router.push('/dashboard/integrations/acumatica/setup/field-mapping')}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Field Mapping
+        </Button>
+      </div>
+    );
+  }
+
+  // Categorize fields by type
+  const stringFields = schema.fields.filter((f) => f.type === 'string');
+  const dateFields = schema.fields.filter((f) => f.type === 'date' || f.type === 'datetime');
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 py-8">
@@ -175,12 +233,12 @@ export default function FiltersPage() {
         </Alert>
       )}
 
-      {/* Info Alert */}
+      {/* Schema Info */}
       <Alert className="border-blue-500/30 bg-blue-500/10">
         <Info className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-700 dark:text-blue-400">
-          These filters determine which invoices will be imported from Acumatica. You can
-          adjust these later if needed.
+          Using schema from {schema.entity} with {schema.totalFields} fields discovered.
+          These filters determine which records will be imported.
         </AlertDescription>
       </Alert>
 
@@ -191,40 +249,80 @@ export default function FiltersPage() {
             Status Filter <span className="text-red-500">*</span>
           </CardTitle>
           <CardDescription>
-            Import records with these statuses
+            Choose which field to filter on and select allowed status values
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {['Hold', 'Balanced', 'Open', 'Closed', 'Voided'].map((status) => (
-            <div key={status} className="flex items-center space-x-2">
-              <Checkbox
-                id={`status-${status.toLowerCase()}`}
-                checked={statusValues.includes(status)}
-                onCheckedChange={(checked) =>
-                  handleStatusToggle(status, checked as boolean)
-                }
-              />
-              <Label
-                htmlFor={`status-${status.toLowerCase()}`}
-                className="text-sm font-normal cursor-pointer"
-              >
-                {status}
-                {status === 'Open' && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    (released, awaiting payment)
-                  </span>
-                )}
-                {status === 'Closed' && (
-                  <span className="ml-2 text-xs text-muted-foreground">(paid)</span>
-                )}
-              </Label>
-            </div>
-          ))}
-          {statusValues.length === 0 && (
-            <p className="text-sm text-red-500">
-              At least one status must be selected
+        <CardContent className="space-y-4">
+          {/* Status Field Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="status-field">
+              Status Field <span className="text-red-500">*</span>
+            </Label>
+            <Select value={statusField} onValueChange={setStatusField}>
+              <SelectTrigger id="status-field">
+                <SelectValue placeholder="Select status field..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {stringFields.map((field) => (
+                  <SelectItem key={field.name} value={field.name}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm">{field.name}</span>
+                      {field.isCustom && (
+                        <span className="px-1.5 py-0.5 text-xs bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
+                          Custom
+                        </span>
+                      )}
+                      {field.sampleValue && (
+                        <span className="text-xs text-muted-foreground">
+                          e.g., {String(field.sampleValue).substring(0, 20)}
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              The field that contains the record status (e.g., Open, Closed, etc.)
             </p>
-          )}
+          </div>
+
+          {/* Status Values */}
+          <div className="space-y-2">
+            <Label>Allowed Status Values <span className="text-red-500">*</span></Label>
+            <div className="space-y-3">
+              {['Hold', 'Balanced', 'Open', 'Closed', 'Voided'].map((status) => (
+                <div key={status} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`status-${status.toLowerCase()}`}
+                    checked={statusValues.includes(status)}
+                    onCheckedChange={(checked) =>
+                      handleStatusToggle(status, checked as boolean)
+                    }
+                  />
+                  <Label
+                    htmlFor={`status-${status.toLowerCase()}`}
+                    className="text-sm font-normal cursor-pointer"
+                  >
+                    {status}
+                    {status === 'Open' && (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        (released, awaiting payment)
+                      </span>
+                    )}
+                    {status === 'Closed' && (
+                      <span className="ml-2 text-xs text-muted-foreground">(paid)</span>
+                    )}
+                  </Label>
+                </div>
+              ))}
+              {statusValues.length === 0 && (
+                <p className="text-sm text-red-500">
+                  At least one status must be selected
+                </p>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -235,60 +333,100 @@ export default function FiltersPage() {
             Document Type Filter <span className="text-red-500">*</span>
           </CardTitle>
           <CardDescription>
-            Import these document types
+            Choose which field contains the document type and select allowed types
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="type-invoice"
-              checked={includeInvoice}
-              onCheckedChange={(checked) => setIncludeInvoice(checked as boolean)}
-            />
-            <Label
-              htmlFor="type-invoice"
-              className="text-sm font-normal cursor-pointer"
-            >
-              Invoice
+        <CardContent className="space-y-4">
+          {/* Document Type Field Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="document-type-field">
+              Document Type Field <span className="text-red-500">*</span>
             </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="type-credit-memo"
-              checked={includeCreditMemo}
-              onCheckedChange={(checked) => setIncludeCreditMemo(checked as boolean)}
-            />
-            <Label
-              htmlFor="type-credit-memo"
-              className="text-sm font-normal cursor-pointer"
-            >
-              Credit Memo
-              <span className="ml-2 text-xs text-muted-foreground">
-                (creates negative amounts)
-              </span>
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="type-debit-memo"
-              checked={includeDebitMemo}
-              onCheckedChange={(checked) => setIncludeDebitMemo(checked as boolean)}
-            />
-            <Label
-              htmlFor="type-debit-memo"
-              className="text-sm font-normal cursor-pointer"
-            >
-              Debit Memo
-            </Label>
-          </div>
-
-          {!includeInvoice && !includeCreditMemo && !includeDebitMemo && (
-            <p className="text-sm text-red-500">
-              At least one document type must be selected
+            <Select value={documentTypeField} onValueChange={setDocumentTypeField}>
+              <SelectTrigger id="document-type-field">
+                <SelectValue placeholder="Select document type field..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {stringFields.map((field) => (
+                  <SelectItem key={field.name} value={field.name}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm">{field.name}</span>
+                      {field.isCustom && (
+                        <span className="px-1.5 py-0.5 text-xs bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
+                          Custom
+                        </span>
+                      )}
+                      {field.sampleValue && (
+                        <span className="text-xs text-muted-foreground">
+                          e.g., {String(field.sampleValue).substring(0, 20)}
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              The field that contains the document type (e.g., Invoice, Credit Memo, etc.)
             </p>
-          )}
+          </div>
+
+          {/* Document Type Values */}
+          <div className="space-y-2">
+            <Label>Allowed Document Types <span className="text-red-500">*</span></Label>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="type-invoice"
+                  checked={includeInvoice}
+                  onCheckedChange={(checked) => setIncludeInvoice(checked as boolean)}
+                />
+                <Label
+                  htmlFor="type-invoice"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Invoice
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="type-credit-memo"
+                  checked={includeCreditMemo}
+                  onCheckedChange={(checked) => setIncludeCreditMemo(checked as boolean)}
+                />
+                <Label
+                  htmlFor="type-credit-memo"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Credit Memo
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    (creates negative amounts)
+                  </span>
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="type-debit-memo"
+                  checked={includeDebitMemo}
+                  onCheckedChange={(checked) => setIncludeDebitMemo(checked as boolean)}
+                />
+                <Label
+                  htmlFor="type-debit-memo"
+                  className="text-sm font-normal cursor-pointer"
+                >
+                  Debit Memo
+                </Label>
+              </div>
+
+              {!includeInvoice && !includeCreditMemo && !includeDebitMemo && (
+                <p className="text-sm text-red-500">
+                  At least one document type must be selected
+                </p>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -299,10 +437,44 @@ export default function FiltersPage() {
             Date Range <span className="text-red-500">*</span>
           </CardTitle>
           <CardDescription>
-            Import invoices from this date forward
+            Choose which date field to filter on and set the start date
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Date Field Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="date-field">
+              Date Field <span className="text-red-500">*</span>
+            </Label>
+            <Select value={dateField} onValueChange={setDateField}>
+              <SelectTrigger id="date-field">
+                <SelectValue placeholder="Select date field..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px]">
+                {dateFields.map((field) => (
+                  <SelectItem key={field.name} value={field.name}>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-sm">{field.name}</span>
+                      {field.isCustom && (
+                        <span className="px-1.5 py-0.5 text-xs bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded">
+                          Custom
+                        </span>
+                      )}
+                      {field.sampleValue && (
+                        <span className="text-xs text-muted-foreground">
+                          e.g., {String(field.sampleValue).substring(0, 20)}
+                        </span>
+                      )}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-sm text-muted-foreground">
+              The date field to filter on (e.g., invoice date, document date, etc.)
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="start-date">
               Start Date <span className="text-red-500">*</span>
@@ -315,14 +487,14 @@ export default function FiltersPage() {
               max={new Date().toISOString().split('T')[0]}
             />
             <p className="text-sm text-muted-foreground">
-              Only invoices on or after this date will be imported
+              Only records on or after this date will be imported
             </p>
           </div>
 
           <Alert className="border-yellow-500/30 bg-yellow-500/10">
             <AlertDescription className="text-sm text-yellow-800 dark:text-yellow-200">
               <strong>Note:</strong> There is no end date. The integration will continuously
-              sync new invoices as they are created in Acumatica.
+              sync new records as they are created in Acumatica.
             </AlertDescription>
           </Alert>
         </CardContent>
