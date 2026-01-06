@@ -87,6 +87,15 @@ async function resolveClient({
   });
 
   if (existing) {
+    // Update clientId if it's missing (for clients created before this fix)
+    if (!existing.clientId) {
+      const updated = await prisma.client.update({
+        where: { id: existing.id },
+        data: { clientId: customerId },
+      });
+      clientCache.set(customerId, updated);
+      return { client: updated, created: false };
+    }
     clientCache.set(customerId, existing);
     return { client: existing, created: false };
   }
@@ -95,8 +104,9 @@ async function resolveClient({
   const newClient = await prisma.client.create({
     data: {
       name: customerName || customerId,
+      clientId: customerId, // Acumatica customer number for user reference
       organizationId,
-      externalId: customerId,
+      externalId: customerId, // For integration tracking
       externalSystem: ACUMATICA_SYSTEM,
       sourceType: 'INTEGRATION',
       createdByIntegrationId: integrationId,
