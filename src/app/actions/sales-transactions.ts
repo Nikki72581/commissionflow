@@ -405,17 +405,39 @@ export async function updateSalesTransaction(
     // Validate input
     const validatedData = updateSalesTransactionSchema.parse(data)
 
-    // Verify transaction belongs to organization
+    // Verify transaction belongs to organization and get existing calculations
     const existingTransaction = await prisma.salesTransaction.findFirst({
       where: {
         id: transactionId,
         organizationId,
+      },
+      include: {
+        commissionCalculations: {
+          include: {
+            commissionPlan: {
+              include: {
+                rules: true,
+              },
+            },
+          },
+        },
+        project: {
+          include: {
+            client: true,
+          },
+        },
       },
     })
 
     if (!existingTransaction) {
       throw new Error('Sales transaction not found')
     }
+
+    // Track if we need to recalculate commissions
+    const needsRecalculation =
+      (validatedData.amount !== undefined && validatedData.amount !== existingTransaction.amount) ||
+      (validatedData.transactionDate !== undefined && validatedData.transactionDate !== existingTransaction.transactionDate.toISOString().split('T')[0]) ||
+      (validatedData.projectId !== undefined && validatedData.projectId !== existingTransaction.projectId)
 
     // If updating project, verify it belongs to organization
     if (validatedData.projectId) {
@@ -461,15 +483,104 @@ export async function updateSalesTransaction(
         },
         client: true,
         user: true,
+        commissionCalculations: {
+          include: {
+            commissionPlan: {
+              include: {
+                rules: true,
+              },
+            },
+          },
+        },
       },
     })
 
+    // Auto-recalculate commissions if needed
+    let recalculationResults = null
+    if (needsRecalculation && existingTransaction.commissionCalculations.length > 0) {
+      const { calculateCommissionWithPrecedence } = await import('@/lib/commission-calculator')
+      const { calculateNetSalesAmount } = await import('@/lib/net-sales-calculator')
+
+      // Check if any calculations are APPROVED or PAID
+      const hasApprovedOrPaid = existingTransaction.commissionCalculations.some(
+        (calc) => calc.status === 'APPROVED' || calc.status === 'PAID'
+      )
+
+      if (hasApprovedOrPaid) {
+        // Don't recalculate, but include a warning in the response
+        recalculationResults = {
+          warning: 'Transaction has approved or paid commissions that were not recalculated. Consider reviewing these manually.',
+          skippedCount: existingTransaction.commissionCalculations.filter(
+            (calc) => calc.status === 'APPROVED' || calc.status === 'PAID'
+          ).length,
+        }
+      }
+
+      // Recalculate PENDING and CALCULATED commissions
+      const recalculableCalcs = existingTransaction.commissionCalculations.filter(
+        (calc) => calc.status === 'PENDING' || calc.status === 'CALCULATED'
+      )
+
+      if (recalculableCalcs.length > 0) {
+        let recalculatedCount = 0
+        const errors: string[] = []
+
+        for (const calc of recalculableCalcs) {
+          try {
+            // Calculate net sales amount
+            const netAmount = await calculateNetSalesAmount(transaction.id)
+
+            // Build calculation context from updated transaction
+            const context = {
+              grossAmount: transaction.amount,
+              netAmount,
+              transactionDate: transaction.transactionDate,
+              customerId: transaction.project?.clientId,
+              customerTier: transaction.project?.client?.tier,
+              projectId: transaction.projectId || undefined,
+              territoryId: transaction.project?.client?.territoryId || undefined,
+              commissionBasis: calc.commissionPlan.commissionBasis,
+            }
+
+            // Recalculate with current rules
+            const result = calculateCommissionWithPrecedence(
+              context,
+              calc.commissionPlan.rules as any
+            )
+
+            // Update calculation with new amount
+            await prisma.commissionCalculation.update({
+              where: { id: calc.id },
+              data: {
+                amount: result.finalAmount,
+                calculatedAt: new Date(),
+                metadata: { ...(result as any), autoRecalculated: true },
+              },
+            })
+
+            recalculatedCount++
+          } catch (error) {
+            console.error(`Error recalculating commission ${calc.id}:`, error)
+            errors.push(`Failed to recalculate commission ${calc.id}`)
+          }
+        }
+
+        recalculationResults = {
+          ...recalculationResults,
+          recalculatedCount,
+          errors: errors.length > 0 ? errors : undefined,
+        }
+      }
+    }
+
     revalidatePath('/dashboard/sales')
     revalidatePath(`/dashboard/sales/${transactionId}`)
-    
+    revalidatePath('/dashboard/commissions')
+
     return {
       success: true,
       data: transaction,
+      recalculation: recalculationResults,
     }
   } catch (error) {
     console.error('Error updating sales transaction:', error)

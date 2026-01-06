@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, DollarSign, TrendingUp, Clock, Plus } from 'lucide-react';
+import { Users, DollarSign, TrendingUp, Clock, Plus, RefreshCw, FileQuestion } from 'lucide-react';
 import Link from 'next/link';
 export const dynamic = 'force-dynamic'
 export default async function AdminDashboard() {
@@ -148,6 +148,40 @@ export default async function AdminDashboard() {
           <CardContent>
             <Button asChild variant="outline" className="w-full">
               <Link href="/dashboard/admin/import">Import Now</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5" />
+              Recalculate Commissions
+            </CardTitle>
+            <CardDescription>
+              Update commission amounts based on current plan rules
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/dashboard/admin/recalculate-commissions">Recalculate</Link>
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileQuestion className="h-5 w-5" />
+              Missing Commissions
+            </CardTitle>
+            <CardDescription>
+              Find and calculate commissions for transactions without calculations
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/dashboard/admin/missing-commissions">Scan Now</Link>
             </Button>
           </CardContent>
         </Card>
