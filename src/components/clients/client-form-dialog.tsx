@@ -139,6 +139,15 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
               </div>
             )}
 
+            {isEdit && (client as any)?.externalSystem && (
+              <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-sm">
+                <p className="font-medium text-blue-900 dark:text-blue-100">Integration Source</p>
+                <p className="text-blue-700 dark:text-blue-300 text-xs mt-1">
+                  This client was created from {(client as any).externalSystem} (ID: {(client as any).externalId})
+                </p>
+              </div>
+            )}
+
             <div className="grid gap-2">
               <Label htmlFor="name">
                 Name <span className="text-destructive">*</span>

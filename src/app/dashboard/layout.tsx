@@ -15,10 +15,13 @@ export default async function DashboardLayout({
   const user = await getCurrentUserWithOrg()
 
   // Get pending count for badges
+  // Admins see all pending approvals in org, salespeople see only their own
   const pendingCount = await prisma.commissionCalculation.count({
     where: {
       status: 'PENDING',
-      user: { clerkId: user.clerkId },
+      ...(user.role === 'ADMIN'
+        ? { user: { organizationId: user.organizationId } }
+        : { user: { clerkId: user.clerkId } }),
     },
   })
 

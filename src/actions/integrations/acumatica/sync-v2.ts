@@ -659,23 +659,30 @@ export async function syncAcumaticaInvoicesV2() {
         }
       }
 
-      // Update sync log
-      await prisma.integrationSyncLog.update({
-        where: { id: syncLog.id },
-        data: {
-          status: 'SUCCESS',
-          completedAt: new Date(),
-          invoicesFetched: summary.invoicesFetched,
-          invoicesProcessed: summary.invoicesProcessed,
-          invoicesSkipped: summary.invoicesSkipped,
-          salesCreated: summary.salesCreated,
-          clientsCreated: summary.clientsCreated,
-          projectsCreated: summary.projectsCreated,
-          errorsCount: summary.errorsCount,
-          skipDetails: skipped.length > 0 ? (skipped as any) : undefined,
-          errorDetails: errors.length > 0 ? (errors as any) : undefined,
-        },
-      });
+      // Update sync log and integration's lastSyncAt
+      const completedAt = new Date();
+      await prisma.$transaction([
+        prisma.integrationSyncLog.update({
+          where: { id: syncLog.id },
+          data: {
+            status: 'SUCCESS',
+            completedAt,
+            invoicesFetched: summary.invoicesFetched,
+            invoicesProcessed: summary.invoicesProcessed,
+            invoicesSkipped: summary.invoicesSkipped,
+            salesCreated: summary.salesCreated,
+            clientsCreated: summary.clientsCreated,
+            projectsCreated: summary.projectsCreated,
+            errorsCount: summary.errorsCount,
+            skipDetails: skipped.length > 0 ? (skipped as any) : undefined,
+            errorDetails: errors.length > 0 ? (errors as any) : undefined,
+          },
+        }),
+        prisma.acumaticaIntegration.update({
+          where: { id: integration.id },
+          data: { lastSyncAt: completedAt },
+        }),
+      ]);
 
       return {
         success: true,
