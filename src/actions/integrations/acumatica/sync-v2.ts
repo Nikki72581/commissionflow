@@ -115,6 +115,7 @@ async function resolveProject({
   projectId,
   client,
   projectCache,
+  hasProjectMapping,
 }: {
   integrationId: string;
   syncLogId: string;
@@ -122,45 +123,17 @@ async function resolveProject({
   projectId?: string;
   client: Client;
   projectCache: Map<string, Project>;
+  hasProjectMapping: boolean;
 }) {
+  // If no project field is mapped in field mappings, do not create or use any projects
+  if (!hasProjectMapping) {
+    return { project: null, created: false };
+  }
+
   if (!projectId) {
-    // Create default project for client
-    const cacheKey = `default-${client.id}`;
-    if (projectCache.has(cacheKey)) {
-      return { project: projectCache.get(cacheKey)!, created: false };
-    }
-
-    const defaultExternalId = `default-${client.externalId}`;
-    const existing = await prisma.project.findUnique({
-      where: {
-        organizationId_externalId_externalSystem: {
-          organizationId,
-          externalId: defaultExternalId,
-          externalSystem: ACUMATICA_SYSTEM,
-        },
-      },
-    });
-
-    if (existing) {
-      projectCache.set(cacheKey, existing);
-      return { project: existing, created: false };
-    }
-
-    const newProject = await prisma.project.create({
-      data: {
-        name: `${client.name} - Default Project`,
-        clientId: client.id,
-        organizationId,
-        externalId: defaultExternalId,
-        externalSystem: ACUMATICA_SYSTEM,
-        sourceType: 'INTEGRATION',
-        createdByIntegrationId: integrationId,
-        createdBySyncLogId: syncLogId,
-      },
-    });
-
-    projectCache.set(cacheKey, newProject);
-    return { project: newProject, created: true };
+    // Project field is mapped but this invoice doesn't have a project value
+    // Return null - no project should be created or associated
+    return { project: null, created: false };
   }
 
   // Use provided project ID
@@ -621,6 +594,7 @@ export async function syncAcumaticaInvoicesV2() {
             projectId: invoiceData.projectId,
             client,
             projectCache,
+            hasProjectMapping: !!fieldMappings.project?.sourceField,
           });
 
           if (projectCreated) {
