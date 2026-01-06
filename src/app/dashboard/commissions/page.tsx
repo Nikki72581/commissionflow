@@ -27,9 +27,11 @@ export const metadata = {
 async function CommissionsTable({
   searchQuery,
   statusFilter,
+  userIdFilter,
 }: {
   searchQuery?: string
   statusFilter?: string
+  userIdFilter?: string
 }) {
   const result = await getCommissionCalculations()
 
@@ -47,6 +49,13 @@ async function CommissionsTable({
   if (statusFilter && statusFilter !== 'all') {
     calculations = calculations.filter(
       (calc) => calc.status.toLowerCase() === statusFilter.toLowerCase()
+    )
+  }
+
+  // Filter by userId (salesperson)
+  if (userIdFilter && userIdFilter !== 'all') {
+    calculations = calculations.filter(
+      (calc) => calc.user.id === userIdFilter
     )
   }
 
@@ -252,10 +261,40 @@ function CommissionsTableSkeleton() {
 }
 
 export default async function CommissionsPage(props: {
-  searchParams: Promise<{ search?: string; status?: string }>
+  searchParams: Promise<{ search?: string; status?: string; userId?: string }>
 }) {
   const searchParams = await props.searchParams
   const statusFilter = searchParams.status || 'all'
+  const userIdFilter = searchParams.userId || 'all'
+
+  // Fetch users for the salesperson filter
+  const { prisma } = await import('@/lib/db')
+  const { getCurrentUserWithOrg } = await import('@/lib/auth')
+  const currentUser = await getCurrentUserWithOrg()
+
+  const usersRaw = await prisma.user.findMany({
+    where: {
+      organizationId: currentUser.organizationId,
+      isPlaceholder: false,
+      firstName: { not: null },
+      lastName: { not: null },
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+    orderBy: [
+      { firstName: 'asc' },
+      { lastName: 'asc' },
+    ],
+  })
+
+  const users = usersRaw.map((u) => ({
+    id: u.id,
+    firstName: u.firstName!,
+    lastName: u.lastName!,
+  }))
 
   return (
     <div className="space-y-6">
@@ -268,12 +307,13 @@ export default async function CommissionsPage(props: {
         </div>
       </div>
 
-      <CommissionFilters />
+      <CommissionFilters users={users} />
 
       <Suspense fallback={<CommissionsTableSkeleton />}>
         <CommissionsTable
           searchQuery={searchParams.search}
           statusFilter={statusFilter}
+          userIdFilter={userIdFilter}
         />
       </Suspense>
     </div>

@@ -242,8 +242,13 @@ export default function FiltersPage() {
       <Alert className="border-blue-500/30 bg-blue-500/10">
         <Info className="h-4 w-4 text-blue-600" />
         <AlertDescription className="text-blue-700 dark:text-blue-400">
-          Using schema from {schema.entity} with {schema.totalFields} fields discovered.
-          These filters determine which records will be imported.
+          {schema.dataSourceType === 'REST_API' ? (
+            <>Using REST API endpoint <strong>{schema.entity}</strong> with {schema.totalFields} fields discovered. These filters determine which records will be imported.</>
+          ) : schema.dataSourceType === 'GENERIC_INQUIRY' ? (
+            <>Using Generic Inquiry <strong>{schema.entity}</strong> with {schema.totalFields} fields discovered. These filters determine which records will be imported.</>
+          ) : (
+            <>Using schema from <strong>{schema.entity}</strong> with {schema.totalFields} fields discovered. These filters determine which records will be imported.</>
+          )}
         </AlertDescription>
       </Alert>
 

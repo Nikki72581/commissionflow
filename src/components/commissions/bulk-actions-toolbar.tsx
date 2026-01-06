@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { DollarSign, X, Download, CheckCircle } from 'lucide-react'
+import { DollarSign, X, Download, CheckCircle, RefreshCw } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 
 interface BulkActionsToolbarProps {
@@ -11,7 +11,9 @@ interface BulkActionsToolbarProps {
   onMarkAsPaid: () => void
   onExport: () => void
   onExportAndPay: () => void
+  onRecalculate?: () => void
   onClearSelection: () => void
+  showRecalculate?: boolean
 }
 
 export function BulkActionsToolbar({
@@ -20,7 +22,9 @@ export function BulkActionsToolbar({
   onMarkAsPaid,
   onExport,
   onExportAndPay,
+  onRecalculate,
   onClearSelection,
+  showRecalculate = false,
 }: BulkActionsToolbarProps) {
   if (selectedCount === 0) return null
 
@@ -38,6 +42,18 @@ export function BulkActionsToolbar({
         </div>
 
         <div className="h-6 w-px bg-primary-foreground/20" />
+
+        {showRecalculate && onRecalculate && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onRecalculate}
+            className="bg-primary-foreground text-primary hover:bg-primary-foreground/90"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Recalculate
+          </Button>
+        )}
 
         <Button
           size="sm"

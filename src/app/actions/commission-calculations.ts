@@ -158,26 +158,14 @@ export async function approveCalculation(calculationId: string) {
         user: true,
         commissionPlan: true,
       },
-      
+
     })
-// After approving commission:
-async function approveCommission(calculationId: string) {
-  // Your existing approval logic
-  const result = await prisma.commissionCalculation.update({
-    where: { id: calculationId },
-    data: {
-      status: 'APPROVED',
-      approvedAt: new Date(),
-    },
-  })
 
-  // ADD THIS: Send notification (async, non-blocking)
-  sendCommissionApprovedNotification(calculationId).catch((error) => {
-    console.error('Failed to send approval notification:', error)
-  })
+    // Send notification (async, non-blocking)
+    sendCommissionApprovedNotification(calculationId).catch((error) => {
+      console.error('Failed to send approval notification:', error)
+    })
 
-  return result
-}
     revalidatePath('/dashboard/commissions')
     revalidatePath(`/dashboard/commissions/${calculationId}`)
     
@@ -460,6 +448,118 @@ export async function getUserCalculations(userId: string) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to fetch user calculations',
+    }
+  }
+}
+
+/**
+ * Recalculate commissions for unapproved/unpaid status
+ * This is useful when commission rules change or transaction amounts are corrected
+ */
+export async function recalculateCommissions(calculationIds: string[]) {
+  try {
+    const organizationId = await getOrganizationId()
+
+    if (calculationIds.length === 0) {
+      throw new Error('No calculations selected for recalculation')
+    }
+
+    // Fetch calculations with all necessary data for recalculation
+    const calculations = await prisma.commissionCalculation.findMany({
+      where: {
+        id: { in: calculationIds },
+        organizationId,
+        status: { in: ['PENDING', 'CALCULATED'] }, // Only recalculate non-approved, non-paid
+      },
+      include: {
+        salesTransaction: {
+          include: {
+            project: {
+              include: {
+                client: true,
+              },
+            },
+          },
+        },
+        commissionPlan: {
+          include: {
+            rules: true,
+          },
+        },
+        user: true,
+      },
+    })
+
+    if (calculations.length === 0) {
+      throw new Error('No eligible calculations found for recalculation (only PENDING or CALCULATED status can be recalculated)')
+    }
+
+    // Import calculator
+    const { calculateCommissionWithPrecedence } = await import('@/lib/commission-calculator')
+
+    let recalculatedCount = 0
+    let unchangedCount = 0
+    const errors: string[] = []
+
+    // Recalculate each commission
+    for (const calc of calculations) {
+      try {
+        const { salesTransaction, commissionPlan } = calc
+
+        // Build calculation context from transaction
+        const context = {
+          grossAmount: salesTransaction.grossAmount,
+          netAmount: salesTransaction.netAmount,
+          transactionDate: salesTransaction.transactionDate,
+          customerId: salesTransaction.project?.clientId,
+          customerTier: salesTransaction.project?.client?.tier,
+          projectId: salesTransaction.projectId,
+          territoryId: salesTransaction.project?.client?.territoryId,
+          commissionBasis: commissionPlan.commissionBasis,
+        }
+
+        // Recalculate with current rules
+        const result = calculateCommissionWithPrecedence(
+          context,
+          commissionPlan.rules as any
+        )
+
+        // Update if amount changed
+        if (result.finalAmount !== calc.amount) {
+          await prisma.commissionCalculation.update({
+            where: { id: calc.id },
+            data: {
+              amount: result.finalAmount,
+              calculatedAt: new Date(),
+              calculationDetails: result as any,
+            },
+          })
+          recalculatedCount++
+        } else {
+          unchangedCount++
+        }
+      } catch (error) {
+        console.error(`Error recalculating commission ${calc.id}:`, error)
+        errors.push(`Failed to recalculate commission for ${calc.user.firstName} ${calc.user.lastName}`)
+      }
+    }
+
+    revalidatePath('/dashboard/commissions')
+
+    return {
+      success: true,
+      message: `Recalculated ${recalculatedCount} commission(s). ${unchangedCount} unchanged.`,
+      data: {
+        recalculatedCount,
+        unchangedCount,
+        errors,
+      },
+    }
+  } catch (error) {
+    console.error('Error recalculating commissions:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to recalculate commissions',
     }
   }
 }

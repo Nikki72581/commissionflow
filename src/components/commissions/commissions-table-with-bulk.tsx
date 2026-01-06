@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { BulkActionsToolbar } from '@/components/commissions/bulk-actions-toolbar'
 import { BulkPayoutDialog } from '@/components/commissions/bulk-payout-dialog'
 import { exportCommissionsToCSV } from '@/app/actions/bulk-payout'
+import { recalculateCommissions } from '@/app/actions/commission-calculations'
 import { useToast } from '@/hooks/use-toast'
 
 interface Commission {
@@ -48,11 +49,26 @@ export function CommissionsTableWithBulk({
 }: CommissionsTableWithBulkProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
+  const [isRecalculating, setIsRecalculating] = useState(false)
   const { toast } = useToast()
 
-  // Only approved commissions can be selected
+  // Approved commissions can be selected for payment
   const approvedCommissions = commissions.filter(c => c.status === 'APPROVED')
-  const selectableIds = new Set(approvedCommissions.map(c => c.id))
+
+  // PENDING and CALCULATED commissions can be selected for recalculation
+  const recalculableCommissions = commissions.filter(c =>
+    c.status === 'PENDING' || c.status === 'CALCULATED'
+  )
+
+  // Combine selectable IDs (approved for payment + pending/calculated for recalculation)
+  const selectableIds = new Set([
+    ...approvedCommissions.map(c => c.id),
+    ...recalculableCommissions.map(c => c.id)
+  ])
+
+  const hasRecalculableSelected = Array.from(selectedIds).some(id =>
+    recalculableCommissions.some(c => c.id === id)
+  )
 
   // Calculate selected total
   const selectedTotal = Array.from(selectedIds).reduce((sum, id) => {
@@ -128,12 +144,37 @@ export function CommissionsTableWithBulk({
     setShowPayoutDialog(true)
   }
 
+  async function handleRecalculate() {
+    if (selectedIds.size === 0) return
+
+    setIsRecalculating(true)
+
+    const result = await recalculateCommissions(Array.from(selectedIds))
+
+    setIsRecalculating(false)
+
+    if (result.success) {
+      toast({
+        title: 'Recalculation complete',
+        description: result.message,
+      })
+      setSelectedIds(new Set())
+      onRefresh()
+    } else {
+      toast({
+        title: 'Recalculation failed',
+        description: result.error,
+        variant: 'destructive',
+      })
+    }
+  }
+
   function handlePayoutSuccess() {
     setSelectedIds(new Set())
     onRefresh()
   }
 
-  const allSelectableSelected = selectableIds.size > 0 && 
+  const allSelectableSelected = selectableIds.size > 0 &&
     Array.from(selectableIds).every(id => selectedIds.has(id))
 
   return (
@@ -143,11 +184,11 @@ export function CommissionsTableWithBulk({
           <thead>
             <tr className="border-b">
               <th className="h-12 px-4 text-left align-middle font-medium">
-                {approvedCommissions.length > 0 && (
+                {selectableIds.size > 0 && (
                   <Checkbox
                     checked={allSelectableSelected}
                     onCheckedChange={handleSelectAll}
-                    aria-label="Select all approved commissions"
+                    aria-label="Select all commissions"
                   />
                 )}
               </th>
@@ -162,7 +203,7 @@ export function CommissionsTableWithBulk({
           </thead>
           <tbody>
             {commissions.map((commission) => {
-              const isSelectable = commission.status === 'APPROVED'
+              const isSelectable = selectableIds.has(commission.id)
               const isSelected = selectedIds.has(commission.id)
 
               return (
@@ -242,7 +283,9 @@ export function CommissionsTableWithBulk({
         onMarkAsPaid={handleMarkAsPaid}
         onExport={handleExport}
         onExportAndPay={handleExportAndPay}
+        onRecalculate={handleRecalculate}
         onClearSelection={handleClearSelection}
+        showRecalculate={hasRecalculableSelected}
       />
 
       <BulkPayoutDialog

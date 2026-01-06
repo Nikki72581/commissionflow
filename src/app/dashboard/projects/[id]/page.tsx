@@ -1,25 +1,31 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, DollarSign, TrendingUp, Calendar } from 'lucide-react'
+import { ArrowLeft, DollarSign, TrendingUp, Calendar, Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getProject } from '@/app/actions/projects'
+import { getClients } from '@/app/actions/clients'
+import { ProjectFormDialog } from '@/components/projects/project-form-dialog'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
 async function ProjectDetails({ projectId }: { projectId: string }) {
-  const result = await getProject(projectId)
+  const [projectResult, clientsResult] = await Promise.all([
+    getProject(projectId),
+    getClients(),
+  ])
 
-  if (!result.success || !result.data) {
+  if (!projectResult.success || !projectResult.data) {
     notFound()
   }
 
-  const project = result.data
+  const project = projectResult.data
+  const clients = clientsResult.success ? clientsResult.data || [] : []
 
   return (
     <div className="space-y-6">
@@ -40,17 +46,37 @@ async function ProjectDetails({ projectId }: { projectId: string }) {
             </div>
           </div>
         </div>
-        <Badge
-          variant={
-            project.status === 'active'
-              ? 'default'
-              : project.status === 'completed'
-              ? 'secondary'
-              : 'outline'
-          }
-        >
-          {project.status}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <ProjectFormDialog
+            clients={clients}
+            project={{
+              id: project.id,
+              name: project.name,
+              description: project.description,
+              clientId: project.clientId,
+              startDate: project.startDate,
+              endDate: project.endDate,
+              status: project.status,
+            }}
+            trigger={
+              <Button variant="outline" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Project
+              </Button>
+            }
+          />
+          <Badge
+            variant={
+              project.status === 'active'
+                ? 'default'
+                : project.status === 'completed'
+                ? 'secondary'
+                : 'outline'
+            }
+          >
+            {project.status}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
