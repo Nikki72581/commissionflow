@@ -18,6 +18,7 @@ interface SyncLogEntry {
   status: string
   startedAt: string
   completedAt: string | null
+  undoneAt: string | null
   triggeredBy: {
     id: string
     name: string | null
@@ -44,6 +45,7 @@ const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | '
   FAILED: 'destructive',
   IN_PROGRESS: 'outline',
   STARTED: 'outline',
+  UNDONE: 'default',
 }
 
 function SyncLogDetailsView({
@@ -252,8 +254,8 @@ export function AcumaticaSyncLogsClient({ logs }: AcumaticaSyncLogsClientProps) 
 
               {/* Status Badge */}
               <div className="flex-shrink-0">
-                <Badge variant={STATUS_VARIANT[log.status] || 'outline'} className="text-xs">
-                  {log.status}
+                <Badge variant={STATUS_VARIANT[log.undoneAt ? 'UNDONE' : log.status] || 'outline'} className="text-xs">
+                  {log.undoneAt ? 'UNDONE' : log.status}
                 </Badge>
               </div>
 
@@ -312,6 +314,7 @@ export function AcumaticaSyncLogsClient({ logs }: AcumaticaSyncLogsClientProps) 
                   onClick={() => handleUndo(log.id)}
                   disabled={
                     isPending ||
+                    log.undoneAt !== null ||
                     (log.salesCreated + log.clientsCreated + log.projectsCreated === 0) ||
                     !['SUCCESS', 'PARTIAL_SUCCESS'].includes(log.status)
                   }

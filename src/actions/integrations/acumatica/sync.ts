@@ -46,6 +46,7 @@ interface SyncLogDetails {
   status: string
   startedAt: string
   completedAt: string | null
+  undoneAt: string | null
   triggeredBy: {
     id: string
     name: string | null
@@ -1158,6 +1159,7 @@ export async function getAcumaticaSyncLogs() {
         status: log.status,
         startedAt: log.startedAt.toISOString(),
         completedAt: log.completedAt ? log.completedAt.toISOString() : null,
+        undoneAt: log.undoneAt ? log.undoneAt.toISOString() : null,
         triggeredBy: triggeredBy
           ? {
               id: triggeredBy.id,
@@ -1263,6 +1265,12 @@ export async function undoAcumaticaSync(syncLogId: string) {
 
     const deletedClients = await prisma.client.deleteMany({
       where: { id: { in: deletableClientIds } },
+    })
+
+    // Mark the sync log as undone
+    await prisma.integrationSyncLog.update({
+      where: { id: syncLog.id },
+      data: { undoneAt: new Date() },
     })
 
     await createAuditLog({

@@ -716,6 +716,7 @@ model IntegrationSyncLog {
 
   // Timestamps
   createdAt DateTime @default(now())
+  undoneAt  DateTime? // Timestamp when sync was undone
 
   integration AcumaticaIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
 
