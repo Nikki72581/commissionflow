@@ -147,6 +147,13 @@ const navigation: NavItem[] = [
     adminOnly: true,
     children: [
       {
+        title: 'Admin Dashboard',
+        href: '/dashboard/admin',
+        icon: LayoutDashboard,
+        iconColor: 'text-orange-600 dark:text-orange-400',
+        adminOnly: true,
+      },
+      {
         title: 'Team Members',
         href: '/dashboard/team',
         icon: Users,
