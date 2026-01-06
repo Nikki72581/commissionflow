@@ -494,8 +494,9 @@ export async function recalculateCommissions(calculationIds: string[]) {
       throw new Error('No eligible calculations found for recalculation (only PENDING or CALCULATED status can be recalculated)')
     }
 
-    // Import calculator
+    // Import calculator and net sales calculator
     const { calculateCommissionWithPrecedence } = await import('@/lib/commission-calculator')
+    const { calculateNetSalesAmount } = await import('@/lib/net-sales-calculator')
 
     let recalculatedCount = 0
     let unchangedCount = 0
@@ -506,15 +507,18 @@ export async function recalculateCommissions(calculationIds: string[]) {
       try {
         const { salesTransaction, commissionPlan } = calc
 
+        // Calculate net sales amount
+        const netAmount = await calculateNetSalesAmount(salesTransaction.id)
+
         // Build calculation context from transaction
         const context = {
-          grossAmount: salesTransaction.grossAmount,
-          netAmount: salesTransaction.netAmount,
+          grossAmount: salesTransaction.amount,
+          netAmount,
           transactionDate: salesTransaction.transactionDate,
           customerId: salesTransaction.project?.clientId,
           customerTier: salesTransaction.project?.client?.tier,
-          projectId: salesTransaction.projectId,
-          territoryId: salesTransaction.project?.client?.territoryId,
+          projectId: salesTransaction.projectId || undefined,
+          territoryId: salesTransaction.project?.client?.territoryId || undefined,
           commissionBasis: commissionPlan.commissionBasis,
         }
 
@@ -531,7 +535,7 @@ export async function recalculateCommissions(calculationIds: string[]) {
             data: {
               amount: result.finalAmount,
               calculatedAt: new Date(),
-              calculationDetails: result as any,
+              metadata: result as any,
             },
           })
           recalculatedCount++
