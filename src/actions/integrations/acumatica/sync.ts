@@ -1207,25 +1207,29 @@ export async function undoAcumaticaSync(syncLogId: string) {
       return { success: false, error: 'Sync log does not belong to your organization' }
     }
 
+    // Get all transactions from this sync
     const transactions = await prisma.salesTransaction.findMany({
       where: {
         organizationId,
         syncLogId: syncLog.id,
         sourceType: 'INTEGRATION',
       },
-      select: { id: true, createdAt: true, updatedAt: true },
+      select: { id: true },
     })
 
-    const deletableTransactionIds = transactions
-      .filter((transaction) => transaction.createdAt.getTime() === transaction.updatedAt.getTime())
-      .map((transaction) => transaction.id)
+    const transactionIds = transactions.map((transaction) => transaction.id)
 
-    const skippedTransactions = transactions.length - deletableTransactionIds.length
+    // Delete commission calculations first (foreign key dependency)
+    const deletedCommissions = await prisma.commissionCalculation.deleteMany({
+      where: { salesTransactionId: { in: transactionIds } },
+    })
 
+    // Delete all sales transactions from this sync
     const deletedSales = await prisma.salesTransaction.deleteMany({
-      where: { id: { in: deletableTransactionIds } },
+      where: { id: { in: transactionIds } },
     })
 
+    // Delete projects created by this sync (only if they have no remaining transactions)
     const projects = await prisma.project.findMany({
       where: {
         organizationId,
@@ -1236,7 +1240,6 @@ export async function undoAcumaticaSync(syncLogId: string) {
     })
 
     const deletableProjectIds = projects
-      .filter((project) => project.createdAt.getTime() === project.updatedAt.getTime())
       .filter((project) => project.salesTransactions.length === 0)
       .map((project) => project.id)
 
@@ -1244,6 +1247,7 @@ export async function undoAcumaticaSync(syncLogId: string) {
       where: { id: { in: deletableProjectIds } },
     })
 
+    // Delete clients created by this sync (only if they have no remaining transactions or projects)
     const clients = await prisma.client.findMany({
       where: {
         organizationId,
@@ -1254,7 +1258,6 @@ export async function undoAcumaticaSync(syncLogId: string) {
     })
 
     const deletableClientIds = clients
-      .filter((client) => client.createdAt.getTime() === client.updatedAt.getTime())
       .filter((client) => client.projects.length === 0 && client.salesTransactions.length === 0)
       .map((client) => client.id)
 
@@ -1269,12 +1272,12 @@ export async function undoAcumaticaSync(syncLogId: string) {
       action: 'integration_sync_reverted',
       entityType: 'integration',
       entityId: integration.id,
-      description: `Reverted Acumatica sync ${syncLog.id}: ${deletedSales.count} sales removed`,
+      description: `Reverted Acumatica sync ${syncLog.id}: ${deletedSales.count} sales and ${deletedCommissions.count} commissions removed`,
       metadata: {
         deletedSales: deletedSales.count,
+        deletedCommissions: deletedCommissions.count,
         deletedProjects: deletedProjects.count,
         deletedClients: deletedClients.count,
-        skippedTransactions,
       },
       organizationId,
     })
@@ -1288,9 +1291,9 @@ export async function undoAcumaticaSync(syncLogId: string) {
       success: true,
       data: {
         deletedSales: deletedSales.count,
+        deletedCommissions: deletedCommissions.count,
         deletedProjects: deletedProjects.count,
         deletedClients: deletedClients.count,
-        skippedTransactions,
       },
     }
   } catch (error) {
