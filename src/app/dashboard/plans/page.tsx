@@ -25,10 +25,7 @@ export const metadata = {
 }
 
 async function PlansTable({ searchQuery }: { searchQuery?: string }) {
-  const [plansResult, projectsResult] = await Promise.all([
-    getCommissionPlans(),
-    getProjects(),
-  ])
+  const plansResult = await getCommissionPlans()
 
   if (!plansResult.success) {
     return (
@@ -38,16 +35,7 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
     )
   }
 
-  if (!projectsResult.success) {
-    return (
-      <div className="rounded-md bg-destructive/15 p-4 text-sm text-destructive">
-        {projectsResult.error}
-      </div>
-    )
-  }
-
   let plans = plansResult.data || []
-  const projects = projectsResult.data || []
 
   // Filter by search query
   if (searchQuery && plans.length > 0) {
@@ -187,7 +175,7 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
                 {formatDate(plan.createdAt)}
               </TableCell>
               <TableCell>
-                <PlanActions plan={plan} projects={projects} />
+                <PlanActions plan={plan} />
               </TableCell>
             </TableRow>
           ))}

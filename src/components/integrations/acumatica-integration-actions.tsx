@@ -21,11 +21,14 @@ export function AcumaticaIntegrationActions({ setupUrl }: AcumaticaIntegrationAc
     startTransition(async () => {
       const result = await syncAcumaticaInvoices()
       if (result.success && result.summary) {
+        // Refresh the page first to show updated lastSyncAt
+        router.refresh()
+
+        // Show success message after initiating refresh
         toast({
           title: 'Sync complete',
           description: `Created ${result.summary.salesCreated} sales, ${result.summary.clientsCreated} clients, ${result.summary.projectsCreated} projects.`,
         })
-        router.refresh()
         return
       }
 

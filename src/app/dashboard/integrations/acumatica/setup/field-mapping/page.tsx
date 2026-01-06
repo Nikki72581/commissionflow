@@ -71,6 +71,11 @@ export default function FieldMappingPage() {
     loadData();
   }, []);
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const loadData = async () => {
     try {
       const integration = await getAcumaticaIntegration();

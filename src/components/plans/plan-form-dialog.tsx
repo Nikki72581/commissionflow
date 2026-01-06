@@ -86,7 +86,12 @@ export function CommissionPlanFormDialog({
 
       if (result.success) {
         setOpen(false)
-        router.refresh()
+        if (!isEdit && result.data?.id) {
+          // Navigate to the newly created plan's detail view
+          router.push(`/dashboard/plans/${result.data.id}`)
+        } else {
+          router.refresh()
+        }
       } else {
         setError(result.error || 'Something went wrong')
       }

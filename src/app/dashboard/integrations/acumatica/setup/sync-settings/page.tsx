@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, ArrowRight, Loader2, Calendar, Filter, Settings, Database, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Filter, Settings, Database, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { getSyncSettings, saveSyncSettings, type SyncSettingsData } from '@/actions/integrations/acumatica/sync-settings';
 import { useToast } from '@/hooks/use-toast';
@@ -74,6 +74,11 @@ export default function SyncSettingsPage() {
 
   useEffect(() => {
     loadSettings();
+  }, []);
+
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, []);
 
   const loadSettings = async () => {
@@ -169,49 +174,6 @@ export default function SyncSettingsPage() {
           style={{ width: '100%' }}
         />
       </div>
-
-      {/* Date Range Filtering */}
-      <Card className="border-purple-500/20">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-purple-600" />
-            <CardTitle>Date Range Filtering</CardTitle>
-          </div>
-          <CardDescription>
-            Control which invoices are imported based on their date
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="invoiceStartDate">
-                Start Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="invoiceStartDate"
-                type="date"
-                value={formData.invoiceStartDate}
-                onChange={(e) => setFormData({ ...formData, invoiceStartDate: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Invoices before this date will not be imported
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="invoiceEndDate">End Date (Optional)</Label>
-              <Input
-                id="invoiceEndDate"
-                type="date"
-                value={formData.invoiceEndDate || ''}
-                onChange={(e) => setFormData({ ...formData, invoiceEndDate: e.target.value || null })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Leave empty to continuously import new invoices
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Document Type Filtering */}
       <Card className="border-blue-500/20">
@@ -670,7 +632,7 @@ export default function SyncSettingsPage() {
 
         <Button
           onClick={handleSaveAndContinue}
-          disabled={saving || !formData.invoiceStartDate}
+          disabled={saving}
           className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
         >
           {saving ? (

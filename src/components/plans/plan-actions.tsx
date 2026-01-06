@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MoreHorizontal, Pencil, Trash2, Power, PowerOff } from 'lucide-react'
+import Link from 'next/link'
+import { MoreHorizontal, Eye, Trash2, Power, PowerOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,7 +22,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { CommissionPlanFormDialog } from './plan-form-dialog'
 import { deleteCommissionPlan, updateCommissionPlan } from '@/app/actions/commission-plans'
 
 interface CommissionPlan {
@@ -32,20 +32,11 @@ interface CommissionPlan {
   isActive: boolean
 }
 
-interface Project {
-  id: string
-  name: string
-  client: {
-    name: string
-  }
-}
-
 interface PlanActionsProps {
   plan: CommissionPlan
-  projects: Project[]
 }
 
-export function PlanActions({ plan, projects }: PlanActionsProps) {
+export function PlanActions({ plan }: PlanActionsProps) {
   const router = useRouter()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -88,16 +79,12 @@ export function PlanActions({ plan, projects }: PlanActionsProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <CommissionPlanFormDialog
-            plan={plan}
-            projects={projects}
-            trigger={
-              <button className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
-              </button>
-            }
-          />
+          <DropdownMenuItem asChild>
+            <Link href={`/dashboard/plans/${plan.id}`} className="flex items-center">
+              <Eye className="mr-2 h-4 w-4" />
+              View Details
+            </Link>
+          </DropdownMenuItem>
           <DropdownMenuItem onClick={handleToggleActive} disabled={isToggling}>
             {plan.isActive ? (
               <>
