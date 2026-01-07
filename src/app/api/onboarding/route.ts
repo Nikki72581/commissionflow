@@ -1,6 +1,6 @@
 // app/api/onboarding/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { clerkClient, currentUser } from '@clerk/nextjs/server';
+import { auth, clerkClient, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
@@ -12,15 +12,37 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const organizationName = String(body.organizationName || '').trim();
     const planTier = body.planTier;
     const role = body.role;
     const firstName = String(body.firstName || '').trim();
     const lastName = String(body.lastName || '').trim();
 
-    if (!organizationName || !planTier || !role || !firstName || !lastName) {
+    if (!planTier || !role || !firstName || !lastName) {
       return NextResponse.json(
         { message: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    const clerk = await clerkClient();
+    const { orgId } = await auth();
+    let effectiveOrgId = orgId;
+
+    if (!effectiveOrgId) {
+      try {
+        const memberships = await clerk.users.getOrganizationMembershipList({
+          userId: user.id,
+          limit: 1,
+        });
+        effectiveOrgId = memberships.data[0]?.organization.id;
+      } catch (error) {
+        console.error('Failed to fetch Clerk organization memberships:', error);
+      }
+    }
+
+    if (!effectiveOrgId) {
+      return NextResponse.json(
+        { message: 'User must belong to an organization' },
         { status: 400 }
       );
     }
@@ -33,7 +55,6 @@ export async function POST(req: NextRequest) {
 
     if (existingUser) {
       try {
-        const clerk = await clerkClient();
         await clerk.users.updateUser(user.id, { firstName, lastName });
       } catch (error) {
         console.error('Failed to update Clerk user during onboarding:', error);
@@ -46,12 +67,36 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Create organization slug from name
-    const baseSlug = organizationName
+    let clerkOrgName = '';
+    let clerkOrgSlug = '';
+
+    try {
+      const clerkOrg = await clerk.organizations.getOrganization({
+        organizationId: effectiveOrgId,
+      });
+      clerkOrgName = clerkOrg.name;
+      clerkOrgSlug = clerkOrg.slug || '';
+    } catch (error) {
+      console.error('Failed to fetch Clerk organization during onboarding:', error);
+      return NextResponse.json(
+        { message: 'Failed to fetch organization' },
+        { status: 500 }
+      );
+    }
+
+    if (!clerkOrgName) {
+      return NextResponse.json(
+        { message: 'Organization name is missing' },
+        { status: 400 }
+      );
+    }
+
+    // Create organization slug from Clerk org name if missing
+    const baseSlug = (clerkOrgSlug || clerkOrgName)
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
-    
+
     // Make slug unique by checking if it exists
     let slug = baseSlug;
     let counter = 1;
@@ -60,51 +105,22 @@ export async function POST(req: NextRequest) {
       counter++;
     }
 
-    const clerk = await clerkClient();
-    let clerkOrgId: string | null = null;
-    let clerkOrgSlug = slug;
-
-    try {
-      const clerkOrg = await clerk.organizations.createOrganization({
-        name: organizationName,
-        slug,
-        createdBy: user.id,
-      });
-      clerkOrgId = clerkOrg.id;
-      if (clerkOrg.slug) {
-        clerkOrgSlug = clerkOrg.slug;
-      }
-    } catch (error) {
-      console.warn('Clerk org creation with provided slug failed, retrying without slug.');
-      try {
-        const clerkOrg = await clerk.organizations.createOrganization({
-          name: organizationName,
-          createdBy: user.id,
-        });
-        clerkOrgId = clerkOrg.id;
-        if (clerkOrg.slug) {
-          clerkOrgSlug = clerkOrg.slug;
-        }
-      } catch (retryError) {
-        console.error('Failed to create Clerk organization during onboarding:', retryError);
-        return NextResponse.json(
-          { message: 'Failed to create organization' },
-          { status: 500 }
-        );
-      }
-    }
+    const existingOrganization = await db.organization.findUnique({
+      where: { clerkOrgId: effectiveOrgId },
+    });
 
     // Create organization and user in a transaction
     const result = await db.$transaction(async (tx) => {
-      // Create organization with Clerk org ID
-      const organization = await tx.organization.create({
-        data: {
-          name: organizationName,
-          slug: clerkOrgSlug,
-          planTier,
-          clerkOrgId,
-        },
-      });
+      const organization = existingOrganization
+        ? existingOrganization
+        : await tx.organization.create({
+            data: {
+              name: clerkOrgName,
+              slug,
+              planTier,
+              clerkOrgId: effectiveOrgId,
+            },
+          });
 
       // Create user
       const newUser = await tx.user.create({
@@ -119,15 +135,6 @@ export async function POST(req: NextRequest) {
       });
 
       return { organization, user: newUser };
-    }).catch(async (error) => {
-      if (clerkOrgId) {
-        try {
-          await clerk.organizations.deleteOrganization(clerkOrgId);
-        } catch (deleteError) {
-          console.error('Failed to roll back Clerk organization:', deleteError);
-        }
-      }
-      throw error;
     });
 
     try {

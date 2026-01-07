@@ -17,7 +17,6 @@ export default function OnboardingPage() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    organizationName: '',
     planTier: 'STARTER',
     role: 'ADMIN',
   });
@@ -96,20 +95,6 @@ export default function OnboardingPage() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="organizationName">Organization Name</Label>
-              <Input
-                id="organizationName"
-                placeholder="Acme Corp"
-                value={formData.organizationName}
-                onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                You will be set up as the admin. You can also use CommissionFlow on your own if you are not joining an organization.
-              </p>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="planTier">Plan</Label>
               <Select
