@@ -1,6 +1,6 @@
 // app/api/onboarding/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { clerkClient, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
@@ -12,9 +12,13 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { organizationName, planTier, role } = body;
+    const organizationName = String(body.organizationName || '').trim();
+    const planTier = body.planTier;
+    const role = body.role;
+    const firstName = String(body.firstName || '').trim();
+    const lastName = String(body.lastName || '').trim();
 
-    if (!organizationName || !planTier || !role) {
+    if (!organizationName || !planTier || !role || !firstName || !lastName) {
       return NextResponse.json(
         { message: 'Missing required fields' },
         { status: 400 }
@@ -28,6 +32,13 @@ export async function POST(req: NextRequest) {
     });
 
     if (existingUser) {
+      try {
+        const clerk = await clerkClient();
+        await clerk.users.updateUser(user.id, { firstName, lastName });
+      } catch (error) {
+        console.error('Failed to update Clerk user during onboarding:', error);
+      }
+
       return NextResponse.json({ 
         success: true,
         message: 'User already onboarded',
@@ -67,8 +78,8 @@ export async function POST(req: NextRequest) {
         data: {
           clerkId: user.id,
           email: user.emailAddresses[0].emailAddress,
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
+          firstName,
+          lastName,
           role,
           organizationId: organization.id,
         },
@@ -76,6 +87,13 @@ export async function POST(req: NextRequest) {
 
       return { organization, user: newUser };
     });
+
+    try {
+      const clerk = await clerkClient();
+      await clerk.users.updateUser(user.id, { firstName, lastName });
+    } catch (error) {
+      console.error('Failed to update Clerk user during onboarding:', error);
+    }
 
     // Note: To enable team invitations, run the link-unlinked-orgs script:
     // npx tsx --env-file=.env.local scripts/link-unlinked-orgs.ts
