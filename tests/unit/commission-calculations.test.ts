@@ -26,6 +26,8 @@ function createTestRule(
     flatAmount: null,
     tierThreshold: null,
     tierPercentage: null,
+    minSaleAmount: null,
+    maxSaleAmount: null,
     minAmount: null,
     maxAmount: null,
     description: null,
@@ -109,47 +111,161 @@ describe('Commission Calculator', () => {
       })
     })
 
-    describe('TIERED commissions', () => {
-      it('should calculate below tier threshold using base percentage', () => {
+    describe('Amount Range Filtering', () => {
+      it('should apply rule when sale is within amount range', () => {
         const rule = createTestRule({
-          ruleType: 'TIERED',
           percentage: 5,
-          tierThreshold: 10000,
-          tierPercentage: 7,
+          minSaleAmount: 5000,
+          maxSaleAmount: 15000,
         })
 
-        // Sale of $8,000 (below $10k threshold) should use base 5%
-        const result = calculateCommission(8000, [rule])
-        expect(result.finalAmount).toBe(400) // 5% of 8000
+        const context: CalculationContext = {
+          grossAmount: 10000,
+          netAmount: 10000,
+          transactionDate: new Date(),
+          commissionBasis: 'GROSS_REVENUE' as CommissionBasis,
+        }
+
+        const result = calculateCommissionWithPrecedence(context, [rule] as any)
+        // Should apply 5% rule
+        expect(result.finalAmount).toBe(500)
       })
 
-      it('should calculate above tier threshold with progression', () => {
+      it('should not apply rule when sale is below minimum', () => {
         const rule = createTestRule({
-          ruleType: 'TIERED',
           percentage: 5,
-          tierThreshold: 10000,
-          tierPercentage: 7,
+          minSaleAmount: 10000,
         })
 
-        // Sale of $15,000:
-        // First $10,000 at 5% = $500
-        // Next $5,000 at 7% = $350
-        // Total = $850
-        const result = calculateCommission(15000, [rule])
-        expect(result.finalAmount).toBe(850)
+        const context: CalculationContext = {
+          grossAmount: 8000, // Below minimum
+          netAmount: 8000,
+          transactionDate: new Date(),
+          commissionBasis: 'GROSS_REVENUE' as CommissionBasis,
+        }
+
+        const result = calculateCommissionWithPrecedence(context, [rule] as any)
+        // Should not apply rule
+        expect(result.finalAmount).toBe(0)
       })
 
-      it('should handle exact threshold amount', () => {
+      it('should not apply rule when sale is above maximum', () => {
         const rule = createTestRule({
-          ruleType: 'TIERED',
           percentage: 5,
-          tierThreshold: 10000,
-          tierPercentage: 7,
+          maxSaleAmount: 10000,
         })
 
-        // Exactly at threshold should only use base rate
-        const result = calculateCommission(10000, [rule])
-        expect(result.finalAmount).toBe(500) // 5% of 10000
+        const context: CalculationContext = {
+          grossAmount: 15000, // Above maximum
+          netAmount: 15000,
+          transactionDate: new Date(),
+          commissionBasis: 'GROSS_REVENUE' as CommissionBasis,
+        }
+
+        const result = calculateCommissionWithPrecedence(context, [rule] as any)
+        // Should not apply rule
+        expect(result.finalAmount).toBe(0)
+      })
+
+      it('should select correct rule based on sale amount ranges', () => {
+        const rules = [
+          createTestRule({
+            id: 'rule-1',
+            percentage: 2,
+            minSaleAmount: 0,
+            maxSaleAmount: 10000,
+            priority: 'DEFAULT' as RulePriority,
+          }),
+          createTestRule({
+            id: 'rule-2',
+            percentage: 4,
+            minSaleAmount: 10000,
+            maxSaleAmount: null, // No upper limit
+            priority: 'DEFAULT' as RulePriority,
+          }),
+        ]
+
+        // $8k sale should use 2% rule
+        const result1 = calculateCommissionWithPrecedence(
+          {
+            grossAmount: 8000,
+            netAmount: 8000,
+            transactionDate: new Date(),
+            commissionBasis: 'GROSS_REVENUE' as CommissionBasis,
+          },
+          rules as any
+        )
+        expect(result1.finalAmount).toBe(160) // 2% of 8000
+
+        // $15k sale should use 4% rule
+        const result2 = calculateCommissionWithPrecedence(
+          {
+            grossAmount: 15000,
+            netAmount: 15000,
+            transactionDate: new Date(),
+            commissionBasis: 'GROSS_REVENUE' as CommissionBasis,
+          },
+          rules as any
+        )
+        expect(result2.finalAmount).toBe(600) // 4% of 15000
+      })
+
+      it('should combine amount range with customer tier filters', () => {
+        const rules = [
+          createTestRule({
+            id: 'rule-1',
+            scope: 'CUSTOMER_TIER' as RuleScope,
+            customerTier: 'VIP' as CustomerTier,
+            percentage: 15,
+            minSaleAmount: 50000,
+            priority: 'CUSTOMER_TIER' as RulePriority,
+          }),
+          createTestRule({
+            id: 'rule-2',
+            scope: 'GLOBAL' as RuleScope,
+            percentage: 5,
+            priority: 'DEFAULT' as RulePriority,
+          }),
+        ]
+
+        // VIP customer with $60k sale should get 15% (meets tier AND amount)
+        const result1 = calculateCommissionWithPrecedence(
+          {
+            grossAmount: 60000,
+            netAmount: 60000,
+            transactionDate: new Date(),
+            commissionBasis: 'GROSS_REVENUE' as CommissionBasis,
+            customerTier: 'VIP' as CustomerTier,
+          },
+          rules as any
+        )
+        expect(result1.finalAmount).toBe(9000) // 15% of 60000
+
+        // VIP customer with $40k sale should get 5% (meets tier but NOT amount minimum)
+        const result2 = calculateCommissionWithPrecedence(
+          {
+            grossAmount: 40000,
+            netAmount: 40000,
+            transactionDate: new Date(),
+            commissionBasis: 'GROSS_REVENUE' as CommissionBasis,
+            customerTier: 'VIP' as CustomerTier,
+          },
+          rules as any
+        )
+        expect(result2.finalAmount).toBe(2000) // 5% of 40000 (fallback to global)
+
+        // Standard customer with $60k sale should get 5% (meets amount but NOT tier)
+        const result3 = calculateCommissionWithPrecedence(
+          {
+            grossAmount: 60000,
+            netAmount: 60000,
+            transactionDate: new Date(),
+            commissionBasis: 'GROSS_REVENUE' as CommissionBasis,
+            customerTier: 'STANDARD' as CustomerTier,
+          },
+          rules as any
+        )
+        expect(result3.finalAmount).toBe(3000) // 5% of 60000 (fallback to global)
       })
     })
 

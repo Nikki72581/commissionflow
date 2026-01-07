@@ -28,17 +28,17 @@ export const updateCommissionPlanSchema = z.object({
 export const createCommissionRuleSchema = z
   .object({
     commissionPlanId: z.string().min(1, 'Plan ID is required'),
-    ruleType: z.enum(['PERCENTAGE', 'FLAT_AMOUNT', 'TIERED'] as const, {
+    ruleType: z.enum(['PERCENTAGE', 'FLAT_AMOUNT'] as const, {
       message: 'Rule type is required',
     }),
     // For PERCENTAGE type
     percentage: z.number().min(0).max(100).optional(),
     // For FLAT_AMOUNT type
     flatAmount: z.number().min(0).optional(),
-    // For TIERED type
-    tierThreshold: z.number().min(0).optional(),
-    tierPercentage: z.number().min(0).max(100).optional(),
-    // Optional caps
+    // NEW: Sale amount range filters (optional, work with any rule type)
+    minSaleAmount: z.number().min(0).optional(),
+    maxSaleAmount: z.number().min(0).optional(),
+    // Optional commission caps (different from sale amount filters!)
     minAmount: z.number().min(0).optional(),
     maxAmount: z.number().min(0).optional(),
     description: z.string().optional(),
@@ -64,13 +64,6 @@ export const createCommissionRuleSchema = z
       if (data.ruleType === 'FLAT_AMOUNT') {
         return data.flatAmount !== undefined && data.flatAmount > 0
       }
-      if (data.ruleType === 'TIERED') {
-        return (
-          data.tierThreshold !== undefined &&
-          data.tierPercentage !== undefined &&
-          data.tierPercentage > 0
-        )
-      }
       return true
     },
     {
@@ -79,14 +72,28 @@ export const createCommissionRuleSchema = z
   )
   .refine(
     (data) => {
-      // Validate that maxAmount is greater than minAmount if both are set
+      // Validate that maxAmount > minAmount if both are set (commission caps)
       if (data.minAmount !== undefined && data.maxAmount !== undefined) {
         return data.maxAmount > data.minAmount
       }
       return true
     },
     {
-      message: 'Maximum amount must be greater than minimum amount',
+      message: 'Maximum commission must be greater than minimum commission',
+      path: ['maxAmount'],
+    }
+  )
+  .refine(
+    (data) => {
+      // NEW: Validate that maxSaleAmount > minSaleAmount if both are set
+      if (data.minSaleAmount !== undefined && data.maxSaleAmount !== undefined) {
+        return data.maxSaleAmount > data.minSaleAmount
+      }
+      return true
+    },
+    {
+      message: 'Maximum sale amount must be greater than minimum sale amount',
+      path: ['maxSaleAmount'],
     }
   )
 
@@ -95,11 +102,13 @@ export const createCommissionRuleSchema = z
  */
 export const updateCommissionRuleSchema = z
   .object({
-    ruleType: z.enum(['PERCENTAGE', 'FLAT_AMOUNT', 'TIERED'] as const).optional(),
+    ruleType: z.enum(['PERCENTAGE', 'FLAT_AMOUNT'] as const).optional(),
     percentage: z.number().min(0).max(100).optional(),
     flatAmount: z.number().min(0).optional(),
-    tierThreshold: z.number().min(0).optional(),
-    tierPercentage: z.number().min(0).max(100).optional(),
+    // NEW: Sale amount range filters
+    minSaleAmount: z.number().min(0).optional(),
+    maxSaleAmount: z.number().min(0).optional(),
+    // Commission caps
     minAmount: z.number().min(0).optional(),
     maxAmount: z.number().min(0).optional(),
     description: z.string().optional(),
@@ -118,14 +127,28 @@ export const updateCommissionRuleSchema = z
   })
   .refine(
     (data) => {
-      // Validate that maxAmount is greater than minAmount if both are set
+      // Validate that maxAmount > minAmount if both are set (commission caps)
       if (data.minAmount !== undefined && data.maxAmount !== undefined) {
         return data.maxAmount > data.minAmount
       }
       return true
     },
     {
-      message: 'Maximum amount must be greater than minimum amount',
+      message: 'Maximum commission must be greater than minimum commission',
+      path: ['maxAmount'],
+    }
+  )
+  .refine(
+    (data) => {
+      // NEW: Validate that maxSaleAmount > minSaleAmount if both are set
+      if (data.minSaleAmount !== undefined && data.maxSaleAmount !== undefined) {
+        return data.maxSaleAmount > data.minSaleAmount
+      }
+      return true
+    },
+    {
+      message: 'Maximum sale amount must be greater than minimum sale amount',
+      path: ['maxSaleAmount'],
     }
   )
 

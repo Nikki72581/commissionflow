@@ -390,17 +390,21 @@ model CommissionRule {
   // Existing fields
   percentage     Float? // For PERCENTAGE type
   flatAmount     Float? // For FLAT_AMOUNT type
-  tierThreshold  Float? // For TIERED type - revenue threshold
-  tierPercentage Float? // For TIERED type - rate above threshold
+  tierThreshold  Float? // @deprecated - For TIERED type - revenue threshold
+  tierPercentage Float? // @deprecated - For TIERED type - rate above threshold
   minAmount      Float? // Minimum commission
   maxAmount      Float? // Maximum commission (cap)
   description    String?
 
-  // NEW: Scoping fields
+  // NEW: Sale amount range filtering (works with any rule type)
+  minSaleAmount Float? // Sale must be >= this amount to apply this rule
+  maxSaleAmount Float? // Sale must be <= this amount to apply this rule (null = no upper limit)
+
+  // Scoping fields
   scope    RuleScope    @default(GLOBAL)
   priority RulePriority @default(DEFAULT)
 
-  // NEW: Applicability filters (nullable for backward compatibility)
+  // Applicability filters (nullable for backward compatibility)
   customerTier      CustomerTier?
   productCategoryId String?
   territoryId       String?
@@ -421,6 +425,7 @@ model CommissionRule {
   @@index([territoryId])
   @@index([clientId])
   @@index([customerTier])
+  @@index([minSaleAmount, maxSaleAmount])
   @@map("commission_rules")
 }
 

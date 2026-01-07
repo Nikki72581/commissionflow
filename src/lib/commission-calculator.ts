@@ -53,6 +53,8 @@ export interface ScopedCommissionRule extends CommissionRule {
   productCategoryId: string | null
   territoryId: string | null
   clientId: string | null
+  minSaleAmount: number | null
+  maxSaleAmount: number | null
 }
 
 export interface PrecedenceCalculationResult extends EnhancedCalculationResult {
@@ -110,24 +112,16 @@ export function calculateCommission(
         break
 
       case 'TIERED':
-        if (rule.tierThreshold && rule.tierPercentage) {
-          if (saleAmount <= rule.tierThreshold) {
-            // Below threshold - use base percentage if available, or 0
-            ruleAmount = rule.percentage
-              ? saleAmount * (rule.percentage / 100)
-              : 0
-            description = `${rule.percentage || 0}% on $${saleAmount.toFixed(2)} (below $${rule.tierThreshold} threshold)`
-          } else {
-            // Above threshold
-            const baseAmount = rule.percentage
-              ? rule.tierThreshold * (rule.percentage / 100)
-              : 0
-            const tierAmount =
-              (saleAmount - rule.tierThreshold) * (rule.tierPercentage / 100)
-            ruleAmount = baseAmount + tierAmount
-            description = `${rule.percentage || 0}% up to $${rule.tierThreshold}, then ${rule.tierPercentage}% on remaining $${(saleAmount - rule.tierThreshold).toFixed(2)}`
-          }
-        }
+        // DEPRECATED: TIERED rules have been migrated to PERCENTAGE rules with amount ranges
+        console.warn(
+          `Encountered deprecated TIERED rule (ID: ${rule.id}). This should have been migrated. Skipping calculation.`
+        )
+        description = '[DEPRECATED] Tiered rule - please migrate to amount-based rules'
+        ruleAmount = 0
+        break
+
+      default:
+        console.warn(`Unsupported rule type: ${rule.ruleType}. Rule ID: ${rule.id}`)
         break
     }
 
@@ -194,18 +188,27 @@ export function previewCommission(
  * Format rule for display
  */
 export function formatRule(rule: CommissionRule): string {
+  // Build amount range description first
+  let rangeDesc = ''
+  if (rule.minSaleAmount !== null || rule.maxSaleAmount !== null) {
+    if (rule.minSaleAmount !== null && rule.maxSaleAmount !== null) {
+      rangeDesc = ` (sales $${rule.minSaleAmount.toFixed(0)}-$${rule.maxSaleAmount.toFixed(0)})`
+    } else if (rule.minSaleAmount !== null) {
+      rangeDesc = ` (sales $${rule.minSaleAmount.toFixed(0)}+)`
+    } else if (rule.maxSaleAmount !== null) {
+      rangeDesc = ` (sales ≤$${rule.maxSaleAmount.toFixed(0)})`
+    }
+  }
+
   switch (rule.ruleType) {
     case 'PERCENTAGE':
-      return `${rule.percentage}% of sale`
+      return `${rule.percentage}% of sale${rangeDesc}`
 
     case 'FLAT_AMOUNT':
-      return `$${rule.flatAmount?.toFixed(2)} per sale`
+      return `$${rule.flatAmount?.toFixed(2)} per sale${rangeDesc}`
 
     case 'TIERED':
-      if (rule.percentage && rule.tierThreshold && rule.tierPercentage) {
-        return `${rule.percentage}% up to $${rule.tierThreshold.toFixed(0)}, then ${rule.tierPercentage}% above`
-      }
-      return 'Tiered commission'
+      return '[DEPRECATED] Tiered rule - please migrate to amount-based rules'
 
     default:
       return 'Unknown rule type'
@@ -264,6 +267,23 @@ export function ruleApplies(
   rule: ScopedCommissionRule,
   context: CalculationContext
 ): boolean {
+  // FIRST: Check amount range filters (if set)
+  const saleAmount =
+    context.commissionBasis === 'NET_SALES'
+      ? context.netAmount
+      : context.grossAmount
+
+  // If minSaleAmount is set, sale must be >= min
+  if (rule.minSaleAmount !== null && saleAmount < rule.minSaleAmount) {
+    return false
+  }
+
+  // If maxSaleAmount is set, sale must be <= max
+  if (rule.maxSaleAmount !== null && saleAmount > rule.maxSaleAmount) {
+    return false
+  }
+
+  // THEN: Check scope matching (existing logic)
   switch (rule.scope) {
     case 'GLOBAL':
       // Global rules always apply

@@ -33,8 +33,8 @@ interface CommissionRule {
   ruleType: 'PERCENTAGE' | 'FLAT_AMOUNT' | 'TIERED'
   percentage?: number | null
   flatAmount?: number | null
-  tierThreshold?: number | null
-  tierPercentage?: number | null
+  minSaleAmount?: number | null
+  maxSaleAmount?: number | null
   minAmount?: number | null
   maxAmount?: number | null
   description?: string | null
@@ -99,6 +99,8 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
       commissionPlanId: planId,
       ruleType,
       description: formData.get('description') as string,
+      minSaleAmount: formData.get('minSaleAmount') ? parseFloat(formData.get('minSaleAmount') as string) : undefined,
+      maxSaleAmount: formData.get('maxSaleAmount') ? parseFloat(formData.get('maxSaleAmount') as string) : undefined,
       minAmount: formData.get('minAmount') ? parseFloat(formData.get('minAmount') as string) : undefined,
       maxAmount: formData.get('maxAmount') ? parseFloat(formData.get('maxAmount') as string) : undefined,
     }
@@ -108,10 +110,6 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
       data.percentage = parseFloat(formData.get('percentage') as string)
     } else if (ruleType === 'FLAT_AMOUNT') {
       data.flatAmount = parseFloat(formData.get('flatAmount') as string)
-    } else if (ruleType === 'TIERED') {
-      data.percentage = parseFloat(formData.get('basePercentage') as string)
-      data.tierThreshold = parseFloat(formData.get('tierThreshold') as string)
-      data.tierPercentage = parseFloat(formData.get('tierPercentage') as string)
     }
 
     // Add scope fields if advanced mode is enabled
@@ -208,7 +206,6 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
                 <SelectContent>
                   <SelectItem value="PERCENTAGE">Percentage of Sale</SelectItem>
                   <SelectItem value="FLAT_AMOUNT">Flat Amount</SelectItem>
-                  <SelectItem value="TIERED">Tiered (Different rates)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -269,89 +266,72 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
               </div>
             )}
 
-            {/* TIERED type fields */}
-            {ruleType === 'TIERED' && (
-              <>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="basePercentage">
-                      Base Rate <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="basePercentage"
-                        name="basePercentage"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        defaultValue={rule?.percentage || ''}
-                        placeholder="5"
-                        required
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        %
-                      </span>
-                    </div>
-                  </div>
 
-                  <div className="grid gap-2">
-                    <Label htmlFor="tierThreshold">
-                      Threshold <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        $
-                      </span>
-                      <Input
-                        id="tierThreshold"
-                        name="tierThreshold"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        defaultValue={rule?.tierThreshold || ''}
-                        placeholder="10000"
-                        className="pl-7"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="tierPercentage">
-                    Rate Above Threshold <span className="text-destructive">*</span>
-                  </Label>
+            {/* Sale Amount Filters */}
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <h4 className="text-sm font-medium">Sale Amount Filters</h4>
+                <span className="text-xs text-muted-foreground">(Optional)</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Apply this rule only to sales within a specific amount range. Leave blank to apply to all amounts.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="minSaleAmount">Minimum Sale</Label>
                   <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      $
+                    </span>
                     <Input
-                      id="tierPercentage"
-                      name="tierPercentage"
+                      id="minSaleAmount"
+                      name="minSaleAmount"
                       type="number"
                       step="0.01"
                       min="0"
-                      max="100"
-                      defaultValue={rule?.tierPercentage || ''}
-                      placeholder="7"
-                      required
+                      defaultValue={rule?.minSaleAmount || ''}
+                      placeholder="0"
+                      className="pl-7"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      %
-                    </span>
                   </div>
+                  <p className="text-xs text-muted-foreground">Sales must be at least this amount</p>
                 </div>
-
-                <p className="text-xs text-muted-foreground">
-                  Example: 5% up to $10,000, then 7% on amounts above
+                <div className="space-y-2">
+                  <Label htmlFor="maxSaleAmount">Maximum Sale</Label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      $
+                    </span>
+                    <Input
+                      id="maxSaleAmount"
+                      name="maxSaleAmount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      defaultValue={rule?.maxSaleAmount || ''}
+                      placeholder="No limit"
+                      className="pl-7"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Leave empty for no upper limit</p>
+                </div>
+              </div>
+              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md">
+                <p className="text-xs text-blue-900 dark:text-blue-200">
+                  <strong>Example:</strong> Set min=$10,000 and max=$50,000 to apply this rule only to sales between $10k-$50k
                 </p>
-              </>
-            )}
+              </div>
+            </div>
 
-            {/* Optional caps */}
+            {/* Optional commission caps */}
             <div className="border-t pt-4">
-              <h4 className="text-sm font-medium mb-3">Optional Caps</h4>
+              <h4 className="text-sm font-medium mb-3">Optional Commission Caps</h4>
+              <p className="text-xs text-muted-foreground mb-3">
+                Set minimum or maximum limits on the commission amount (not the sale amount).
+              </p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="minAmount">Minimum</Label>
+                  <Label htmlFor="minAmount">Minimum Commission</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                       $
@@ -370,7 +350,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
                 </div>
 
                 <div className="grid gap-2">
-                  <Label htmlFor="maxAmount">Maximum</Label>
+                  <Label htmlFor="maxAmount">Maximum Commission</Label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                       $
