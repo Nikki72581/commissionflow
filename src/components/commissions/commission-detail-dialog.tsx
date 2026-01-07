@@ -68,7 +68,7 @@ interface CommissionDetailDialogProps {
     }
     commissionPlan: {
       name: string
-      commissionBasis?: string
+      commissionBasis?: string | null
     }
     user?: {
       firstName: string | null
