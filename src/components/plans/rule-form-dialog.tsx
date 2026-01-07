@@ -168,7 +168,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
         </DialogTrigger>
       )}
 
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[760px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{isEdit ? 'Edit Rule' : 'Add Commission Rule'}</DialogTitle>
@@ -177,15 +177,15 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 sm:grid-cols-2">
             {error && (
-              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive sm:col-span-2">
                 {error}
               </div>
             )}
 
             {warnings.length > 0 && (
-              <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+              <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800 sm:col-span-2">
                 <p className="font-medium mb-1">Warning:</p>
                 <ul className="list-disc list-inside space-y-1">
                   {warnings.map((warning, i) => (
@@ -195,7 +195,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
               </div>
             )}
 
-            <div className="grid gap-2">
+            <div className="grid gap-2 sm:col-span-1">
               <Label htmlFor="ruleType">
                 Rule Type <span className="text-destructive">*</span>
               </Label>
@@ -212,7 +212,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
 
             {/* PERCENTAGE type fields */}
             {ruleType === 'PERCENTAGE' && (
-              <div className="grid gap-2">
+              <div className="grid gap-2 sm:col-span-1">
                 <Label htmlFor="percentage">
                   Percentage <span className="text-destructive">*</span>
                 </Label>
@@ -241,7 +241,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
 
             {/* FLAT_AMOUNT type fields */}
             {ruleType === 'FLAT_AMOUNT' && (
-              <div className="grid gap-2">
+              <div className="grid gap-2 sm:col-span-1">
                 <Label htmlFor="flatAmount">
                   Amount <span className="text-destructive">*</span>
                 </Label>
@@ -270,7 +270,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
 
 
             {/* Sale Amount Filters */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 sm:col-span-2">
               <div className="flex items-center gap-2 mb-3">
                 <h4 className="text-sm font-medium">Sale Amount Filters</h4>
                 <span className="text-xs text-muted-foreground">(Optional)</span>
@@ -326,7 +326,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
             </div>
 
             {/* Optional commission caps */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 sm:col-span-2">
               <h4 className="text-sm font-medium mb-3">Optional Commission Caps</h4>
               <p className="text-xs text-muted-foreground mb-3">
                 Set minimum or maximum limits on the commission amount (not the sale amount).
@@ -373,7 +373,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
             </div>
 
             {/* Advanced: Rule Scope */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 sm:col-span-2">
               <Button
                 type="button"
                 variant="ghost"
@@ -488,7 +488,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
               )}
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid gap-2 sm:col-span-2">
               <Label htmlFor="description">Notes (Optional)</Label>
               <Textarea
                 id="description"

@@ -108,7 +108,7 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[500px]" data-testid="client-form-dialog">
+      <DialogContent className="sm:max-w-[760px]" data-testid="client-form-dialog">
         {showSuccess ? (
           <div className="flex flex-col items-center justify-center py-12" data-testid="success-message">
             <div className="animate-in zoom-in duration-500">
@@ -132,15 +132,15 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
               </DialogDescription>
             </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 sm:grid-cols-2">
             {error && (
-              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive sm:col-span-2">
                 {error}
               </div>
             )}
 
             {isEdit && (client as any)?.externalSystem && (
-              <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-sm">
+              <div className="rounded-md bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 p-3 text-sm sm:col-span-2">
                 <p className="font-medium text-blue-900 dark:text-blue-100">Integration Source</p>
                 <p className="text-blue-700 dark:text-blue-300 text-xs mt-1">
                   This client was created from {(client as any).externalSystem} (ID: {(client as any).externalId})
@@ -271,7 +271,7 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
               </div>
             )}
 
-            <div className="grid gap-2">
+            <div className="grid gap-2 sm:col-span-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
