@@ -161,7 +161,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : (
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" data-testid="add-rule-button">
             <Plus className="mr-2 h-4 w-4" />
             Add Rule
           </Button>
@@ -200,12 +200,12 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
                 Rule Type <span className="text-destructive">*</span>
               </Label>
               <Select value={ruleType} onValueChange={setRuleType}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="rule-type-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PERCENTAGE">Percentage of Sale</SelectItem>
-                  <SelectItem value="FLAT_AMOUNT">Flat Amount</SelectItem>
+                  <SelectItem value="PERCENTAGE" data-testid="rule-type-percentage">Percentage of Sale</SelectItem>
+                  <SelectItem value="FLAT_AMOUNT" data-testid="rule-type-flat">Flat Amount</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -227,6 +227,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
                     defaultValue={rule?.percentage || ''}
                     placeholder="10"
                     required
+                    data-testid="rule-value-input"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     %
@@ -258,6 +259,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
                     placeholder="500"
                     className="pl-7"
                     required
+                    data-testid="rule-value-input"
                   />
                 </div>
                 <p className="text-xs text-muted-foreground">

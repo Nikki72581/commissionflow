@@ -102,15 +102,15 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : (
         <DialogTrigger asChild>
-          <Button>
+          <Button data-testid="new-client-button">
             <Plus className="mr-2 h-4 w-4" />
             New Client
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" data-testid="client-form-dialog">
         {showSuccess ? (
-          <div className="flex flex-col items-center justify-center py-12">
+          <div className="flex flex-col items-center justify-center py-12" data-testid="success-message">
             <div className="animate-in zoom-in duration-500">
               <CheckCircle2 className="h-16 w-16 text-green-500" />
             </div>
@@ -155,10 +155,14 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
               <Input
                 id="name"
                 name="name"
+                data-testid="client-name-input"
                 defaultValue={client?.name}
                 placeholder="Acme Corporation"
                 required
               />
+              {error && error.includes('name') && (
+                <p className="text-sm text-destructive" data-testid="client-name-error">Name is required</p>
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -167,9 +171,13 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
                 id="email"
                 name="email"
                 type="email"
+                data-testid="client-email-input"
                 defaultValue={client?.email || ''}
                 placeholder="contact@acme.com"
               />
+              {error && error.includes('email') && (
+                <p className="text-sm text-destructive" data-testid="client-email-error">Please enter a valid email</p>
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -178,6 +186,7 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
                 id="phone"
                 name="phone"
                 type="tel"
+                data-testid="client-phone-input"
                 defaultValue={client?.phone || ''}
                 placeholder="(555) 123-4567"
               />
@@ -188,6 +197,7 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
               <Input
                 id="address"
                 name="address"
+                data-testid="client-address-input"
                 defaultValue={client?.address || ''}
                 placeholder="123 Main St, City, State 12345"
               />
@@ -209,14 +219,14 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
             <div className="grid gap-2">
               <Label htmlFor="tier">Customer Tier</Label>
               <Select value={tier} onValueChange={(value: 'STANDARD' | 'VIP' | 'NEW' | 'ENTERPRISE') => setTier(value)}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="client-tier-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="STANDARD">Standard</SelectItem>
-                  <SelectItem value="VIP">VIP</SelectItem>
-                  <SelectItem value="NEW">New Customer</SelectItem>
-                  <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                  <SelectItem value="STANDARD" data-testid="client-tier-standard">Standard</SelectItem>
+                  <SelectItem value="VIP" data-testid="client-tier-vip">VIP</SelectItem>
+                  <SelectItem value="NEW" data-testid="client-tier-new">New Customer</SelectItem>
+                  <SelectItem value="ENTERPRISE" data-testid="client-tier-enterprise">Enterprise</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
@@ -227,14 +237,14 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
             <div className="grid gap-2">
               <Label htmlFor="status">Status</Label>
               <Select value={status} onValueChange={(value: 'ACTIVE' | 'INACTIVE' | 'PROSPECTIVE' | 'CHURNED') => setStatus(value)}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="client-status-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACTIVE">Active</SelectItem>
-                  <SelectItem value="INACTIVE">Inactive</SelectItem>
-                  <SelectItem value="PROSPECTIVE">Prospective</SelectItem>
-                  <SelectItem value="CHURNED">Churned</SelectItem>
+                  <SelectItem value="ACTIVE" data-testid="client-status-active">Active</SelectItem>
+                  <SelectItem value="INACTIVE" data-testid="client-status-inactive">Inactive</SelectItem>
+                  <SelectItem value="PROSPECTIVE" data-testid="client-status-prospective">Prospective</SelectItem>
+                  <SelectItem value="CHURNED" data-testid="client-status-churned">Churned</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
@@ -282,7 +292,7 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} data-testid="submit-client-button">
               {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Client'}
             </Button>
           </DialogFooter>

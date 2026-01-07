@@ -54,20 +54,24 @@ if (searchQuery && clients.length > 0) {
   if (clients.length === 0) {
     if (searchQuery) {
       return (
-        <EmptyState
-          icon={Search}
-          title="No clients found"
-          description={`No clients match "${searchQuery}". Try a different search term.`}
-        />
+        <div data-testid="empty-state">
+          <EmptyState
+            icon={Search}
+            title="No clients found"
+            description={`No clients match "${searchQuery}". Try a different search term.`}
+          />
+        </div>
       )
     }
 
     return (
-      <EmptyState
-        icon={Users}
-        title="No clients yet"
-        description="Get started by adding your first client. Clients are the companies or individuals you work with."
-      />
+      <div data-testid="empty-state">
+        <EmptyState
+          icon={Users}
+          title="No clients yet"
+          description="Get started by adding your first client. Clients are the companies or individuals you work with."
+        />
+      </div>
     )
   }
 
@@ -90,11 +94,13 @@ if (searchQuery && clients.length > 0) {
           {clients.map((client) => (
             <TableRow
               key={client.id}
+              data-testid="client-row"
               className="hover:bg-purple-500/5 transition-colors border-b border-purple-500/5"
             >
               <TableCell>
                 <Link
                   href={`/dashboard/clients/${client.id}`}
+                  data-testid="client-name"
                   className="font-medium text-purple-700 dark:text-purple-400 hover:underline hover:text-purple-900 dark:hover:text-purple-300 transition-colors"
                 >
                   {client.name}
@@ -102,6 +108,7 @@ if (searchQuery && clients.length > 0) {
               </TableCell>
               <TableCell>
                 <Badge
+                  data-testid="client-status-badge"
                   variant={(client as any).status === 'ACTIVE' ? 'success' : (client as any).status === 'PROSPECTIVE' ? 'info' : (client as any).status === 'INACTIVE' ? 'secondary' : 'outline'}
                   className="font-medium"
                 >
@@ -235,6 +242,7 @@ export default async function ClientsPage({
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               name="search"
+              data-testid="client-search-input"
               placeholder="Search clients..."
               defaultValue={searchParams.search}
               className="pl-9 border-purple-500/20 focus:border-purple-500/40 focus:ring-purple-500/20"

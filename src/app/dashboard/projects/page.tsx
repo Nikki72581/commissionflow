@@ -66,6 +66,7 @@ if (searchQuery && projects.length > 0) {
           icon={Search}
           title="No projects found"
           description={`No projects match "${searchQuery}". Try a different search term.`}
+          data-testid="empty-state"
         />
       )
     }
@@ -75,6 +76,7 @@ if (searchQuery && projects.length > 0) {
         icon={Briefcase}
         title="No projects yet"
         description="Get started by creating your first project. Projects represent deals or engagements with your clients."
+        data-testid="empty-state"
       />
     )
   }
@@ -95,11 +97,12 @@ if (searchQuery && projects.length > 0) {
         </TableHeader>
         <TableBody>
           {projects.map((project) => (
-            <TableRow key={project.id}>
+            <TableRow key={project.id} data-testid="project-row">
               <TableCell>
                 <Link
                   href={`/dashboard/projects/${project.id}`}
                   className="font-medium hover:underline"
+                  data-testid="project-name"
                 >
                   {project.name}
                 </Link>
@@ -126,6 +129,7 @@ if (searchQuery && projects.length > 0) {
                       ? 'secondary'
                       : 'outline'
                   }
+                  data-testid="project-status-badge"
                 >
                   {project.status}
                 </Badge>
@@ -200,6 +204,7 @@ export default async function ProjectsPage({
               placeholder="Search projects..."
               defaultValue={searchParams.search}
               className="pl-9"
+              data-testid="project-search-input"
             />
           </div>
         </form>

@@ -55,6 +55,7 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
           icon={Search}
           title="No plans found"
           description={`No plans match "${searchQuery}". Try a different search term.`}
+          data-testid="empty-state"
         />
       )
     }
@@ -64,6 +65,7 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
         icon={FileText}
         title="No commission plans yet"
         description="Create your first commission plan to define how commissions are calculated."
+        data-testid="empty-state"
       />
     )
   }
@@ -103,6 +105,7 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
               className={`transition-colors border-b border-emerald-500/5 ${
                 plan.isActive ? 'hover:bg-emerald-500/5' : 'hover:bg-slate-500/5 opacity-70'
               }`}
+              data-testid="plan-row"
             >
               <TableCell>
                 <Link
@@ -112,6 +115,7 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
                       ? 'text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300'
                       : 'text-slate-600 dark:text-slate-400'
                   }`}
+                  data-testid="plan-name"
                 >
                   {plan.name}
                 </Link>

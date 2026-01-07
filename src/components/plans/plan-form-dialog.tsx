@@ -108,14 +108,14 @@ export function CommissionPlanFormDialog({
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : (
         <DialogTrigger asChild>
-          <Button>
+          <Button data-testid="new-plan-button">
             <Plus className="mr-2 h-4 w-4" />
             New Commission Plan
           </Button>
         </DialogTrigger>
       )}
 
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" data-testid="plan-form-dialog">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
@@ -145,6 +145,7 @@ export function CommissionPlanFormDialog({
                 defaultValue={plan?.name}
                 placeholder="Standard Sales Commission"
                 required
+                data-testid="plan-name-input"
               />
             </div>
 
@@ -156,6 +157,7 @@ export function CommissionPlanFormDialog({
                 defaultValue={plan?.description || ''}
                 placeholder="Describe when this plan applies..."
                 rows={3}
+                data-testid="plan-description-input"
               />
             </div>
 
@@ -224,7 +226,7 @@ export function CommissionPlanFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} data-testid="submit-plan-button">
               {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Plan'}
             </Button>
           </DialogFooter>

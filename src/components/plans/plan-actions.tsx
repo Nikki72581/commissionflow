@@ -102,6 +102,7 @@ export function PlanActions({ plan }: PlanActionsProps) {
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}
             className="text-destructive"
+            data-testid="delete-plan-button"
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
@@ -110,7 +111,7 @@ export function PlanActions({ plan }: PlanActionsProps) {
       </DropdownMenu>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent data-testid="confirm-delete-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -124,6 +125,7 @@ export function PlanActions({ plan }: PlanActionsProps) {
               onClick={handleDelete}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="confirm-delete-button"
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
