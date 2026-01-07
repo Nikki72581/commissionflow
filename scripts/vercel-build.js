@@ -1,6 +1,7 @@
-import { PrismaClient } from '@prisma/client'
+const { execSync } = require('node:child_process')
+const { URL } = require('node:url')
 
-function normalizeSchemaName(name: string): string {
+function normalizeSchemaName(name) {
   const normalized = name
     .toLowerCase()
     .replace(/[^a-z0-9_]/g, '_')
@@ -9,8 +10,8 @@ function normalizeSchemaName(name: string): string {
   return normalized.length > 63 ? normalized.slice(0, 63) : normalized
 }
 
-function resolveSchemaName(): string | undefined {
-  const explicit = process.env.PRISMA_SCHEMA?.trim()
+function resolveSchemaName() {
+  const explicit = process.env.PRISMA_SCHEMA && process.env.PRISMA_SCHEMA.trim()
   if (explicit) return explicit
   const gitRef = process.env.VERCEL_GIT_COMMIT_REF
   if (gitRef && gitRef !== 'main') return normalizeSchemaName(gitRef)
@@ -18,7 +19,7 @@ function resolveSchemaName(): string | undefined {
   return undefined
 }
 
-function appendSchemaToUrl(url: string, schema?: string): string {
+function appendSchemaToUrl(url, schema) {
   if (!schema) return url
   try {
     const parsed = new URL(url)
@@ -32,23 +33,12 @@ function appendSchemaToUrl(url: string, schema?: string): string {
   }
 }
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
 const baseDatabaseUrl = process.env.DATABASE_URL
 const schemaName = resolveSchemaName()
-const databaseUrl = baseDatabaseUrl ? appendSchemaToUrl(baseDatabaseUrl, schemaName) : undefined
+if (baseDatabaseUrl && schemaName) {
+  process.env.DATABASE_URL = appendSchemaToUrl(baseDatabaseUrl, schemaName)
+}
 
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    ...(databaseUrl ? { datasources: { db: { url: databaseUrl } } } : {}),
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  })
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
-
-// Export as both 'prisma' and 'db' for backwards compatibility
-export const db = prisma
-export default prisma
+execSync('prisma migrate deploy', { stdio: 'inherit', env: process.env })
+execSync('prisma generate', { stdio: 'inherit', env: process.env })
+execSync('next build', { stdio: 'inherit', env: process.env })
