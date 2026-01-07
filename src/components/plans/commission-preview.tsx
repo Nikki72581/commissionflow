@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { NumberInput } from '@/components/ui/number-input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { formatCurrency } from '@/lib/utils'
@@ -55,20 +55,15 @@ export function CommissionPreview({ rules }: CommissionPreviewProps) {
         {/* Sale Amount Input */}
         <div className="grid gap-2">
           <Label htmlFor="previewAmount">Sale Amount</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-              $
-            </span>
-            <Input
-              id="previewAmount"
-              type="number"
-              step="100"
-              min="0"
-              value={saleAmount}
-              onChange={(e) => setSaleAmount(parseFloat(e.target.value) || 0)}
-              className="pl-7 text-lg font-medium"
-            />
-          </div>
+          <NumberInput
+            id="previewAmount"
+            step="100"
+            min="0"
+            value={saleAmount}
+            onChange={(e) => setSaleAmount(parseFloat(e.target.value) || 0)}
+            className="text-lg font-medium"
+            startAdornment="$"
+          />
         </div>
 
         <Separator />

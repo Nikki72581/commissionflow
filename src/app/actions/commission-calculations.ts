@@ -167,6 +167,7 @@ export async function approveCalculation(calculationId: string) {
     })
 
     revalidatePath('/dashboard/commissions')
+    revalidatePath('/dashboard/commissions/pending')
     revalidatePath(`/dashboard/commissions/${calculationId}`)
     
     return {
@@ -221,6 +222,7 @@ export async function bulkApproveCalculations(data: BulkApproveInput) {
     })
 
     revalidatePath('/dashboard/commissions')
+    revalidatePath('/dashboard/commissions/pending')
     
     return {
       success: true,
@@ -321,6 +323,7 @@ export async function rejectCalculation(calculationId: string, reason?: string) 
     })
 
     revalidatePath('/dashboard/commissions')
+    revalidatePath('/dashboard/commissions/pending')
     
     return {
       success: true,
@@ -331,6 +334,53 @@ export async function rejectCalculation(calculationId: string, reason?: string) 
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to reject calculation',
+    }
+  }
+}
+
+/**
+ * Bulk reject multiple commission calculations
+ */
+export async function bulkRejectCalculations(data: BulkApproveInput) {
+  try {
+    const organizationId = await getOrganizationId()
+
+    const validatedData = bulkApproveSchema.parse(data)
+
+    const calculations = await prisma.commissionCalculation.findMany({
+      where: {
+        id: { in: validatedData.calculationIds },
+        organizationId,
+      },
+    })
+
+    if (calculations.length !== validatedData.calculationIds.length) {
+      throw new Error('Some calculations were not found')
+    }
+
+    const hasPaidCalculations = calculations.some((calc) => calc.status === 'PAID')
+    if (hasPaidCalculations) {
+      throw new Error('Cannot reject calculations that have already been paid')
+    }
+
+    await prisma.commissionCalculation.deleteMany({
+      where: {
+        id: { in: validatedData.calculationIds },
+      },
+    })
+
+    revalidatePath('/dashboard/commissions')
+    revalidatePath('/dashboard/commissions/pending')
+
+    return {
+      success: true,
+      message: `${validatedData.calculationIds.length} calculation(s) rejected successfully`,
+    }
+  } catch (error) {
+    console.error('Error bulk rejecting calculations:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to bulk reject calculations',
     }
   }
 }

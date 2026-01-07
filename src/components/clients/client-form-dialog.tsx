@@ -254,7 +254,7 @@ export function ClientFormDialog({ client, territories = [], trigger }: ClientFo
 
             {territories.length > 0 && (
               <div className="grid gap-2">
-                <Label htmlFor="territoryId">Territory (Optional)</Label>
+                <Label htmlFor="territoryId">Territory</Label>
                 <Select value={territoryId || 'none'} onValueChange={(value) => setTerritoryId(value === 'none' ? '' : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select territory" />

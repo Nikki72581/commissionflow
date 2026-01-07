@@ -325,7 +325,7 @@ export default function RecalculateCommissionsPage() {
 
           {/* Salespeople Filter */}
           <div>
-            <Label>Salespeople (optional)</Label>
+            <Label>Salespeople</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 max-h-40 overflow-y-auto border rounded-md p-3">
               {users.map((user) => (
                 <div key={user.id} className="flex items-center space-x-2">
@@ -350,7 +350,7 @@ export default function RecalculateCommissionsPage() {
 
           {/* Commission Plans Filter */}
           <div>
-            <Label>Commission Plans (optional)</Label>
+            <Label>Commission Plans</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto border rounded-md p-3">
               {plans.map((plan) => (
                 <div key={plan.id} className="flex items-center space-x-2">
@@ -375,7 +375,7 @@ export default function RecalculateCommissionsPage() {
 
           {/* Projects Filter */}
           <div>
-            <Label>Projects (optional)</Label>
+            <Label>Projects</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2 max-h-40 overflow-y-auto border rounded-md p-3">
               {projects.map((project) => (
                 <div key={project.id} className="flex items-center space-x-2">

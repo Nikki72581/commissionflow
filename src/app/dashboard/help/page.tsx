@@ -171,7 +171,7 @@ const setupSteps: SetupStep[] = [
       },
       {
         label: 'Pending Approvals',
-        href: '/dashboard/commissions?status=pending',
+        href: '/dashboard/commissions/pending',
         variant: 'outline',
       },
     ],
@@ -275,11 +275,6 @@ export default async function HelpPage() {
                         <Badge variant="outline" className="font-mono">
                           Step {step.step}
                         </Badge>
-                        {step.isOptional && (
-                          <Badge variant="secondary" className="text-xs">
-                            Optional
-                          </Badge>
-                        )}
                         <span className="text-sm text-muted-foreground">
                           • {step.estimatedTime}
                         </span>

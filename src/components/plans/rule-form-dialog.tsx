@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { NumberInput } from '@/components/ui/number-input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -216,23 +216,18 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
                 <Label htmlFor="percentage">
                   Percentage <span className="text-destructive">*</span>
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="percentage"
-                    name="percentage"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    defaultValue={rule?.percentage || ''}
-                    placeholder="10"
-                    required
-                    data-testid="rule-value-input"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    %
-                  </span>
-                </div>
+                <NumberInput
+                  id="percentage"
+                  name="percentage"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  defaultValue={rule?.percentage || ''}
+                  placeholder="10"
+                  endAdornment="%"
+                  required
+                  data-testid="rule-value-input"
+                />
                 <p className="text-xs text-muted-foreground">
                   E.g., 10% means $1,000 commission on $10,000 sale
                 </p>
@@ -245,23 +240,17 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
                 <Label htmlFor="flatAmount">
                   Amount <span className="text-destructive">*</span>
                 </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
-                  </span>
-                  <Input
-                    id="flatAmount"
-                    name="flatAmount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    defaultValue={rule?.flatAmount || ''}
-                    placeholder="500"
-                    className="pl-7"
-                    required
-                    data-testid="rule-value-input"
-                  />
-                </div>
+                <NumberInput
+                  id="flatAmount"
+                  name="flatAmount"
+                  step="0.01"
+                  min="0"
+                  defaultValue={rule?.flatAmount ?? '0.00'}
+                  placeholder="500"
+                  startAdornment="$"
+                  required
+                  data-testid="rule-value-input"
+                />
                 <p className="text-xs text-muted-foreground">
                   Fixed amount paid per sale, regardless of sale size
                 </p>
@@ -273,7 +262,6 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
             <div className="border-t pt-4 sm:col-span-2">
               <div className="flex items-center gap-2 mb-3">
                 <h4 className="text-sm font-medium">Sale Amount Filters</h4>
-                <span className="text-xs text-muted-foreground">(Optional)</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
                 Apply this rule only to sales within a specific amount range. Leave blank to apply to all amounts.
@@ -281,40 +269,28 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="minSaleAmount">Minimum Sale</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      $
-                    </span>
-                    <Input
-                      id="minSaleAmount"
-                      name="minSaleAmount"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      defaultValue={rule?.minSaleAmount || ''}
-                      placeholder="0"
-                      className="pl-7"
-                    />
-                  </div>
+                  <NumberInput
+                    id="minSaleAmount"
+                    name="minSaleAmount"
+                    step="0.01"
+                    min="0"
+                    defaultValue={rule?.minSaleAmount || ''}
+                    placeholder="0"
+                    startAdornment="$"
+                  />
                   <p className="text-xs text-muted-foreground">Sales must be at least this amount</p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="maxSaleAmount">Maximum Sale</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      $
-                    </span>
-                    <Input
-                      id="maxSaleAmount"
-                      name="maxSaleAmount"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      defaultValue={rule?.maxSaleAmount || ''}
-                      placeholder="No limit"
-                      className="pl-7"
-                    />
-                  </div>
+                  <NumberInput
+                    id="maxSaleAmount"
+                    name="maxSaleAmount"
+                    step="0.01"
+                    min="0"
+                    defaultValue={rule?.maxSaleAmount || ''}
+                    placeholder="No limit"
+                    startAdornment="$"
+                  />
                   <p className="text-xs text-muted-foreground">Leave empty for no upper limit</p>
                 </div>
               </div>
@@ -325,49 +301,36 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
               </div>
             </div>
 
-            {/* Optional commission caps */}
             <div className="border-t pt-4 sm:col-span-2">
-              <h4 className="text-sm font-medium mb-3">Optional Commission Caps</h4>
+              <h4 className="text-sm font-medium mb-3">Commission Caps</h4>
               <p className="text-xs text-muted-foreground mb-3">
                 Set minimum or maximum limits on the commission amount (not the sale amount).
               </p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="minAmount">Minimum Commission</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      $
-                    </span>
-                    <Input
-                      id="minAmount"
-                      name="minAmount"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      defaultValue={rule?.minAmount || ''}
-                      placeholder="0"
-                      className="pl-7"
-                    />
-                  </div>
+                  <NumberInput
+                    id="minAmount"
+                    name="minAmount"
+                    step="0.01"
+                    min="0"
+                    defaultValue={rule?.minAmount || ''}
+                    placeholder="0"
+                    startAdornment="$"
+                  />
                 </div>
 
                 <div className="grid gap-2">
                   <Label htmlFor="maxAmount">Maximum Commission</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      $
-                    </span>
-                    <Input
-                      id="maxAmount"
-                      name="maxAmount"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      defaultValue={rule?.maxAmount || ''}
-                      placeholder="No limit"
-                      className="pl-7"
-                    />
-                  </div>
+                  <NumberInput
+                    id="maxAmount"
+                    name="maxAmount"
+                    step="0.01"
+                    min="0"
+                    defaultValue={rule?.maxAmount || ''}
+                    placeholder="No limit"
+                    startAdornment="$"
+                  />
                 </div>
               </div>
             </div>
@@ -489,12 +452,12 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
             </div>
 
             <div className="grid gap-2 sm:col-span-2">
-              <Label htmlFor="description">Notes (Optional)</Label>
+              <Label htmlFor="description">Notes</Label>
               <Textarea
                 id="description"
                 name="description"
                 defaultValue={rule?.description || ''}
-                placeholder="Add any notes about this rule..."
+                placeholder="Add notes about this rule..."
                 rows={2}
               />
             </div>

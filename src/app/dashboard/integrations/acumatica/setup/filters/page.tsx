@@ -516,7 +516,7 @@ export default function FiltersPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Branch Filter</CardTitle>
-              <CardDescription>Filter by specific branches (optional)</CardDescription>
+              <CardDescription>Filter by specific branches</CardDescription>
             </div>
             <span className="px-2 py-1 text-xs font-medium bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded-full">
               Coming Soon

@@ -14,6 +14,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { NumberInput } from '@/components/ui/number-input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -174,6 +175,7 @@ export function SalesTransactionFormDialog({
     const d = new Date(date)
     return d.toISOString().split('T')[0]
   }
+  const todayInput = formatDateForInput(new Date())
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -212,22 +214,16 @@ export function SalesTransactionFormDialog({
                 <Label htmlFor="amount">
                   Sale Amount <span className="text-destructive">*</span>
                 </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
-                  </span>
-                  <Input
-                    id="amount"
-                    name="amount"
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    defaultValue={transaction?.amount}
-                    placeholder="10000.00"
-                    className="pl-7"
-                    required
-                  />
-                </div>
+                <NumberInput
+                  id="amount"
+                  name="amount"
+                  step="0.01"
+                  min="0.01"
+                  defaultValue={transaction?.amount ?? '0.00'}
+                  placeholder="10000.00"
+                  startAdornment="$"
+                  required
+                />
               </div>
 
               <div className="grid gap-2">
@@ -239,7 +235,7 @@ export function SalesTransactionFormDialog({
                   name="transactionDate"
                   type="date"
                   defaultValue={
-                    transaction ? formatDateForInput(transaction.transactionDate) : ''
+                    transaction ? formatDateForInput(transaction.transactionDate) : todayInput
                   }
                   required
                 />
@@ -280,7 +276,7 @@ export function SalesTransactionFormDialog({
                 <Label htmlFor="productCategoryId">Product Category</Label>
                 <Select value={productCategoryId || 'none'} onValueChange={(value) => setProductCategoryId(value === 'none' ? '' : value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category (optional)" />
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No category</SelectItem>
@@ -299,8 +295,12 @@ export function SalesTransactionFormDialog({
               <div className="grid gap-2">
                 <Label htmlFor="projectId">
                   Project {requireProjects && <span className="text-destructive">*</span>}
-                  {!requireProjects && <span className="text-muted-foreground text-xs">(Optional - select project or client below)</span>}
                 </Label>
+                {!requireProjects && (
+                  <p className="text-xs text-muted-foreground">
+                    Select a project or client below.
+                  </p>
+                )}
                 <Select value={selectedProjectId ?? 'none'} onValueChange={(value) => {
                   const newProjectId = value === 'none' ? null : value
                   setSelectedProjectId(newProjectId)
@@ -381,7 +381,7 @@ export function SalesTransactionFormDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="description">Description (Optional)</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
                 name="description"

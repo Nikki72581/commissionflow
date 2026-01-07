@@ -78,7 +78,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
             <Label htmlFor="employeeId">Employee ID</Label>
             <Input
               id="employeeId"
-              placeholder="Optional"
+              placeholder="Employee ID"
               value={employeeId}
               onChange={(e) => setEmployeeId(e.target.value)}
               disabled={loading}
@@ -91,7 +91,7 @@ export function EditUserDialog({ user }: EditUserDialogProps) {
             <Label htmlFor="salespersonId">Salesperson ID</Label>
             <Input
               id="salespersonId"
-              placeholder="Optional"
+              placeholder="Salesperson ID"
               value={salespersonId}
               onChange={(e) => setSalespersonId(e.target.value)}
               disabled={loading}

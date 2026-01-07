@@ -51,6 +51,7 @@ export function ProjectFormDialog({
   )
 
   const isEdit = !!project
+  const todayInput = new Date().toISOString().split('T')[0]
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -188,7 +189,7 @@ export function ProjectFormDialog({
                   defaultValue={
                     project?.startDate
                       ? new Date(project.startDate).toISOString().split('T')[0]
-                      : ''
+                      : todayInput
                   }
                 />
               </div>

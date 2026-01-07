@@ -184,10 +184,10 @@ export function CommissionPlanFormDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="projectId">Attach to Project (Optional)</Label>
+              <Label htmlFor="projectId">Attach to Project</Label>
               <Select value={selectedProjectId || 'none'} onValueChange={(value) => setSelectedProjectId(value === 'none' ? '' : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a project (optional)" />
+                  <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No project (general plan)</SelectItem>
@@ -199,7 +199,7 @@ export function CommissionPlanFormDialog({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Optionally attach this plan to a specific project
+                Attach this plan to a specific project if needed.
               </p>
             </div>
 

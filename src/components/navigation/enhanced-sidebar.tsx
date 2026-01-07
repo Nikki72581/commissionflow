@@ -97,7 +97,7 @@ const navigation: NavItem[] = [
       },
       {
         title: 'Pending Approvals',
-        href: '/dashboard/commissions?status=pending',
+        href: '/dashboard/commissions/pending',
         icon: CheckCircle,
         iconColor: 'text-amber-600 dark:text-amber-400',
         badge: 'pendingCount', // Will be replaced with actual count

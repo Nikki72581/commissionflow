@@ -422,9 +422,9 @@ export default function FieldMappingPage() {
       {/* Optional Mappings */}
       <Card className="border-purple-500/20">
         <CardHeader>
-          <CardTitle>Optional Field Mappings</CardTitle>
+          <CardTitle>Additional Field Mappings</CardTitle>
           <CardDescription>
-            These fields are optional but can enhance your data
+            These fields can enhance your data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -434,7 +434,7 @@ export default function FieldMappingPage() {
             value={customerNameField}
             onChange={setCustomerNameField}
             fields={fieldsByType.string}
-            placeholder="(Optional) Select customer name field..."
+            placeholder="Select customer name field..."
           />
 
           <FieldSelector
@@ -443,7 +443,7 @@ export default function FieldMappingPage() {
             value={projectField}
             onChange={setProjectField}
             fields={fieldsByType.string}
-            placeholder="(Optional) Select project field..."
+            placeholder="Select project field..."
           />
 
           <FieldSelector
@@ -452,7 +452,7 @@ export default function FieldMappingPage() {
             value={descriptionField}
             onChange={setDescriptionField}
             fields={fieldsByType.string}
-            placeholder="(Optional) Select description field..."
+            placeholder="Select description field..."
           />
 
           <FieldSelector
@@ -461,7 +461,7 @@ export default function FieldMappingPage() {
             value={branchField}
             onChange={setBranchField}
             fields={fieldsByType.string}
-            placeholder="(Optional) Select branch field..."
+            placeholder="Select branch field..."
           />
         </CardContent>
       </Card>
