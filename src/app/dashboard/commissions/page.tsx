@@ -12,7 +12,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getCommissionCalculations } from '@/app/actions/commission-calculations'
-import { CommissionActions } from '@/components/commissions/commission-actions'
 import { CommissionDetailDialog } from '@/components/commissions/commission-detail-dialog'
 import { CommissionFilters } from '@/components/commissions/commission-filters'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -145,8 +144,8 @@ async function CommissionsTable({
               <TableHead>Commission</TableHead>
               <TableHead>Plan</TableHead>
               <TableHead>Project</TableHead>
+              <TableHead>Customer</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -210,6 +209,13 @@ async function CommissionsTable({
                   )}
                 </TableCell>
                 <TableCell>
+                  {calc.salesTransaction.project?.client?.name ? (
+                    <div className="text-sm">{calc.salesTransaction.project.client.name}</div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No Customer</div>
+                  )}
+                </TableCell>
+                <TableCell>
                   <Badge
                     variant={
                       calc.status === 'PAID'
@@ -226,13 +232,6 @@ async function CommissionsTable({
     {formatDate((calc as any).paidAt)}
   </div>
 )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <CommissionActions
-                    calculationId={calc.id}
-                    status={calc.status}
-                    amount={calc.amount}
-                  />
                 </TableCell>
               </TableRow>
             ))}
