@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db'
 
 export async function DELETE() {
   try {
-    const { userId } = await auth()
+    const { userId, orgId } = await auth()
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -20,61 +20,80 @@ export async function DELETE() {
       return NextResponse.json({ error: 'Forbidden - Admin only' }, { status: 403 })
     }
 
+    let organizationId = user.organizationId
+
+    if (orgId) {
+      const organization = await prisma.organization.findUnique({
+        where: { clerkOrgId: orgId },
+        select: { id: true },
+      })
+
+      if (!organization) {
+        return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+      }
+
+      if (organization.id !== user.organizationId) {
+        return NextResponse.json({ error: 'Forbidden - Organization mismatch' }, { status: 403 })
+      }
+
+      organizationId = organization.id
+    }
+
     // Delete all data for this organization
     // Order matters due to foreign key constraints
 
     // 1. Delete commission calculations (depends on payouts)
     await prisma.commissionCalculation.deleteMany({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
     })
 
     // 2. Delete payouts
     await prisma.payout.deleteMany({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
     })
 
     // 3. Delete sales transactions
     await prisma.salesTransaction.deleteMany({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
     })
 
     // 4. Delete commission rules (depends on commission plans)
     await prisma.commissionRule.deleteMany({
       where: {
         commissionPlan: {
-          organizationId: user.organizationId
-        }
+          organizationId,
+        },
       },
     })
 
     // 5. Delete commission plans
     await prisma.commissionPlan.deleteMany({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
     })
 
     // 6. Delete projects
     await prisma.project.deleteMany({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
     })
 
     // 7. Delete clients
     await prisma.client.deleteMany({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
     })
 
     // 8. Delete product categories
     await prisma.productCategory.deleteMany({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
     })
 
     // 9. Delete territories
     await prisma.territory.deleteMany({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
     })
 
     // 10. Delete integration sync logs
     const integration = await prisma.acumaticaIntegration.findUnique({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
       select: { id: true },
     })
 
@@ -96,13 +115,13 @@ export async function DELETE() {
 
     // 13. Delete audit logs
     await prisma.auditLog.deleteMany({
-      where: { organizationId: user.organizationId },
+      where: { organizationId },
     })
 
     // 14. Delete placeholder users (keep real invited users)
     await prisma.user.deleteMany({
       where: {
-        organizationId: user.organizationId,
+        organizationId,
         isPlaceholder: true,
       },
     })
