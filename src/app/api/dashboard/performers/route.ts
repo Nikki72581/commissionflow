@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getTopPerformers } from '@/app/actions/dashboard'
-import { DateRange } from '@/lib/date-range'
+import { normalizeDateRange } from '@/lib/date-range'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const dateRange: DateRange | undefined = body.dateRange
+    const dateRange = normalizeDateRange(body.dateRange)
 
     const result = await getTopPerformers(dateRange, 10)
     return NextResponse.json(result)

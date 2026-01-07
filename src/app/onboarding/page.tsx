@@ -71,6 +71,9 @@ export default function OnboardingPage() {
                 onChange={(e) => setFormData({ ...formData, organizationName: e.target.value })}
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                You will be set up as the admin. You can also use CommissionFlow on your own if you are not joining an organization.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -92,22 +95,6 @@ export default function OnboardingPage() {
               <p className="text-xs text-muted-foreground">
                 14-day free trial on all plans
               </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role">Your Role</Label>
-              <Select
-                value={formData.role}
-                onValueChange={(value) => setFormData({ ...formData, role: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ADMIN">Admin (Full Access)</SelectItem>
-                  <SelectItem value="SALESPERSON">Salesperson (View Only)</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <Button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90" disabled={loading}>

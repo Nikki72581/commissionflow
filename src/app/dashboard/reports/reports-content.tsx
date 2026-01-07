@@ -78,7 +78,7 @@ export function ReportsContent() {
     try {
       const [statsResult, trendsResult, performersResult] = await Promise.all([
         getDashboardStats(dateRange),
-        getCommissionTrends(12),
+        getCommissionTrends({ months: 12, dateRange }),
         getTopPerformers(dateRange, 50),
       ])
 

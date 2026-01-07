@@ -18,6 +18,11 @@ export interface DateRange {
   to: Date
 }
 
+export type SerializableDateRange = {
+  from: Date | string
+  to: Date | string
+}
+
 export function getDateRangeFromPreset(preset: DateRangePreset): DateRange {
   const now = new Date()
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
@@ -110,6 +115,17 @@ export function getDateRangeFromPreset(preset: DateRangePreset): DateRange {
         to: now,
       }
   }
+}
+
+export function normalizeDateRange(range?: SerializableDateRange | null): DateRange | undefined {
+  if (!range?.from || !range?.to) return undefined
+
+  const from = range.from instanceof Date ? range.from : new Date(range.from)
+  const to = range.to instanceof Date ? range.to : new Date(range.to)
+
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return undefined
+
+  return { from, to }
 }
 
 export function formatDateRange(range: DateRange): string {
