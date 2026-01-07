@@ -60,16 +60,49 @@ export async function POST(req: NextRequest) {
       counter++;
     }
 
+    const clerk = await clerkClient();
+    let clerkOrgId: string | null = null;
+    let clerkOrgSlug = slug;
+
+    try {
+      const clerkOrg = await clerk.organizations.createOrganization({
+        name: organizationName,
+        slug,
+        createdBy: user.id,
+      });
+      clerkOrgId = clerkOrg.id;
+      if (clerkOrg.slug) {
+        clerkOrgSlug = clerkOrg.slug;
+      }
+    } catch (error) {
+      console.warn('Clerk org creation with provided slug failed, retrying without slug.');
+      try {
+        const clerkOrg = await clerk.organizations.createOrganization({
+          name: organizationName,
+          createdBy: user.id,
+        });
+        clerkOrgId = clerkOrg.id;
+        if (clerkOrg.slug) {
+          clerkOrgSlug = clerkOrg.slug;
+        }
+      } catch (retryError) {
+        console.error('Failed to create Clerk organization during onboarding:', retryError);
+        return NextResponse.json(
+          { message: 'Failed to create organization' },
+          { status: 500 }
+        );
+      }
+    }
+
     // Create organization and user in a transaction
-    // Note: Clerk org creation will be handled separately by an admin script
     const result = await db.$transaction(async (tx) => {
-      // Create organization without Clerk org ID initially
+      // Create organization with Clerk org ID
       const organization = await tx.organization.create({
         data: {
           name: organizationName,
-          slug,
+          slug: clerkOrgSlug,
           planTier,
-          clerkOrgId: null, // Will be linked later via admin script
+          clerkOrgId,
         },
       });
 
@@ -86,17 +119,22 @@ export async function POST(req: NextRequest) {
       });
 
       return { organization, user: newUser };
+    }).catch(async (error) => {
+      if (clerkOrgId) {
+        try {
+          await clerk.organizations.deleteOrganization(clerkOrgId);
+        } catch (deleteError) {
+          console.error('Failed to roll back Clerk organization:', deleteError);
+        }
+      }
+      throw error;
     });
 
     try {
-      const clerk = await clerkClient();
       await clerk.users.updateUser(user.id, { firstName, lastName });
     } catch (error) {
       console.error('Failed to update Clerk user during onboarding:', error);
     }
-
-    // Note: To enable team invitations, run the link-unlinked-orgs script:
-    // npx tsx --env-file=.env.local scripts/link-unlinked-orgs.ts
 
     return NextResponse.json({
       success: true,
