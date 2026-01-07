@@ -200,11 +200,12 @@ function PlansTableSkeleton() {
 }
 
 export default async function PlansPage(props: {
-  searchParams: Promise<{ search?: string }>
+  searchParams: Promise<{ search?: string; create?: string }>
 }) {
   const searchParams = await props.searchParams
   const projectsResult = await getProjects()
   const projects = projectsResult.success ? projectsResult.data : []
+  const openCreateDialog = searchParams.create === '1' || searchParams.create === 'true'
 
   return (
     <div className="space-y-6">
@@ -215,7 +216,7 @@ export default async function PlansPage(props: {
             Define how commissions are calculated
           </p>
         </div>
-        <CommissionPlanFormDialog projects={projects} />
+        <CommissionPlanFormDialog projects={projects} defaultOpen={openCreateDialog} />
       </div>
 
       <div className="flex items-center gap-4">

@@ -74,6 +74,7 @@ interface SalesTransactionFormDialogProps {
   productCategories?: ProductCategory[]
   requireProjects?: boolean
   trigger?: React.ReactNode
+  defaultOpen?: boolean
   open?: boolean
   onOpenChange?: (open: boolean) => void
 }
@@ -86,11 +87,12 @@ export function SalesTransactionFormDialog({
   productCategories = [],
   requireProjects = true,
   trigger,
+  defaultOpen = false,
   open: controlledOpen,
   onOpenChange,
 }: SalesTransactionFormDialogProps) {
   const router = useRouter()
-  const [internalOpen, setInternalOpen] = useState(false)
+  const [internalOpen, setInternalOpen] = useState(defaultOpen)
   const open = controlledOpen !== undefined ? controlledOpen : internalOpen
   const setOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen
   const [loading, setLoading] = useState(false)

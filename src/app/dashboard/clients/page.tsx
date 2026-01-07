@@ -169,7 +169,7 @@ function ClientsTableSkeleton() {
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: { search?: string }
+  searchParams: { search?: string; create?: string }
 }) {
   const territoriesResult = await getTerritories()
   const territories = territoriesResult.success ? territoriesResult.data || [] : []
@@ -177,13 +177,15 @@ export default async function ClientsPage({
   const clients = clientsResult.success ? clientsResult.data || [] : []
 
   const totalClients = clients.length
-  // Count clients with active projects
-  const clientsWithActiveProjects = clients.filter(c =>
-    c.projects.some((p: any) => p.status === 'active')
-  ).length
+  const activeClients = clients.filter((client) => {
+    const status = ((client as any).status ?? 'ACTIVE').toString().toLowerCase()
+    return status === 'active'
+  }).length
   const activeProjects = clients.reduce((sum, c) =>
     sum + c.projects.filter((p: any) => p.status === 'active').length, 0
   )
+
+  const openCreateDialog = searchParams.create === '1' || searchParams.create === 'true'
 
   return (
     <div className="space-y-6">
@@ -194,7 +196,7 @@ export default async function ClientsPage({
             Manage your clients and their projects
           </p>
         </div>
-        <ClientFormDialog territories={territories} />
+        <ClientFormDialog territories={territories} defaultOpen={openCreateDialog} />
       </div>
 
       {/* Stats Cards */}
@@ -218,7 +220,7 @@ export default async function ClientsPage({
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
-              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{clientsWithActiveProjects}</p>
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{activeClients}</p>
             </div>
           </div>
         </div>

@@ -35,11 +35,17 @@ interface ClientFormDialogProps {
   client?: Client
   territories?: Territory[]
   trigger?: React.ReactNode
+  defaultOpen?: boolean
 }
 
-export function ClientFormDialog({ client, territories = [], trigger }: ClientFormDialogProps) {
+export function ClientFormDialog({
+  client,
+  territories = [],
+  trigger,
+  defaultOpen = false,
+}: ClientFormDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)

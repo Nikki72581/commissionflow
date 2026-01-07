@@ -31,6 +31,7 @@ interface ProjectFormDialogProps {
   project?: Pick<ProjectWithClient, 'id' | 'name' | 'description' | 'clientId' | 'startDate' | 'endDate' | 'status'>
   defaultClientId?: string
   trigger?: React.ReactNode
+  defaultOpen?: boolean
 }
 
 export function ProjectFormDialog({
@@ -38,9 +39,10 @@ export function ProjectFormDialog({
   project,
   defaultClientId,
   trigger,
+  defaultOpen = false,
 }: ProjectFormDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedClientId, setSelectedClientId] = useState(

@@ -178,10 +178,11 @@ function ProjectsTableSkeleton() {
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: { search?: string }
+  searchParams: { search?: string; create?: string }
 }) {
   const clientsResult = await getClients()
   const clients = clientsResult.data ?? []
+  const openCreateDialog = searchParams.create === '1' || searchParams.create === 'true'
 
   return (
     <div className="space-y-6">
@@ -192,7 +193,7 @@ export default async function ProjectsPage({
             Manage your projects and commission plans
           </p>
         </div>
-        <ProjectFormDialog clients={clients} />
+        <ProjectFormDialog clients={clients} defaultOpen={openCreateDialog} />
       </div>
 
       <div className="flex items-center gap-4">

@@ -62,11 +62,21 @@ async function CommissionsTable({
   if (searchQuery && calculations.length > 0) {
     const query = searchQuery.toLowerCase()
     calculations = calculations.filter(
-      (calc) =>
-        `${calc.user.firstName} ${calc.user.lastName}`.toLowerCase().includes(query) ||
-        calc.salesTransaction.project?.name.toLowerCase().includes(query) ||
-        calc.salesTransaction.project?.client.name.toLowerCase().includes(query) ||
-        calc.commissionPlan.name.toLowerCase().includes(query)
+      (calc) => {
+        const salespersonName = `${calc.user.firstName} ${calc.user.lastName}`.toLowerCase()
+        const projectName = calc.salesTransaction.project?.name?.toLowerCase() || ''
+        const projectClientName = calc.salesTransaction.project?.client?.name?.toLowerCase() || ''
+        const directClientName = calc.salesTransaction.client?.name?.toLowerCase() || ''
+        const planName = calc.commissionPlan.name.toLowerCase()
+
+        return (
+          salespersonName.includes(query) ||
+          projectName.includes(query) ||
+          projectClientName.includes(query) ||
+          directClientName.includes(query) ||
+          planName.includes(query)
+        )
+      }
     )
   }
 
@@ -200,16 +210,15 @@ async function CommissionsTable({
                       >
                         {calc.salesTransaction.project.name}
                       </Link>
-                      <div className="text-xs text-muted-foreground">
-                        {calc.salesTransaction.project.client.name}
-                      </div>
                     </>
                   ) : (
                     <div className="text-sm text-muted-foreground">No Project</div>
                   )}
                 </TableCell>
                 <TableCell>
-                  {calc.salesTransaction.project?.client?.name ? (
+                  {calc.salesTransaction.client?.name ? (
+                    <div className="text-sm">{calc.salesTransaction.client.name}</div>
+                  ) : calc.salesTransaction.project?.client?.name ? (
                     <div className="text-sm">{calc.salesTransaction.project.client.name}</div>
                   ) : (
                     <div className="text-sm text-muted-foreground">No Customer</div>

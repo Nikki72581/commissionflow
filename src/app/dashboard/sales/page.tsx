@@ -257,7 +257,7 @@ function SalesTableSkeleton() {
 export default async function SalesPage({
   searchParams,
 }: {
-  searchParams: { search?: string }
+  searchParams: { search?: string; create?: string }
 }) {
   const [projectsResult, clientsResult, usersResult, productCategoriesResult, orgSettingsResult] = await Promise.all([
     getProjects(),
@@ -278,6 +278,8 @@ const users = (usersResult.success ? (usersResult.data || []) : [])
   }>
 const productCategories = productCategoriesResult.success ? (productCategoriesResult.data || []) : []
 const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.requireProjects ?? true) : true
+
+  const openCreateDialog = searchParams.create === '1' || searchParams.create === 'true'
 
   return (
     <div className="space-y-6">
@@ -301,6 +303,7 @@ const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.req
             users={users}
             productCategories={productCategories}
             requireProjects={requireProjects}
+            defaultOpen={openCreateDialog}
           />
         </div>
       </div>

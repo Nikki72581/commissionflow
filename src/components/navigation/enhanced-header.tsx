@@ -100,26 +100,26 @@ export function EnhancedHeader({
   const quickActions = [
     {
       title: 'New Sale',
-      href: '/dashboard/sales/new',
+      href: '/dashboard/sales?create=1',
       icon: ShoppingCart,
       shortcut: '⌘S',
       adminOnly: true,
     },
     {
       title: 'New Client',
-      href: '/dashboard/clients/new',
+      href: '/dashboard/clients?create=1',
       icon: Users,
       shortcut: '⌘C',
     },
     {
       title: 'New Project',
-      href: '/dashboard/projects/new',
+      href: '/dashboard/projects?create=1',
       icon: FolderKanban,
       shortcut: '⌘P',
     },
     {
       title: 'New Commission Plan',
-      href: '/dashboard/plans/new',
+      href: '/dashboard/plans?create=1',
       icon: FileText,
       shortcut: '⌘L',
       adminOnly: true,

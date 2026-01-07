@@ -46,15 +46,17 @@ interface CommissionPlanFormDialogProps {
   plan?: CommissionPlan
   projects?: Project[]
   trigger?: React.ReactNode
+  defaultOpen?: boolean
 }
 
 export function CommissionPlanFormDialog({
   plan,
   projects = [],
   trigger,
+  defaultOpen = false,
 }: CommissionPlanFormDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState(plan?.projectId || '')
