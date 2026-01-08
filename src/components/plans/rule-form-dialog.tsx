@@ -58,6 +58,12 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
   const [error, setError] = useState<string | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
   const [ruleType, setRuleType] = useState<string>(rule?.ruleType || 'PERCENTAGE')
+  const [showSaleAmountFilters, setShowSaleAmountFilters] = useState(
+    !!rule?.minSaleAmount || !!rule?.maxSaleAmount
+  )
+  const [showCommissionCaps, setShowCommissionCaps] = useState(
+    !!rule?.minAmount || !!rule?.maxAmount
+  )
   const [showAdvanced, setShowAdvanced] = useState(!!rule?.scope && rule.scope !== 'GLOBAL')
   const [scope, setScope] = useState<string>(rule?.scope || 'GLOBAL')
   const [customerTier, setCustomerTier] = useState<string>(rule?.customerTier || '')
@@ -260,77 +266,100 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
 
             {/* Sale Amount Filters */}
             <div className="border-t pt-4 sm:col-span-2">
-              <div className="flex items-center gap-2 mb-3">
-                <h4 className="text-sm font-medium">Sale Amount Filters</h4>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Apply this rule only to sales within a specific amount range. Leave blank to apply to all amounts.
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="minSaleAmount">Minimum Sale</Label>
-                  <NumberInput
-                    id="minSaleAmount"
-                    name="minSaleAmount"
-                    step="0.01"
-                    min="0"
-                    defaultValue={rule?.minSaleAmount || ''}
-                    placeholder="0"
-                    startAdornment="$"
-                  />
-                  <p className="text-xs text-muted-foreground">Sales must be at least this amount</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxSaleAmount">Maximum Sale</Label>
-                  <NumberInput
-                    id="maxSaleAmount"
-                    name="maxSaleAmount"
-                    step="0.01"
-                    min="0"
-                    defaultValue={rule?.maxSaleAmount || ''}
-                    placeholder="No limit"
-                    startAdornment="$"
-                  />
-                  <p className="text-xs text-muted-foreground">Leave empty for no upper limit</p>
-                </div>
-              </div>
-              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md">
-                <p className="text-xs text-blue-900 dark:text-blue-200">
-                  <strong>Example:</strong> Set min=$10,000 and max=$50,000 to apply this rule only to sales between $10k-$50k
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSaleAmountFilters(!showSaleAmountFilters)}
+                className="w-full justify-between"
+                aria-expanded={showSaleAmountFilters}
+              >
+                <span className="text-sm font-medium">Sale Amount Filters</span>
+                {showSaleAmountFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+              <div className={`mt-3 space-y-3 ${showSaleAmountFilters ? '' : 'hidden'}`}>
+                <p className="text-xs text-muted-foreground">
+                  Apply this rule only to sales within a specific amount range. Leave blank to apply to all amounts.
                 </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="minSaleAmount">Minimum Sale</Label>
+                    <NumberInput
+                      id="minSaleAmount"
+                      name="minSaleAmount"
+                      step="0.01"
+                      min="0"
+                      defaultValue={rule?.minSaleAmount || ''}
+                      placeholder="0"
+                      startAdornment="$"
+                    />
+                    <p className="text-xs text-muted-foreground">Sales must be at least this amount</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maxSaleAmount">Maximum Sale</Label>
+                    <NumberInput
+                      id="maxSaleAmount"
+                      name="maxSaleAmount"
+                      step="0.01"
+                      min="0"
+                      defaultValue={rule?.maxSaleAmount || ''}
+                      placeholder="No limit"
+                      startAdornment="$"
+                    />
+                    <p className="text-xs text-muted-foreground">Leave empty for no upper limit</p>
+                  </div>
+                </div>
+                <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-950/20">
+                  <p className="text-xs text-blue-900 dark:text-blue-200">
+                    <strong>Example:</strong> Set min=$10,000 and max=$50,000 to apply this rule only to sales between
+                    $10k-$50k
+                  </p>
+                </div>
               </div>
             </div>
 
             <div className="border-t pt-4 sm:col-span-2">
-              <h4 className="text-sm font-medium mb-3">Commission Caps</h4>
-              <p className="text-xs text-muted-foreground mb-3">
-                Set minimum or maximum limits on the commission amount (not the sale amount).
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="minAmount">Minimum Commission</Label>
-                  <NumberInput
-                    id="minAmount"
-                    name="minAmount"
-                    step="0.01"
-                    min="0"
-                    defaultValue={rule?.minAmount || ''}
-                    placeholder="0"
-                    startAdornment="$"
-                  />
-                </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCommissionCaps(!showCommissionCaps)}
+                className="w-full justify-between"
+                aria-expanded={showCommissionCaps}
+              >
+                <span className="text-sm font-medium">Commission Caps</span>
+                {showCommissionCaps ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+              <div className={`mt-3 space-y-3 ${showCommissionCaps ? '' : 'hidden'}`}>
+                <p className="text-xs text-muted-foreground">
+                  Set minimum or maximum limits on the commission amount (not the sale amount).
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="minAmount">Minimum Commission</Label>
+                    <NumberInput
+                      id="minAmount"
+                      name="minAmount"
+                      step="0.01"
+                      min="0"
+                      defaultValue={rule?.minAmount || ''}
+                      placeholder="0"
+                      startAdornment="$"
+                    />
+                  </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="maxAmount">Maximum Commission</Label>
-                  <NumberInput
-                    id="maxAmount"
-                    name="maxAmount"
-                    step="0.01"
-                    min="0"
-                    defaultValue={rule?.maxAmount || ''}
-                    placeholder="No limit"
-                    startAdornment="$"
-                  />
+                  <div className="grid gap-2">
+                    <Label htmlFor="maxAmount">Maximum Commission</Label>
+                    <NumberInput
+                      id="maxAmount"
+                      name="maxAmount"
+                      step="0.01"
+                      min="0"
+                      defaultValue={rule?.maxAmount || ''}
+                      placeholder="No limit"
+                      startAdornment="$"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
