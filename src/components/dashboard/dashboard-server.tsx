@@ -1,36 +1,14 @@
 import { Suspense } from 'react'
-import { unstable_cache } from 'next/cache'
 import { getDashboardStats, getCommissionTrends, getTopPerformers } from '@/app/actions/dashboard'
-import { getDateRangeFromPreset, DateRange } from '@/lib/date-range'
+import { getDateRangeFromPreset } from '@/lib/date-range'
 import { DashboardStats } from './dashboard-stats'
 import { DashboardCharts } from './dashboard-charts'
-import { DashboardSkeleton, StatsSkeleton, ChartsSkeleton } from './dashboard-skeleton'
+import { StatsSkeleton, ChartsSkeleton } from './dashboard-skeleton'
 import { DashboardHeader } from './dashboard-header'
-
-// Cache dashboard stats for 5 minutes
-const getCachedStats = unstable_cache(
-  async (dateRange: DateRange) => getDashboardStats(dateRange),
-  ['dashboard-stats'],
-  { revalidate: 300 }
-)
-
-// Cache trends for 5 minutes
-const getCachedTrends = unstable_cache(
-  async (dateRange: DateRange) => getCommissionTrends({ dateRange }),
-  ['dashboard-trends'],
-  { revalidate: 300 }
-)
-
-// Cache top performers for 5 minutes
-const getCachedPerformers = unstable_cache(
-  async (dateRange: DateRange) => getTopPerformers(dateRange, 10),
-  ['dashboard-performers'],
-  { revalidate: 300 }
-)
 
 async function DashboardStatsSection() {
   const defaultDateRange = getDateRangeFromPreset('thisMonth')
-  const statsResult = await getCachedStats(defaultDateRange)
+  const statsResult = await getDashboardStats(defaultDateRange)
 
   if (!statsResult.success || !statsResult.data) {
     return (
@@ -47,8 +25,8 @@ async function DashboardChartsSection() {
   const defaultDateRange = getDateRangeFromPreset('thisMonth')
 
   const [trendsResult, performersResult] = await Promise.all([
-    getCachedTrends(defaultDateRange),
-    getCachedPerformers(defaultDateRange),
+    getCommissionTrends({ dateRange: defaultDateRange }),
+    getTopPerformers(defaultDateRange, 10),
   ])
 
   const trends = (trendsResult.success ? trendsResult.data : []) || []
