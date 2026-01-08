@@ -18,7 +18,7 @@ import {
   FolderKanban,
   FileText,
   DollarSign,
-  Command,
+  HelpCircle,
   Building2,
   Moon,
   Sun,
@@ -326,10 +326,9 @@ export function EnhancedHeader({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/keyboard-shortcuts">
-                  <Command className="mr-2 h-4 w-4" />
-                  <span>Keyboard Shortcuts</span>
-                  <DropdownMenuShortcut>?</DropdownMenuShortcut>
+                <Link href="/dashboard/help">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>User Help Guide</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

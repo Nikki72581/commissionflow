@@ -59,6 +59,7 @@ interface SalesImportDialogProps {
   clients: Array<{ id: string; name: string }>
   users: Array<{ id: string; email: string; firstName: string; lastName: string }>
   productCategories: Array<{ id: string; name: string }>
+  triggerClassName?: string
 }
 
 export function SalesImportDialog({
@@ -66,6 +67,7 @@ export function SalesImportDialog({
   clients,
   users,
   productCategories,
+  triggerClassName,
 }: SalesImportDialogProps) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -404,7 +406,7 @@ export function SalesImportDialog({
       if (!isOpen) resetDialog()
     }}>
       <DialogTrigger asChild>
-        <Button variant="outline">
+        <Button variant="outline" className={triggerClassName}>
           <Upload className="mr-2 h-4 w-4" />
           Import Sales
         </Button>

@@ -3,8 +3,13 @@ import { requireAdmin } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { SalesImportDialog } from '@/components/sales/sales-import-dialog';
 import { Users, DollarSign, TrendingUp, Clock, Plus, RefreshCw, FileQuestion } from 'lucide-react';
 import Link from 'next/link';
+import { getProjects } from '@/app/actions/projects';
+import { getClients } from '@/app/actions/clients';
+import { getUsers } from '@/app/actions/users';
+import { getProductCategories } from '@/app/actions/product-categories';
 export const dynamic = 'force-dynamic'
 export default async function AdminDashboard() {
   const user = await requireAdmin();
@@ -14,7 +19,11 @@ export default async function AdminDashboard() {
     salespeople,
     totalCommissions,
     pendingPayouts,
-    activePlans
+    activePlans,
+    projectsResult,
+    clientsResult,
+    usersResult,
+    productCategoriesResult,
   ] = await Promise.all([
     db.user.count({
       where: { 
@@ -40,8 +49,23 @@ export default async function AdminDashboard() {
         organizationId: user.organizationId,
         isActive: true
       }
-    })
+    }),
+    getProjects(),
+    getClients(),
+    getUsers(),
+    getProductCategories(),
   ]);
+
+  const projects = projectsResult.success ? (projectsResult.data || []) : []
+  const clients = clientsResult.success ? (clientsResult.data || []) : []
+  const users = (usersResult.success ? (usersResult.data || []) : [])
+    .filter((teamUser) => teamUser.firstName && teamUser.lastName) as Array<{
+      id: string
+      firstName: string
+      lastName: string
+      email: string
+    }>
+  const productCategories = productCategoriesResult.success ? (productCategoriesResult.data || []) : []
 
   const metrics = [
     {
@@ -110,7 +134,7 @@ export default async function AdminDashboard() {
 
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="flex h-full flex-col hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5" />
@@ -120,14 +144,14 @@ export default async function AdminDashboard() {
               Design a new commission structure with AI assistance
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full">
-              <Link href="/dashboard/admin/plans/new">Get Started</Link>
+          <CardContent className="mt-auto">
+            <Button asChild className="w-full h-10">
+              <Link href="/dashboard/plans?create=1">Get Started</Link>
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="flex h-full flex-col hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
@@ -137,14 +161,14 @@ export default async function AdminDashboard() {
               Add salespeople and assign commission plans
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard/admin/team">View Team</Link>
+          <CardContent className="mt-auto">
+            <Button asChild variant="outline" className="w-full h-10">
+              <Link href="/dashboard/team">View Team</Link>
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="flex h-full flex-col hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
@@ -154,14 +178,18 @@ export default async function AdminDashboard() {
               Upload sales transactions to calculate commissions
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
-              <Link href="/dashboard/admin/import">Import Now</Link>
-            </Button>
+          <CardContent className="mt-auto">
+            <SalesImportDialog
+              projects={projects}
+              clients={clients}
+              users={users}
+              productCategories={productCategories}
+              triggerClassName="w-full h-10"
+            />
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="flex h-full flex-col hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <RefreshCw className="h-5 w-5" />
@@ -171,14 +199,14 @@ export default async function AdminDashboard() {
               Update commission amounts based on current plan rules
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
+          <CardContent className="mt-auto">
+            <Button asChild variant="outline" className="w-full h-10">
               <Link href="/dashboard/admin/recalculate-commissions">Recalculate</Link>
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+        <Card className="flex h-full flex-col hover:shadow-lg transition-shadow cursor-pointer">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileQuestion className="h-5 w-5" />
@@ -188,8 +216,8 @@ export default async function AdminDashboard() {
               Find and calculate commissions for transactions without calculations
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline" className="w-full">
+          <CardContent className="mt-auto">
+            <Button asChild variant="outline" className="w-full h-10">
               <Link href="/dashboard/admin/missing-commissions">Scan Now</Link>
             </Button>
           </CardContent>
