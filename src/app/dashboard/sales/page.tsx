@@ -285,7 +285,7 @@ const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.req
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">Sales Transactions</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">Sales Transactions</h1>
           <p className="text-muted-foreground">
             Track all sales and their commission calculations
           </p>

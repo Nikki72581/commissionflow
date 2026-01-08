@@ -112,7 +112,7 @@ export default async function IntegrationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
             Integrations
           </h1>
           <p className="text-muted-foreground">
@@ -122,8 +122,10 @@ export default async function IntegrationsPage() {
         {acumaticaIntegration && (
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full"
-                style={{ backgroundColor: acumaticaIntegration.status === 'ACTIVE' ? 'rgba(16,185,129,1)' : 'rgba(107,114,128,1)' }}
+              <div
+                className={`h-3 w-3 rounded-full ${
+                  acumaticaIntegration.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-muted-foreground'
+                }`}
               />
               <div className="text-sm text-muted-foreground">
                 Acumatica: {acumaticaIntegration.status === 'ACTIVE' ? 'Connected' : acumaticaIntegration.status}

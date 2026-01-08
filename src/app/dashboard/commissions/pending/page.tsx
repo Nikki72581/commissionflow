@@ -63,6 +63,7 @@ export default function PendingApprovalsPage() {
       <PageHeader
         title="Pending Approvals"
         description="Review and approve pending commission calculations"
+        titleClassName="bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent"
         breadcrumbs={[
           { title: 'Commissions', href: '/dashboard/commissions' },
           { title: 'Pending Approvals' },

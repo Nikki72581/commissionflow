@@ -60,6 +60,7 @@ export default function PayoutHistoryPage() {
       <PageHeader
         title="Payout History"
         description="View all processed commission payments"
+        titleClassName="bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent"
         breadcrumbs={[
           { title: 'Commissions', href: '/dashboard/commissions' },
           { title: 'Payout History' }

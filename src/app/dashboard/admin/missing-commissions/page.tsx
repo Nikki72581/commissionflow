@@ -210,7 +210,9 @@ export default function MissingCommissionsPage() {
   return (
     <div className="container mx-auto py-8 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Missing Commissions</h1>
+        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+          Missing Commissions
+        </h1>
         <p className="text-muted-foreground">
           Find and calculate commissions for sales transactions that don't have calculations yet.
         </p>

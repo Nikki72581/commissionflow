@@ -74,7 +74,9 @@ export default async function AdminDashboard() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+            Dashboard
+          </h1>
           <p className="text-muted-foreground">Welcome back, {user.firstName}!</p>
         </div>
       </div>

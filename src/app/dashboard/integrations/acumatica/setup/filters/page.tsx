@@ -214,7 +214,7 @@ export default function FiltersPage() {
     <div className="max-w-4xl mx-auto space-y-6 py-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
           Configure Data Filters
         </h1>
         <p className="text-muted-foreground mt-2">

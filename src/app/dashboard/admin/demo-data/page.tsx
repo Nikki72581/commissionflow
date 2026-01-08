@@ -195,7 +195,9 @@ export default function DemoDataGeneratorPage() {
   return (
     <div className="container mx-auto py-8 max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Demo Data Generator</h1>
+        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+          Demo Data Generator
+        </h1>
         <p className="text-muted-foreground">
           Generate realistic test data for your organization. All data created will be associated with your current organization.
         </p>

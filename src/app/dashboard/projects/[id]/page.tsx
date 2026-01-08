@@ -39,7 +39,9 @@ async function ProjectDetails({ projectId }: { projectId: string }) {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
+              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                {project.name}
+              </h1>
               <p className="text-muted-foreground">
                 Created {formatDate(project.createdAt)}
               </p>
