@@ -2,6 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Trophy, Medal, Award } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { getSectionAccent, SectionAccent } from '@/lib/section-accent'
+import { cn } from '@/lib/utils'
 
 interface Performer {
   userId: string
@@ -17,13 +19,16 @@ interface TopPerformersProps {
   performers: Performer[]
   title?: string
   showRank?: boolean
+  accent?: SectionAccent
 }
 
 export function TopPerformers({ 
   performers, 
   title = 'Top Performers',
-  showRank = true 
+  showRank = true,
+  accent = 'dashboard',
 }: TopPerformersProps) {
+  const accentStyles = getSectionAccent(accent)
   const getRankIcon = (index: number) => {
     switch (index) {
       case 0:
@@ -52,7 +57,13 @@ export function TopPerformers({
 
   if (performers.length === 0) {
     return (
-      <Card>
+      <Card
+        className={cn(
+          'border-2 bg-gradient-to-br from-card to-muted/20',
+          accentStyles.cardBorder,
+          accentStyles.cardHover
+        )}
+      >
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           <CardDescription>No data available</CardDescription>
@@ -67,7 +78,13 @@ export function TopPerformers({
   }
 
   return (
-    <Card>
+    <Card
+      className={cn(
+        'border-2 bg-gradient-to-br from-card to-muted/20',
+        accentStyles.cardBorder,
+        accentStyles.cardHover
+      )}
+    >
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>Based on total commissions earned</CardDescription>

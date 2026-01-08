@@ -100,7 +100,7 @@ async function ProjectDetails({ projectId }: { projectId: string }) {
 
             {project.description && (
               <>
-                <Separator />
+                <Separator className="bg-purple-500/20" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Description</p>
                   <p className="text-sm text-muted-foreground">{project.description}</p>
@@ -110,7 +110,7 @@ async function ProjectDetails({ projectId }: { projectId: string }) {
 
             {(project.startDate || project.endDate) && (
               <>
-                <Separator />
+                <Separator className="bg-purple-500/20" />
                 <div className="space-y-3">
                   {project.startDate && (
                     <div className="flex items-start gap-3">

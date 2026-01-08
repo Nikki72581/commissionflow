@@ -84,15 +84,22 @@ export default async function AdminDashboard() {
       {/* Metrics Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric) => (
-          <Card key={metric.title}>
+          <Card
+            key={metric.title}
+            className="border-2 border-indigo-500/30 transition-all hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10 bg-gradient-to-br from-card to-muted/20"
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 {metric.title}
               </CardTitle>
-              <metric.icon className="h-4 w-4 text-muted-foreground" />
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
+                <metric.icon className="h-4 w-4 text-white" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{metric.value}</div>
+              <div className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+                {metric.value}
+              </div>
               <p className="text-xs text-muted-foreground">
                 {metric.description}
               </p>

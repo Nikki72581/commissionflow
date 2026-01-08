@@ -131,7 +131,7 @@ async function ClientDetails({ clientId }: { clientId: string }) {
 
             {client.email && (
               <>
-                <Separator />
+                <Separator className="bg-purple-500/20" />
                 <div className="flex items-start gap-3">
                   <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div className="space-y-1">
@@ -174,7 +174,7 @@ async function ClientDetails({ clientId }: { clientId: string }) {
 
             {client.notes && (
               <>
-                <Separator />
+                <Separator className="bg-purple-500/20" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Notes</p>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{client.notes}</p>

@@ -66,7 +66,7 @@ export function CommissionPreview({ rules }: CommissionPreviewProps) {
           />
         </div>
 
-        <Separator />
+        <Separator className="bg-emerald-500/20" />
 
         {/* Calculation Breakdown */}
         <div className="space-y-3">
@@ -92,7 +92,7 @@ export function CommissionPreview({ rules }: CommissionPreviewProps) {
           ))}
         </div>
 
-        <Separator />
+        <Separator className="bg-emerald-500/20" />
 
         {/* Total */}
         <div className="flex items-center justify-between rounded-lg bg-muted p-4">

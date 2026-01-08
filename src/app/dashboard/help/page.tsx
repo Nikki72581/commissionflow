@@ -288,15 +288,15 @@ export default async function HelpPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Tips */}
-                  <div className="space-y-2 rounded-lg bg-blue-500/5 border border-blue-500/10 p-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-blue-700 dark:text-blue-400">
+                  <div className="space-y-2 rounded-lg bg-muted/40 border border-muted-foreground/20 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <Lightbulb className="h-4 w-4" />
                       Tips & Best Practices
                     </div>
                     <ul className="space-y-1.5 text-sm">
                       {step.tips.map((tip, index) => (
                         <li key={index} className="flex items-start gap-2">
-                          <ChevronRight className="h-4 w-4 mt-0.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                          <ChevronRight className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
                           <span>{tip}</span>
                         </li>
                       ))}

@@ -437,7 +437,7 @@ export default function AcumaticaSetupPage() {
 
             {/* Show available companies */}
             {availableCompanies && availableCompanies.length > 0 && (
-              <Alert className="border-blue-500/50 bg-blue-500/10">
+              <Alert className="border-indigo-500/50 bg-indigo-500/10">
                 <AlertDescription>
                   <div className="space-y-2">
                     <p className="font-medium text-sm">Available Companies:</p>
@@ -447,9 +447,9 @@ export default function AcumaticaSetupPage() {
                           key={company.id}
                           type="button"
                           onClick={() => handleInputChange('companyId', company.id)}
-                          className="block w-full text-left px-3 py-2 text-sm rounded-md hover:bg-blue-500/20 transition-colors"
+                          className="block w-full text-left px-3 py-2 text-sm rounded-md hover:bg-indigo-500/20 transition-colors"
                         >
-                          <div className="font-mono font-medium text-blue-600 dark:text-blue-400">
+                          <div className="font-mono font-medium text-indigo-600 dark:text-indigo-400">
                             {company.id}
                           </div>
                           <div className="text-xs text-muted-foreground">

@@ -110,7 +110,7 @@ async function PlanDetails({ planId }: { planId: string }) {
               </div>
             )}
 
-            <Separator />
+            <Separator className="bg-emerald-500/20" />
 
             <div className="space-y-1">
               <p className="text-sm font-medium">Statistics</p>

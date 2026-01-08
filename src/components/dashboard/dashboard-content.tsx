@@ -139,6 +139,7 @@ export function DashboardContent({
           description={`${stats.salesCount} transactions`}
           icon={DollarSign}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Total Commissions"
@@ -146,6 +147,7 @@ export function DashboardContent({
           description={`${stats.commissionsCount} calculated`}
           icon={TrendingUp}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Average Rate"
@@ -153,6 +155,7 @@ export function DashboardContent({
           description="Commission percentage"
           icon={BarChart3}
           format="percentage"
+          accent="dashboard"
         />
         <StatsCard
           title="Active Plans"
@@ -160,6 +163,7 @@ export function DashboardContent({
           description={`${stats.salesPeopleCount} salespeople`}
           icon={Users}
           format="number"
+          accent="dashboard"
         />
       </div>
 
@@ -171,6 +175,7 @@ export function DashboardContent({
           description={`${stats.pendingCount} awaiting approval`}
           icon={Clock}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Approved"
@@ -178,6 +183,7 @@ export function DashboardContent({
           description={`${stats.approvedCount} ready to pay`}
           icon={CheckCircle}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Paid"
@@ -185,13 +191,14 @@ export function DashboardContent({
           description={`${stats.paidCount} completed`}
           icon={Wallet}
           format="currency"
+          accent="dashboard"
         />
       </div>
 
       {/* Charts and Performance */}
       <div className="grid gap-6 lg:grid-cols-2">
         <CommissionTrendsChart data={trends} />
-        <TopPerformers performers={performers.slice(0, 5)} />
+        <TopPerformers performers={performers.slice(0, 5)} accent="dashboard" />
       </div>
     </div>
   )

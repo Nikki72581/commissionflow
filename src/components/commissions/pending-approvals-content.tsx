@@ -211,24 +211,28 @@ export function PendingApprovalsContent({ commissions }: PendingApprovalsContent
             value={pendingAmount}
             format="currency"
             description={`${items.length} approvals waiting`}
+            accent="commissions"
           />
           <StatsCard
             title="Pending approvals"
             value={items.length}
             format="number"
             description={`${formatCurrency(pendingAmount)} remaining`}
+            accent="commissions"
           />
           <StatsCard
             title="Approved by you"
             value={approvedCount}
             format="number"
             description={`${approvedCount} approved this session`}
+            accent="commissions"
           />
           <StatsCard
             title="Approved value"
             value={approvedAmount}
             format="currency"
             description="Approved this session"
+            accent="commissions"
           />
         </div>
 

@@ -181,6 +181,7 @@ export function ReportsContent() {
           format="currency"
           icon={DollarSign}
           description={`${stats.salesCount} transactions`}
+          accent="reports"
         />
         <StatsCard
           title="Total Commissions"
@@ -188,6 +189,7 @@ export function ReportsContent() {
           format="currency"
           icon={TrendingUp}
           description={`${stats.commissionsCount} calculations`}
+          accent="reports"
         />
         <StatsCard
           title="Average Rate"
@@ -195,6 +197,7 @@ export function ReportsContent() {
           format="percentage"
           icon={BarChart3}
           description="Commission percentage"
+          accent="reports"
         />
         <StatsCard
           title="Active Salespeople"
@@ -202,6 +205,7 @@ export function ReportsContent() {
           format="number"
           icon={Users}
           description={`${stats.activeClientsCount} active clients`}
+          accent="reports"
         />
       </div>
 

@@ -214,7 +214,7 @@ export default function DataSourceSelectionPage() {
       <Card className="border-purple-500/20">
         <CardHeader>
           <div className="flex items-center gap-2 mb-2">
-            <FileText className="h-6 w-6 text-blue-600" />
+            <FileText className="h-6 w-6 text-indigo-600" />
             <CardTitle>Generic Inquiry (OData)</CardTitle>
           </div>
           <CardDescription>
@@ -223,19 +223,19 @@ export default function DataSourceSelectionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="p-4 rounded-lg border border-blue-500/20 bg-blue-500/5">
+          <div className="p-4 rounded-lg border border-indigo-500/20 bg-indigo-500/5">
             <h4 className="font-semibold text-sm mb-2">What you'll need:</h4>
             <ul className="text-sm text-muted-foreground space-y-2">
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold">1.</span>
+                <span className="text-indigo-600 font-bold">1.</span>
                 <span>Create a Generic Inquiry in Acumatica that returns your invoice/commission data</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold">2.</span>
+                <span className="text-indigo-600 font-bold">2.</span>
                 <span>Publish the Generic Inquiry via OData in Acumatica</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold">3.</span>
+                <span className="text-indigo-600 font-bold">3.</span>
                 <span>Click "Discover Generic Inquiries" below to see available inquiries</span>
               </li>
             </ul>

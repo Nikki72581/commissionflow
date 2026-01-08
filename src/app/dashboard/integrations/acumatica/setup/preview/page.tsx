@@ -225,8 +225,8 @@ export default function PreviewPage() {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-lg border bg-blue-500/5 border-blue-500/20">
-                    <div className="text-2xl font-bold text-blue-600">
+                  <div className="p-4 rounded-lg border bg-indigo-500/5 border-indigo-500/20">
+                    <div className="text-2xl font-bold text-indigo-600">
                       {previewData.validation.totalRecords}
                     </div>
                     <div className="text-sm text-muted-foreground">
@@ -262,7 +262,7 @@ export default function PreviewPage() {
 
                 {/* Unmapped Salespeople Details */}
                 {previewData.validation.unmappedSalespeople.length > 0 && (
-                  <Alert className="border-purple-500/30 bg-purple-500/10">
+                  <Alert className="border-indigo-500/30 bg-indigo-500/10">
                     <AlertDescription>
                       <p className="font-semibold text-sm mb-2">
                         Unmapped Salespeople:

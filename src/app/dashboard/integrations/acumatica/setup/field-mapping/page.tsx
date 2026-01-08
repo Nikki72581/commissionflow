@@ -263,9 +263,9 @@ export default function FieldMappingPage() {
       )}
 
       {/* Schema Info */}
-      <Alert className="border-blue-500/30 bg-blue-500/10">
-        <Info className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-blue-700 dark:text-blue-400">
+      <Alert className="border-indigo-500/30 bg-indigo-500/10">
+        <Info className="h-4 w-4 text-indigo-600" />
+        <AlertDescription className="text-indigo-700 dark:text-indigo-400">
           Discovered {schema.totalFields} fields from {schema.entity}
           {schema.customFieldCount > 0 && ` (including ${schema.customFieldCount} custom fields)`}
         </AlertDescription>

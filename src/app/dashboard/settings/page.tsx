@@ -205,7 +205,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Separator />
+      <Separator className="bg-indigo-500/20" />
 
       {/* Commission Setup Section */}
       <Card>
@@ -245,7 +245,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="grid gap-4 md:grid-cols-3">
             {/* Product Categories */}
@@ -311,7 +311,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Separator />
+      <Separator className="bg-indigo-500/20" />
 
       {/* Profile Settings */}
       <Card>
@@ -517,7 +517,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -535,7 +535,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -553,7 +553,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -612,7 +612,7 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="space-y-2">
             <Label>Two-Factor Authentication</Label>
@@ -624,7 +624,7 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="space-y-2">
             <Label>Account Created</Label>

@@ -79,7 +79,7 @@ export default function CustomerTiersPage() {
         </p>
       </div>
 
-      <Separator />
+      <Separator className="bg-indigo-500/20" />
 
       {/* Info Card */}
       <Card className="border-border bg-muted/40">
@@ -143,7 +143,7 @@ export default function CustomerTiersPage() {
                     ))}
                   </ul>
                 </div>
-                <Separator />
+                <Separator className="bg-indigo-500/20" />
                 <div>
                   <h4 className="text-sm font-semibold mb-1">Usage</h4>
                   <p className="text-sm text-muted-foreground">{tier.usage}</p>
@@ -176,7 +176,7 @@ export default function CustomerTiersPage() {
               </div>
             </div>
 
-            <Separator />
+            <Separator className="bg-indigo-500/20" />
 
             <div className="flex gap-3">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold shrink-0">
@@ -190,7 +190,7 @@ export default function CustomerTiersPage() {
               </div>
             </div>
 
-            <Separator />
+            <Separator className="bg-indigo-500/20" />
 
             <div className="flex gap-3">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold shrink-0">
