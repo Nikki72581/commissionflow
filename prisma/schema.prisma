@@ -197,7 +197,7 @@ model Organization {
   slug            String   @unique
   clerkOrgId      String?  @unique // Clerk organization ID for team invitations
   planTier        PlanTier @default(STARTER)
-  requireProjects Boolean  @default(true) // Whether projects are required for sales transactions
+  requireProjects Boolean  @default(false) // Whether projects are required for sales transactions
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

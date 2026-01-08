@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
           slug,
           planTier,
           clerkOrgId: null, // Will be linked later via admin script
+          requireProjects: false,
         },
       });
 

@@ -277,7 +277,7 @@ const users = (usersResult.success ? (usersResult.data || []) : [])
     email: string
   }>
 const productCategories = productCategoriesResult.success ? (productCategoriesResult.data || []) : []
-const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.requireProjects ?? true) : true
+const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.requireProjects ?? false) : false
 
   return (
     <div className="space-y-6">

@@ -83,7 +83,7 @@ export function SalesTransactionFormDialog({
   clients = [],
   users,
   productCategories = [],
-  requireProjects = true,
+  requireProjects = false,
   trigger,
   open: controlledOpen,
   onOpenChange,

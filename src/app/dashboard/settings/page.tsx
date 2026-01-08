@@ -48,7 +48,7 @@ export default function SettingsPage() {
   const [weeklyReports, setWeeklyReports] = useState(false)
 
   // Organization settings
-  const [requireProjects, setRequireProjects] = useState(true)
+  const [requireProjects, setRequireProjects] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
 
   // Load user profile
