@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { DollarSign, TrendingUp, Users, BarChart3, Clock, CheckCircle, Wallet } from 'lucide-react'
+import { DollarSign, TrendingUp, Users, BarChart3, Clock, CheckCircle, Wallet, Sparkles } from 'lucide-react'
 import { StatsCard } from '@/components/dashboard/stats-card'
 import { CommissionTrendsChart } from '@/components/dashboard/commission-trends-chart'
 import { TopPerformers } from '@/components/dashboard/top-performers'
@@ -10,6 +10,9 @@ import { ExportButton } from '@/components/dashboard/export-button'
 import { DateRange } from '@/lib/date-range'
 import { CommissionExportData } from '@/lib/csv-export'
 import { DashboardSkeleton } from './dashboard-skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 interface DashboardStats {
   totalSales: number
@@ -57,6 +60,12 @@ export function DashboardContent({
   initialTrends,
   initialPerformers,
 }: DashboardContentProps) {
+  const isFreshOrg =
+    initialStats.activePlansCount === 0 &&
+    initialStats.activeClientsCount === 0 &&
+    initialStats.salesCount === 0 &&
+    initialStats.commissionsCount === 0 &&
+    initialStats.salesPeopleCount === 0
   const [isLoading, setIsLoading] = useState(false)
   const [stats, setStats] = useState<DashboardStats>(initialStats)
   const [trends, setTrends] = useState<TrendData[]>(initialTrends)
@@ -117,6 +126,19 @@ export function DashboardContent({
           <ExportButton data={exportData} label="Export" />
         </div>
       </div>
+
+      {isFreshOrg ? (
+        <Alert className="border-amber-200/70 bg-amber-50/70 text-amber-900">
+          <Sparkles />
+          <AlertTitle>Welcome! You’re all set to get started.</AlertTitle>
+          <AlertDescription className="text-amber-800/90">
+            <p>Visit the help and support page for quick guides and next steps.</p>
+            <Button asChild size="sm" className="mt-2">
+              <Link href="/dashboard/help">Go to Help & Support</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {/* Key Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
