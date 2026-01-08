@@ -167,7 +167,7 @@ export default function DataSourceSelectionPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -185,7 +185,7 @@ export default function DataSourceSelectionPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
           style={{ width: '28.57%' }}
@@ -289,7 +289,7 @@ export default function DataSourceSelectionPage() {
                     className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
                       selectedEntity === entity.name
                         ? 'border-purple-500 bg-purple-500/5'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-500/50'
+                        : 'border-border hover:border-purple-500/50'
                     }`}
                     onClick={() => setSelectedEntity(entity.name)}
                   >
@@ -303,7 +303,7 @@ export default function DataSourceSelectionPage() {
                           {entity.displayName}
                         </Label>
                         {entity.screenId && (
-                          <span className="px-2 py-0.5 text-xs font-mono bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded">
+                          <span className="px-2 py-0.5 text-xs font-mono bg-muted/60 text-muted-foreground rounded">
                             {entity.screenId}
                           </span>
                         )}

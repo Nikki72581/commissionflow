@@ -115,10 +115,10 @@ export default function App() {
             </div>
             
             <div className="grid md:grid-cols-3 gap-6">
-              <Card className="border-2 hover:border-red-500/50 transition-all hover:shadow-lg hover:shadow-red-500/10 bg-gradient-to-br from-card to-red-500/5 group">
+              <Card className="border-2 hover:border-primary/40 transition-all hover:shadow-lg hover:shadow-primary/10 bg-gradient-to-br from-card to-muted/20 group">
                 <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-red-500/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                    <BarChart3 className="h-6 w-6 text-red-500" />
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    <BarChart3 className="h-6 w-6 text-primary" />
                   </div>
                   <CardTitle>Spreadsheet Hell</CardTitle>
                 </CardHeader>
@@ -129,10 +129,10 @@ export default function App() {
                 </CardContent>
               </Card>
               
-              <Card className="border-2 hover:border-orange-500/50 transition-all hover:shadow-lg hover:shadow-orange-500/10 bg-gradient-to-br from-card to-orange-500/5 group">
+              <Card className="border-2 hover:border-primary/40 transition-all hover:shadow-lg hover:shadow-primary/10 bg-gradient-to-br from-card to-muted/20 group">
                 <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-orange-500/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                    <Users className="h-6 w-6 text-orange-500" />
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    <Users className="h-6 w-6 text-primary" />
                   </div>
                   <CardTitle>Zero Transparency</CardTitle>
                 </CardHeader>
@@ -143,10 +143,10 @@ export default function App() {
                 </CardContent>
               </Card>
               
-              <Card className="border-2 hover:border-yellow-500/50 transition-all hover:shadow-lg hover:shadow-yellow-500/10 bg-gradient-to-br from-card to-yellow-500/5 group">
+              <Card className="border-2 hover:border-primary/40 transition-all hover:shadow-lg hover:shadow-primary/10 bg-gradient-to-br from-card to-muted/20 group">
                 <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-yellow-600/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                    <TrendingUp className="h-6 w-6 text-yellow-600" />
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                    <TrendingUp className="h-6 w-6 text-primary" />
                   </div>
                   <CardTitle>Complex Plans</CardTitle>
                 </CardHeader>
@@ -184,37 +184,37 @@ export default function App() {
               icon={<Zap className="h-7 w-7" />}
               title="AI-Powered Plan Builder"
               description="Let AI help you design optimal commission structures or analyze existing plans for potential issues and hidden costs."
-              gradient="from-yellow-500 to-orange-500"
+              gradient="from-blue-600 to-purple-600"
             />
             <FeatureCard
               icon={<TrendingUp className="h-7 w-7" />}
               title="Automated Calculations"
               description="Import sales data from any source and let CommissionFlow automatically calculate commissions based on your custom rules."
-              gradient="from-green-500 to-emerald-500"
+              gradient="from-blue-600 to-purple-600"
             />
             <FeatureCard
               icon={<Users className="h-7 w-7" />}
               title="Salesperson Portal"
               description="Give your team real-time visibility into their earnings with beautiful dashboards, detailed breakdowns, and progress tracking."
-              gradient="from-blue-500 to-cyan-500"
+              gradient="from-blue-600 to-purple-600"
             />
             <FeatureCard
               icon={<Shield className="h-7 w-7" />}
               title="Secure & Compliant"
               description="Enterprise-grade security with role-based access control, data encryption, and complete audit trails for all transactions."
-              gradient="from-purple-500 to-pink-500"
+              gradient="from-blue-600 to-purple-600"
             />
             <FeatureCard
               icon={<Lock className="h-7 w-7" />}
               title="Seamless Integrations"
               description="Connect with your existing CRM, ERP, payment platforms, and HR systems for completely seamless data flow."
-              gradient="from-indigo-500 to-purple-500"
+              gradient="from-blue-600 to-purple-600"
             />
             <FeatureCard
               icon={<DollarSign className="h-7 w-7" />}
               title="Payout Management"
               description="Track, approve, and process commission payouts all in one place with complete transparency and automated workflows."
-              gradient="from-emerald-500 to-teal-500"
+              gradient="from-blue-600 to-purple-600"
             />
           </div>
         </div>
@@ -355,7 +355,7 @@ function FeatureCard({
   gradient: string;
 }) {
   return (
-    <Card className="border-2 hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10 hover:-translate-y-1 group bg-gradient-to-br from-card to-muted/20">
+    <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 group bg-gradient-to-br from-card to-muted/20">
       <CardHeader>
         <div className={`h-14 w-14 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
           <div className="text-white">{icon}</div>

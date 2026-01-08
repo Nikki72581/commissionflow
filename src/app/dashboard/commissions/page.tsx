@@ -120,7 +120,7 @@ async function CommissionsTable({
           <div className="text-sm text-muted-foreground">Total</div>
           <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{formatCurrency(totalAmount)}</div>
         </div>
-        <div className="rounded-lg border-2 hover:border-orange-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-orange-500/5 p-4">
+        <div className="rounded-lg border-2 hover:border-amber-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-amber-500/5 p-4">
           <div className="text-sm text-muted-foreground">Pending</div>
           <div className="text-2xl font-bold">{formatCurrency(pendingAmount)}</div>
           <Badge variant="outline" className="mt-1">

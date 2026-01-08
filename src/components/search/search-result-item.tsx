@@ -44,7 +44,7 @@ const typeColors = {
   client: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
   project: 'bg-purple-500/10 text-purple-700 dark:text-purple-400',
   sale: 'bg-green-500/10 text-green-700 dark:text-green-400',
-  commission: 'bg-orange-500/10 text-orange-700 dark:text-orange-400',
+  commission: 'bg-primary/10 text-primary',
   plan: 'bg-pink-500/10 text-pink-700 dark:text-pink-400',
   team: 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400',
   payout: 'bg-teal-500/10 text-teal-700 dark:text-teal-400'

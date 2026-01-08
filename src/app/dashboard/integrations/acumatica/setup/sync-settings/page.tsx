@@ -139,7 +139,7 @@ export default function SyncSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -168,7 +168,7 @@ export default function SyncSettingsPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
           style={{ width: '100%' }}
@@ -557,10 +557,10 @@ export default function SyncSettingsPage() {
       )}
 
       {/* Sync Schedule */}
-      <Card className="border-orange-500/20">
+      <Card className="border-primary/20">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-orange-600" />
+            <Clock className="h-5 w-5 text-primary" />
             <CardTitle>Sync Schedule</CardTitle>
           </div>
           <CardDescription>

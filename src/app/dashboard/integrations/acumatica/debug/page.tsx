@@ -36,7 +36,7 @@ export default function DebugPage() {
           <Button onClick={handleTest}>Test Server Action</Button>
 
           {result && (
-            <pre className="bg-slate-100 dark:bg-slate-900 p-4 rounded overflow-auto">
+            <pre className="bg-muted/60 p-4 rounded overflow-auto border border-border">
               {result}
             </pre>
           )}

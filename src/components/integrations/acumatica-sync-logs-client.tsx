@@ -170,7 +170,7 @@ function SyncLogDetailsView({
                               <summary className="cursor-pointer text-xs text-blue-600 dark:text-blue-400 hover:underline">
                                 Show Debug Data
                               </summary>
-                              <pre className="mt-2 text-xs bg-slate-50 dark:bg-slate-900 p-2 rounded overflow-x-auto max-h-96 overflow-y-auto border border-slate-200 dark:border-slate-800">
+                              <pre className="mt-2 text-xs bg-muted/60 p-2 rounded overflow-x-auto max-h-96 overflow-y-auto border border-border">
                                 {JSON.stringify(skip.debugData as Record<string, unknown>, null, 2)}
                               </pre>
                             </details>

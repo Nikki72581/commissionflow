@@ -247,7 +247,7 @@ export default function FieldMappingPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
           style={{ width: '42.86%' }}
@@ -559,7 +559,7 @@ function FieldSelector({
       </Select>
       <p className="text-sm text-muted-foreground">{description}</p>
       {selectedField?.sampleValue && (
-        <div className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 p-2 rounded font-mono">
+        <div className="text-xs text-muted-foreground bg-muted/60 p-2 rounded font-mono border border-border">
           Sample: {String(selectedField.sampleValue)}
         </div>
       )}

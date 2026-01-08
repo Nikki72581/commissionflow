@@ -85,10 +85,10 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-transparent to-blue-500/5 shadow-sm">
+    <div className="rounded-lg border border-border bg-gradient-to-br from-card to-muted/20 shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow className="border-b border-emerald-500/10 bg-gradient-to-r from-emerald-500/5 to-blue-500/5">
+          <TableRow className="border-b border-border bg-muted/50">
             <TableHead className="font-semibold">Plan Name</TableHead>
             <TableHead className="font-semibold">Project</TableHead>
             <TableHead className="font-semibold">Rules</TableHead>
@@ -102,8 +102,8 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
           {plans.map((plan) => (
             <TableRow
               key={plan.id}
-              className={`transition-colors border-b border-emerald-500/5 ${
-                plan.isActive ? 'hover:bg-emerald-500/5' : 'hover:bg-slate-500/5 opacity-70'
+              className={`transition-colors border-b border-border/60 ${
+                plan.isActive ? 'hover:bg-muted/40' : 'hover:bg-muted/30 opacity-70'
               }`}
               data-testid="plan-row"
             >
@@ -112,8 +112,8 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
                   href={`/dashboard/plans/${plan.id}`}
                   className={`font-medium hover:underline transition-colors ${
                     plan.isActive
-                      ? 'text-emerald-700 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300'
-                      : 'text-slate-600 dark:text-slate-400'
+                      ? 'text-foreground hover:text-foreground'
+                      : 'text-muted-foreground'
                   }`}
                   data-testid="plan-name"
                 >
@@ -129,12 +129,12 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
                 {plan.project ? (
                   <Link
                     href={`/dashboard/projects/${plan.project.id}`}
-                    className="text-sm text-blue-700 dark:text-blue-400 hover:underline hover:text-blue-900 dark:hover:text-blue-300 transition-colors"
+                    className="text-sm text-primary hover:underline transition-colors"
                   >
                     {plan.project.name}
                   </Link>
                 ) : (
-                  <Badge variant="outline" className="border-slate-500/30 text-slate-700 dark:text-slate-400">
+                  <Badge variant="outline" className="border-border text-muted-foreground">
                     General
                   </Badge>
                 )}
@@ -152,7 +152,7 @@ async function PlansTable({ searchQuery }: { searchQuery?: string }) {
                       </Badge>
                     ))}
                     {plan.rules.length > 2 && (
-                      <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                      <span className="text-xs font-medium text-primary">
                         +{plan.rules.length - 2} more
                       </span>
                     )}
@@ -210,8 +210,8 @@ export default async function PlansPage(props: {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 via-green-600 to-emerald-600 bg-clip-text text-transparent">Commission Plans</h1>
+      <div>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Commission Plans</h1>
           <p className="text-muted-foreground">
             Define how commissions are calculated
           </p>

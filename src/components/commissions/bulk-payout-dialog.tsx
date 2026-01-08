@@ -207,13 +207,13 @@ export function BulkPayoutDialog({
           </div>
 
           {/* Warning */}
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-orange-50 border border-orange-200">
-            <AlertCircle className="h-5 w-5 text-orange-600 mt-0.5" />
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
             <div className="text-sm">
-              <div className="font-semibold text-orange-900 mb-1">
+              <div className="font-semibold text-amber-900 mb-1">
                 This action cannot be undone
               </div>
-              <div className="text-orange-700">
+              <div className="text-amber-700">
                 {summary.totalCommissions} commission{summary.totalCommissions !== 1 ? 's' : ''} will be marked as PAID 
                 and {summary.salespeopleCount} salesperson{summary.salespeopleCount !== 1 ? ' will' : ' will'} be notified.
               </div>

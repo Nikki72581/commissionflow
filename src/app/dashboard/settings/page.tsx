@@ -225,7 +225,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
-                    <FolderKanban className="h-5 w-5 text-orange-600" />
+                    <FolderKanban className="h-5 w-5 text-primary" />
                     <Label htmlFor="requireProjects" className="font-semibold">Require Projects for Sales</Label>
                   </div>
                   <p className="text-sm text-muted-foreground">

@@ -27,11 +27,11 @@ export function TopPerformers({
   const getRankIcon = (index: number) => {
     switch (index) {
       case 0:
-        return <Trophy className="h-5 w-5 text-yellow-500" />
+        return <Trophy className="h-5 w-5 text-primary" />
       case 1:
-        return <Medal className="h-5 w-5 text-gray-400" />
+        return <Medal className="h-5 w-5 text-muted-foreground" />
       case 2:
-        return <Award className="h-5 w-5 text-orange-600" />
+        return <Award className="h-5 w-5 text-primary/80" />
       default:
         return null
     }
@@ -40,11 +40,11 @@ export function TopPerformers({
   const getRankBadge = (index: number) => {
     switch (index) {
       case 0:
-        return <Badge className="bg-yellow-500">1st</Badge>
+        return <Badge className="bg-primary text-primary-foreground">1st</Badge>
       case 1:
-        return <Badge className="bg-gray-400">2nd</Badge>
+        return <Badge variant="outline" className="text-muted-foreground">2nd</Badge>
       case 2:
-        return <Badge className="bg-orange-600">3rd</Badge>
+        return <Badge variant="outline" className="text-primary">3rd</Badge>
       default:
         return <Badge variant="outline">{index + 1}th</Badge>
     }

@@ -223,7 +223,7 @@ export default function FiltersPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
           style={{ width: '57.14%' }}
@@ -511,14 +511,14 @@ export default function FiltersPage() {
       </Card>
 
       {/* Branch Filter - Coming Soon */}
-      <Card className="border-gray-500/20 opacity-50">
+      <Card className="border-border opacity-50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Branch Filter</CardTitle>
               <CardDescription>Filter by specific branches</CardDescription>
             </div>
-            <span className="px-2 py-1 text-xs font-medium bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded-full">
+            <span className="px-2 py-1 text-xs font-medium bg-muted/60 text-muted-foreground rounded-full">
               Coming Soon
             </span>
           </div>
