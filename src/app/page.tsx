@@ -11,6 +11,14 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <div className="w-full bg-amber-50 border-b border-amber-200">
+        <div className="container mx-auto px-4 py-2 text-sm text-amber-900 flex items-center gap-2">
+          <Shield className="h-4 w-4 text-amber-700" />
+          <span>
+            Early development preview. Free to try and open to the public, but use at your own risk. Pre-production updates may cause data loss.
+          </span>
+        </div>
+      </div>
       {/* Header */}
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
