@@ -171,7 +171,7 @@ const setupSteps: SetupStep[] = [
       },
       {
         label: 'Pending Approvals',
-        href: '/dashboard/commissions?status=pending',
+        href: '/dashboard/commissions/pending',
         variant: 'outline',
       },
     ],
@@ -217,7 +217,7 @@ export default async function HelpPage() {
           <BookOpen className="h-4 w-4" />
           <span>Getting Started Guide</span>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-muted-foreground to-foreground bg-clip-text text-transparent">
           Help & Support
         </h1>
         <p className="text-lg text-muted-foreground">
@@ -275,11 +275,6 @@ export default async function HelpPage() {
                         <Badge variant="outline" className="font-mono">
                           Step {step.step}
                         </Badge>
-                        {step.isOptional && (
-                          <Badge variant="secondary" className="text-xs">
-                            Optional
-                          </Badge>
-                        )}
                         <span className="text-sm text-muted-foreground">
                           • {step.estimatedTime}
                         </span>
@@ -293,15 +288,15 @@ export default async function HelpPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Tips */}
-                  <div className="space-y-2 rounded-lg bg-blue-500/5 border border-blue-500/10 p-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-blue-700 dark:text-blue-400">
+                  <div className="space-y-2 rounded-lg bg-muted/40 border border-muted-foreground/20 p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                       <Lightbulb className="h-4 w-4" />
                       Tips & Best Practices
                     </div>
                     <ul className="space-y-1.5 text-sm">
                       {step.tips.map((tip, index) => (
                         <li key={index} className="flex items-start gap-2">
-                          <ChevronRight className="h-4 w-4 mt-0.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                          <ChevronRight className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
                           <span>{tip}</span>
                         </li>
                       ))}

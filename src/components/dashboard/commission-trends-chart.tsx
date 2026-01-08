@@ -36,15 +36,15 @@ export function CommissionTrendsChart({ data, type = 'area' }: CommissionTrendsC
         <p className="font-medium mb-2">{payload[0].payload.monthLabel}</p>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-blue-500" />
+            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--chart-1)' }} />
             <span className="text-sm">Sales: {formatCurrency(payload[0].payload.sales)}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-green-500" />
+            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--chart-2)' }} />
             <span className="text-sm">Commissions: {formatCurrency(payload[0].payload.commissions)}</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-purple-500" />
+            <div className="h-3 w-3 rounded-full" style={{ backgroundColor: 'var(--chart-3)' }} />
             <span className="text-sm">Rate: {payload[0].payload.rate.toFixed(2)}%</span>
           </div>
           <div className="text-xs text-muted-foreground mt-1">
@@ -67,12 +67,12 @@ export function CommissionTrendsChart({ data, type = 'area' }: CommissionTrendsC
             <AreaChart data={formattedData}>
               <defs>
                 <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="colorCommissions" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -91,14 +91,14 @@ export function CommissionTrendsChart({ data, type = 'area' }: CommissionTrendsC
               <Area 
                 type="monotone" 
                 dataKey="sales" 
-                stroke="#3b82f6" 
+                stroke="var(--chart-1)"
                 fill="url(#colorSales)" 
                 name="Sales"
               />
               <Area 
                 type="monotone" 
                 dataKey="commissions" 
-                stroke="#10b981" 
+                stroke="var(--chart-2)"
                 fill="url(#colorCommissions)" 
                 name="Commissions"
               />
@@ -121,14 +121,14 @@ export function CommissionTrendsChart({ data, type = 'area' }: CommissionTrendsC
               <Line 
                 type="monotone" 
                 dataKey="sales" 
-                stroke="#3b82f6" 
+                stroke="var(--chart-1)"
                 strokeWidth={2}
                 name="Sales"
               />
               <Line 
                 type="monotone" 
                 dataKey="commissions" 
-                stroke="#10b981" 
+                stroke="var(--chart-2)"
                 strokeWidth={2}
                 name="Commissions"
               />

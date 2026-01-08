@@ -31,6 +31,7 @@ interface ProjectFormDialogProps {
   project?: Pick<ProjectWithClient, 'id' | 'name' | 'description' | 'clientId' | 'startDate' | 'endDate' | 'status'>
   defaultClientId?: string
   trigger?: React.ReactNode
+  defaultOpen?: boolean
 }
 
 export function ProjectFormDialog({
@@ -38,9 +39,10 @@ export function ProjectFormDialog({
   project,
   defaultClientId,
   trigger,
+  defaultOpen = false,
 }: ProjectFormDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedClientId, setSelectedClientId] = useState(
@@ -51,6 +53,7 @@ export function ProjectFormDialog({
   )
 
   const isEdit = !!project
+  const todayInput = new Date().toISOString().split('T')[0]
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -103,13 +106,13 @@ export function ProjectFormDialog({
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : (
         <DialogTrigger asChild>
-          <Button>
+          <Button data-testid="new-project-button">
             <Plus className="mr-2 h-4 w-4" />
             New Project
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" data-testid="project-form-dialog">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{isEdit ? 'Edit Project' : 'New Project'}</DialogTitle>
@@ -134,10 +137,14 @@ export function ProjectFormDialog({
               <Input
                 id="name"
                 name="name"
+                data-testid="project-name-input"
                 defaultValue={project?.name}
                 placeholder="Website Redesign"
                 required
               />
+              {error && error.includes('required') && (
+                <p className="text-sm text-destructive" data-testid="project-name-error">Project name is required</p>
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -145,17 +152,20 @@ export function ProjectFormDialog({
                 Client <span className="text-destructive">*</span>
               </Label>
               <Select value={selectedClientId} onValueChange={setSelectedClientId}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="project-client-select">
                   <SelectValue placeholder="Select a client" />
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map((client) => (
-                    <SelectItem key={client.id} value={client.id}>
+                    <SelectItem key={client.id} value={client.id} data-testid="client-option">
                       {client.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {error && error.includes('Client') && (
+                <p className="text-sm text-destructive" data-testid="project-client-error">Client is required</p>
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -163,6 +173,7 @@ export function ProjectFormDialog({
               <Textarea
                 id="description"
                 name="description"
+                data-testid="project-description-input"
                 defaultValue={project?.description || ''}
                 placeholder="Project details and objectives..."
                 rows={3}
@@ -176,10 +187,11 @@ export function ProjectFormDialog({
                   id="startDate"
                   name="startDate"
                   type="date"
+                  data-testid="project-start-date"
                   defaultValue={
                     project?.startDate
                       ? new Date(project.startDate).toISOString().split('T')[0]
-                      : ''
+                      : todayInput
                   }
                 />
               </div>
@@ -190,6 +202,7 @@ export function ProjectFormDialog({
                   id="endDate"
                   name="endDate"
                   type="date"
+                  data-testid="project-end-date"
                   defaultValue={
                     project?.endDate
                       ? new Date(project.endDate).toISOString().split('T')[0]
@@ -198,17 +211,21 @@ export function ProjectFormDialog({
                 />
               </div>
             </div>
+            {error && error.includes('end date') && (
+              <p className="text-sm text-destructive" data-testid="project-date-error">end date must be after start date</p>
+            )}
 
             <div className="grid gap-2">
               <Label htmlFor="status">Status</Label>
               <Select value={selectedStatus} onValueChange={value => setSelectedStatus(value as 'active' | 'completed' | 'cancelled')}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="project-status-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="active" data-testid="project-status-active">Active</SelectItem>
+                  <SelectItem value="in-progress" data-testid="project-status-in-progress">In Progress</SelectItem>
+                  <SelectItem value="completed" data-testid="project-status-completed">Completed</SelectItem>
+                  <SelectItem value="cancelled" data-testid="project-status-cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -223,7 +240,7 @@ export function ProjectFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !selectedClientId}>
+            <Button type="submit" disabled={loading || !selectedClientId} data-testid="submit-project-button">
               {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Project'}
             </Button>
           </DialogFooter>

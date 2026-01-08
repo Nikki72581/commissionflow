@@ -197,7 +197,7 @@ export default function SalespersonMappingPage() {
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
               Map Salespeople
             </h1>
             <p className="text-muted-foreground mt-1">
@@ -254,15 +254,15 @@ export default function SalespersonMappingPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-500/20 bg-gradient-to-br from-slate-500/10 to-gray-500/5">
+        <Card className="border-border bg-gradient-to-br from-card to-muted/20">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-full bg-slate-500/20 p-3">
-                <UserX className="h-5 w-5 text-slate-600 dark:text-slate-400" />
+              <div className="rounded-full bg-muted/60 p-3">
+                <UserX className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Ignored</p>
-                <p className="text-2xl font-bold text-slate-700 dark:text-slate-400">
+                <p className="text-2xl font-bold text-foreground">
                   {ignoredCount}
                 </p>
               </div>
@@ -300,9 +300,9 @@ export default function SalespersonMappingPage() {
               </div>
             </div>
             <div className="flex items-start gap-2">
-              <UserX className="h-4 w-4 text-slate-600 mt-0.5 flex-shrink-0" />
+              <UserX className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
               <div>
-                <strong className="text-slate-700 dark:text-slate-400">Ignored:</strong>
+                <strong className="text-foreground">Ignored:</strong>
                 <span className="text-muted-foreground ml-1">
                   Sales from this salesperson will not be imported
                 </span>
@@ -330,7 +330,7 @@ export default function SalespersonMappingPage() {
             {mappings.map((mapping) => (
               <div
                 key={mapping.id}
-                className="flex items-center justify-between p-4 border rounded-lg bg-white dark:bg-slate-900"
+                className="flex items-center justify-between p-4 border border-border rounded-lg bg-background"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3">

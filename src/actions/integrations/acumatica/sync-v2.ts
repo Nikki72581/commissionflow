@@ -87,6 +87,15 @@ async function resolveClient({
   });
 
   if (existing) {
+    // Update clientId if it's missing (for clients created before this fix)
+    if (!existing.clientId) {
+      const updated = await prisma.client.update({
+        where: { id: existing.id },
+        data: { clientId: customerId },
+      });
+      clientCache.set(customerId, updated);
+      return { client: updated, created: false };
+    }
     clientCache.set(customerId, existing);
     return { client: existing, created: false };
   }
@@ -95,8 +104,9 @@ async function resolveClient({
   const newClient = await prisma.client.create({
     data: {
       name: customerName || customerId,
+      clientId: customerId, // Acumatica customer number for user reference
       organizationId,
-      externalId: customerId,
+      externalId: customerId, // For integration tracking
       externalSystem: ACUMATICA_SYSTEM,
       sourceType: 'INTEGRATION',
       createdByIntegrationId: integrationId,
@@ -115,6 +125,7 @@ async function resolveProject({
   projectId,
   client,
   projectCache,
+  hasProjectMapping,
 }: {
   integrationId: string;
   syncLogId: string;
@@ -122,45 +133,17 @@ async function resolveProject({
   projectId?: string;
   client: Client;
   projectCache: Map<string, Project>;
+  hasProjectMapping: boolean;
 }) {
+  // If no project field is mapped in field mappings, do not create or use any projects
+  if (!hasProjectMapping) {
+    return { project: null, created: false };
+  }
+
   if (!projectId) {
-    // Create default project for client
-    const cacheKey = `default-${client.id}`;
-    if (projectCache.has(cacheKey)) {
-      return { project: projectCache.get(cacheKey)!, created: false };
-    }
-
-    const defaultExternalId = `default-${client.externalId}`;
-    const existing = await prisma.project.findUnique({
-      where: {
-        organizationId_externalId_externalSystem: {
-          organizationId,
-          externalId: defaultExternalId,
-          externalSystem: ACUMATICA_SYSTEM,
-        },
-      },
-    });
-
-    if (existing) {
-      projectCache.set(cacheKey, existing);
-      return { project: existing, created: false };
-    }
-
-    const newProject = await prisma.project.create({
-      data: {
-        name: `${client.name} - Default Project`,
-        clientId: client.id,
-        organizationId,
-        externalId: defaultExternalId,
-        externalSystem: ACUMATICA_SYSTEM,
-        sourceType: 'INTEGRATION',
-        createdByIntegrationId: integrationId,
-        createdBySyncLogId: syncLogId,
-      },
-    });
-
-    projectCache.set(cacheKey, newProject);
-    return { project: newProject, created: true };
+    // Project field is mapped but this invoice doesn't have a project value
+    // Return null - no project should be created or associated
+    return { project: null, created: false };
   }
 
   // Use provided project ID
@@ -395,7 +378,13 @@ export async function syncAcumaticaInvoicesV2() {
       console.log('[Sync V2] Query:', query);
 
       // Fetch invoices
-      const response = await client.makeRequest('GET', query);
+      // Generic Inquiry and DAC OData endpoints require Basic Auth instead of session cookies
+      const useBasicAuth = integration.dataSourceType === 'GENERIC_INQUIRY' ||
+                          integration.dataSourceType === 'DAC_ODATA';
+
+      const response = useBasicAuth
+        ? await client.makeBasicAuthRequest('GET', query)
+        : await client.makeRequest('GET', query);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch invoices: ${response.status} ${response.statusText}`);
@@ -413,6 +402,25 @@ export async function syncAcumaticaInvoicesV2() {
 
       // Build salesperson map
       const salespersonMap = new Map<string, User>();
+
+      console.log('[Sync V2] Querying salesperson mappings for integration:', integration.id);
+
+      // First, log ALL mappings for debugging
+      const allMappings = await prisma.acumaticaSalespersonMapping.findMany({
+        where: { integrationId: integration.id },
+        select: {
+          acumaticaSalespersonId: true,
+          userId: true,
+          status: true,
+          matchType: true,
+        },
+      });
+      console.log('[Sync V2] Total mappings in database:', allMappings.length);
+      allMappings.forEach((m, i) => {
+        console.log(`[Sync V2] All Mapping ${i + 1}: acumaticaSalespersonId="${m.acumaticaSalespersonId}", userId="${m.userId}", status="${m.status}", matchType="${m.matchType}"`);
+      });
+
+      // Now get only mappings with users (what we actually use)
       const mappingsWithUsers = await prisma.acumaticaSalespersonMapping.findMany({
         where: {
           integrationId: integration.id,
@@ -422,8 +430,15 @@ export async function syncAcumaticaInvoicesV2() {
         select: {
           acumaticaSalespersonId: true,
           userId: true,
+          status: true,
         },
       });
+
+      console.log('[Sync V2] Found', mappingsWithUsers.length, 'salesperson mappings with users (non-IGNORED + has userId)');
+      if (mappingsWithUsers.length === 0 && allMappings.length > 0) {
+        console.warn('[Sync V2] WARNING: There are', allMappings.length, 'total mappings but NONE have userId set!');
+        console.warn('[Sync V2] This likely means saveSalespersonMappings() was never called to create placeholder users.');
+      }
 
       const mappedUserIds = mappingsWithUsers
         .map((mapping) => mapping.userId)
@@ -445,6 +460,12 @@ export async function syncAcumaticaInvoicesV2() {
       });
 
       console.log(`[Sync V2] Built salesperson map with ${salespersonMap.size} entries`);
+      console.log('[Sync V2] Salesperson map keys:', Array.from(salespersonMap.keys()));
+      console.log('[Sync V2] Sample salesperson map entry:',
+        salespersonMap.size > 0
+          ? { id: Array.from(salespersonMap.keys())[0], user: Array.from(salespersonMap.values())[0].email }
+          : 'No entries'
+      );
 
       // Caches
       const clientCache = new Map<string, Client>();
@@ -499,42 +520,65 @@ export async function syncAcumaticaInvoicesV2() {
             continue;
           }
 
+          console.log(`[Sync V2] Invoice ${invoiceRef} - Looking for salesperson: "${invoiceData.salespersonId}"`);
+          console.log(`[Sync V2] Invoice ${invoiceRef} - Salesperson ID type: ${typeof invoiceData.salespersonId}`);
+          console.log(`[Sync V2] Invoice ${invoiceRef} - Available salesperson IDs in map:`, Array.from(salespersonMap.keys()));
+
           let transactionUser = salespersonMap.get(invoiceData.salespersonId);
 
           if (!transactionUser) {
-            if (integration.unmappedSalespersonAction === 'SKIP') {
-              summary.invoicesSkipped += 1;
-              skipped.push({
-                invoiceRef,
-                reason: `Unmapped salesperson: ${invoiceData.salespersonId}`,
-              });
-              continue;
+            console.log(`[Sync V2] Invoice ${invoiceRef} - MISMATCH: Salesperson "${invoiceData.salespersonId}" not found in map`);
+            console.log(`[Sync V2] Invoice ${invoiceRef} - Checking for case-insensitive or trimmed matches...`);
+
+            // Try to find a case-insensitive or trimmed match and USE it
+            const trimmedId = invoiceData.salespersonId.trim();
+            const lowerCaseId = trimmedId.toLowerCase();
+            for (const [mapKey, mapUser] of salespersonMap.entries()) {
+              if (mapKey.trim().toLowerCase() === lowerCaseId) {
+                console.log(`[Sync V2] Invoice ${invoiceRef} - Found case-insensitive/trimmed match: "${mapKey}" matches "${invoiceData.salespersonId}" - using this mapping`);
+                transactionUser = mapUser;
+                break;
+              }
             }
 
-            // Handle DEFAULT_USER action if configured
-            if (integration.unmappedSalespersonAction === 'DEFAULT_USER' && integration.defaultSalespersonUserId) {
-              const defaultUser = await prisma.user.findUnique({
-                where: { id: integration.defaultSalespersonUserId },
-              });
+            // If still no match after case-insensitive search, handle unmapped salesperson
+            if (!transactionUser) {
+              console.log(`[Sync V2] Invoice ${invoiceRef} - Raw invoice salesperson data:`, JSON.stringify(rawInvoice.Commissions || rawInvoice.SalesPersons || 'No commission data', null, 2));
 
-              if (!defaultUser) {
+              if (integration.unmappedSalespersonAction === 'SKIP') {
                 summary.invoicesSkipped += 1;
                 skipped.push({
                   invoiceRef,
-                  reason: 'Default user not found',
+                  reason: `Unmapped salesperson: ${invoiceData.salespersonId}`,
                 });
                 continue;
               }
 
-              // Use default user
-              transactionUser = defaultUser;
-            } else {
-              summary.invoicesSkipped += 1;
-              skipped.push({
-                invoiceRef,
-                reason: `Unmapped salesperson: ${invoiceData.salespersonId}`,
-              });
-              continue;
+              // Handle DEFAULT_USER action if configured
+              if (integration.unmappedSalespersonAction === 'DEFAULT_USER' && integration.defaultSalespersonUserId) {
+                const defaultUser = await prisma.user.findUnique({
+                  where: { id: integration.defaultSalespersonUserId },
+                });
+
+                if (!defaultUser) {
+                  summary.invoicesSkipped += 1;
+                  skipped.push({
+                    invoiceRef,
+                    reason: 'Default user not found',
+                  });
+                  continue;
+                }
+
+                // Use default user
+                transactionUser = defaultUser;
+              } else {
+                summary.invoicesSkipped += 1;
+                skipped.push({
+                  invoiceRef,
+                  reason: `Unmapped salesperson: ${invoiceData.salespersonId}`,
+                });
+                continue;
+              }
             }
           }
 
@@ -560,6 +604,7 @@ export async function syncAcumaticaInvoicesV2() {
             projectId: invoiceData.projectId,
             client,
             projectCache,
+            hasProjectMapping: !!fieldMappings.project?.sourceField,
           });
 
           if (projectCreated) {
@@ -624,23 +669,30 @@ export async function syncAcumaticaInvoicesV2() {
         }
       }
 
-      // Update sync log
-      await prisma.integrationSyncLog.update({
-        where: { id: syncLog.id },
-        data: {
-          status: 'SUCCESS',
-          completedAt: new Date(),
-          invoicesFetched: summary.invoicesFetched,
-          invoicesProcessed: summary.invoicesProcessed,
-          invoicesSkipped: summary.invoicesSkipped,
-          salesCreated: summary.salesCreated,
-          clientsCreated: summary.clientsCreated,
-          projectsCreated: summary.projectsCreated,
-          errorsCount: summary.errorsCount,
-          skipDetails: skipped.length > 0 ? (skipped as any) : undefined,
-          errorDetails: errors.length > 0 ? (errors as any) : undefined,
-        },
-      });
+      // Update sync log and integration's lastSyncAt
+      const completedAt = new Date();
+      await prisma.$transaction([
+        prisma.integrationSyncLog.update({
+          where: { id: syncLog.id },
+          data: {
+            status: 'SUCCESS',
+            completedAt,
+            invoicesFetched: summary.invoicesFetched,
+            invoicesProcessed: summary.invoicesProcessed,
+            invoicesSkipped: summary.invoicesSkipped,
+            salesCreated: summary.salesCreated,
+            clientsCreated: summary.clientsCreated,
+            projectsCreated: summary.projectsCreated,
+            errorsCount: summary.errorsCount,
+            skipDetails: skipped.length > 0 ? (skipped as any) : undefined,
+            errorDetails: errors.length > 0 ? (errors as any) : undefined,
+          },
+        }),
+        prisma.acumaticaIntegration.update({
+          where: { id: integration.id },
+          data: { lastSyncAt: completedAt },
+        }),
+      ]);
 
       return {
         success: true,

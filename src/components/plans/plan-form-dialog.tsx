@@ -46,15 +46,17 @@ interface CommissionPlanFormDialogProps {
   plan?: CommissionPlan
   projects?: Project[]
   trigger?: React.ReactNode
+  defaultOpen?: boolean
 }
 
 export function CommissionPlanFormDialog({
   plan,
   projects = [],
   trigger,
+  defaultOpen = false,
 }: CommissionPlanFormDialogProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedProjectId, setSelectedProjectId] = useState(plan?.projectId || '')
@@ -86,7 +88,12 @@ export function CommissionPlanFormDialog({
 
       if (result.success) {
         setOpen(false)
-        router.refresh()
+        if (!isEdit && result.data?.id) {
+          // Navigate to the newly created plan's detail view
+          router.push(`/dashboard/plans/${result.data.id}`)
+        } else {
+          router.refresh()
+        }
       } else {
         setError(result.error || 'Something went wrong')
       }
@@ -103,14 +110,14 @@ export function CommissionPlanFormDialog({
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : (
         <DialogTrigger asChild>
-          <Button>
+          <Button data-testid="new-plan-button">
             <Plus className="mr-2 h-4 w-4" />
             New Commission Plan
           </Button>
         </DialogTrigger>
       )}
 
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" data-testid="plan-form-dialog">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
@@ -140,6 +147,7 @@ export function CommissionPlanFormDialog({
                 defaultValue={plan?.name}
                 placeholder="Standard Sales Commission"
                 required
+                data-testid="plan-name-input"
               />
             </div>
 
@@ -151,6 +159,7 @@ export function CommissionPlanFormDialog({
                 defaultValue={plan?.description || ''}
                 placeholder="Describe when this plan applies..."
                 rows={3}
+                data-testid="plan-description-input"
               />
             </div>
 
@@ -177,10 +186,10 @@ export function CommissionPlanFormDialog({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="projectId">Attach to Project (Optional)</Label>
+              <Label htmlFor="projectId">Attach to Project</Label>
               <Select value={selectedProjectId || 'none'} onValueChange={(value) => setSelectedProjectId(value === 'none' ? '' : value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a project (optional)" />
+                  <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No project (general plan)</SelectItem>
@@ -192,7 +201,7 @@ export function CommissionPlanFormDialog({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Optionally attach this plan to a specific project
+                Attach this plan to a specific project if needed.
               </p>
             </div>
 
@@ -219,7 +228,7 @@ export function CommissionPlanFormDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} data-testid="submit-plan-button">
               {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Plan'}
             </Button>
           </DialogFooter>

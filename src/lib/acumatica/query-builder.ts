@@ -25,9 +25,9 @@ export class AcumaticaQueryBuilder {
     if (dataSourceType === "REST_API") {
       baseEndpoint = `/entity/Default/${apiVersion}/${dataSourceEntity}`;
     } else if (dataSourceType === "GENERIC_INQUIRY") {
-      baseEndpoint = `/api/odata/gi/${dataSourceEntity}`;
+      baseEndpoint = `/odata/${dataSourceEntity}`;
     } else if (dataSourceType === "DAC_ODATA") {
-      baseEndpoint = `/api/odata/dac/${dataSourceEntity}`;
+      baseEndpoint = `/odatav4/${dataSourceEntity}`;
     }
 
     // Build query components
@@ -47,7 +47,7 @@ export class AcumaticaQueryBuilder {
     }
 
     if (filterClause) {
-      queryParts.push(`$filter=${filterClause}`);
+      queryParts.push(`$filter=${encodeURIComponent(filterClause)}`);
     }
 
     const queryString = queryParts.join("&");
@@ -350,14 +350,14 @@ export class AcumaticaQueryBuilder {
     if (dataSourceType === "REST_API") {
       baseEndpoint = `/entity/Default/${apiVersion}/${dataSourceEntity}`;
     } else if (dataSourceType === "GENERIC_INQUIRY") {
-      baseEndpoint = `/api/odata/gi/${dataSourceEntity}`;
+      baseEndpoint = `/odata/${dataSourceEntity}`;
     } else if (dataSourceType === "DAC_ODATA") {
-      baseEndpoint = `/api/odata/dac/${dataSourceEntity}`;
+      baseEndpoint = `/odatav4/${dataSourceEntity}`;
     }
 
     const filterClause = this.buildFilterClause(filterConfig, fieldMappings);
 
-    return `${baseEndpoint}/$count${filterClause ? "?$filter=" + filterClause : ""}`;
+    return `${baseEndpoint}/$count${filterClause ? "?$filter=" + encodeURIComponent(filterClause) : ""}`;
   }
 
   /**

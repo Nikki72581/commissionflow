@@ -7,7 +7,7 @@ import { CommissionTrendsChart } from '@/components/dashboard/commission-trends-
 import { TopPerformers } from '@/components/dashboard/top-performers'
 import { DateRangePicker } from '@/components/dashboard/date-range-picker'
 import { ExportButton } from '@/components/dashboard/export-button'
-import { DateRange } from '@/lib/date-range'
+import { DateRange, formatDateRange } from '@/lib/date-range'
 import { CommissionExportData } from '@/lib/csv-export'
 import { DashboardSkeleton } from './dashboard-skeleton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -53,12 +53,14 @@ interface DashboardContentProps {
   initialStats: DashboardStats
   initialTrends: TrendData[]
   initialPerformers: Performer[]
+  initialDateRange: DateRange
 }
 
 export function DashboardContent({
   initialStats,
   initialTrends,
   initialPerformers,
+  initialDateRange,
 }: DashboardContentProps) {
   const isFreshOrg =
     initialStats.activePlansCount === 0 &&
@@ -71,7 +73,7 @@ export function DashboardContent({
   const [trends, setTrends] = useState<TrendData[]>(initialTrends)
   const [performers, setPerformers] = useState<Performer[]>(initialPerformers)
   const [exportData, setExportData] = useState<CommissionExportData[]>([])
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [dateRange, setDateRange] = useState<DateRange>(initialDateRange)
 
   const handleDateRangeChange = async (range: DateRange) => {
     setDateRange(range)
@@ -79,8 +81,13 @@ export function DashboardContent({
 
     try {
       // Fetch filtered data
-      const [statsRes, performersRes, exportRes] = await Promise.all([
+      const [statsRes, trendsRes, performersRes, exportRes] = await Promise.all([
         fetch('/api/dashboard/stats', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dateRange: range }),
+        }).then(r => r.json()),
+        fetch('/api/dashboard/trends', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dateRange: range }),
@@ -98,6 +105,7 @@ export function DashboardContent({
       ])
 
       if (statsRes.success) setStats(statsRes.data)
+      if (trendsRes.success) setTrends(trendsRes.data)
       if (performersRes.success) setPerformers(performersRes.data)
       if (exportRes.success) setExportData(exportRes.data)
     } catch (error) {
@@ -116,9 +124,14 @@ export function DashboardContent({
       {/* Header with filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+            Dashboard
+          </h1>
           <p className="text-muted-foreground">
             Overview of your sales and commission performance
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Showing {formatDateRange(dateRange)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -148,6 +161,7 @@ export function DashboardContent({
           description={`${stats.salesCount} transactions`}
           icon={DollarSign}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Total Commissions"
@@ -155,6 +169,7 @@ export function DashboardContent({
           description={`${stats.commissionsCount} calculated`}
           icon={TrendingUp}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Average Rate"
@@ -162,6 +177,7 @@ export function DashboardContent({
           description="Commission percentage"
           icon={BarChart3}
           format="percentage"
+          accent="dashboard"
         />
         <StatsCard
           title="Active Plans"
@@ -169,6 +185,7 @@ export function DashboardContent({
           description={`${stats.salesPeopleCount} salespeople`}
           icon={Users}
           format="number"
+          accent="dashboard"
         />
       </div>
 
@@ -180,6 +197,7 @@ export function DashboardContent({
           description={`${stats.pendingCount} awaiting approval`}
           icon={Clock}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Approved"
@@ -187,6 +205,7 @@ export function DashboardContent({
           description={`${stats.approvedCount} ready to pay`}
           icon={CheckCircle}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Paid"
@@ -194,13 +213,14 @@ export function DashboardContent({
           description={`${stats.paidCount} completed`}
           icon={Wallet}
           format="currency"
+          accent="dashboard"
         />
       </div>
 
       {/* Charts and Performance */}
       <div className="grid gap-6 lg:grid-cols-2">
         <CommissionTrendsChart data={trends} />
-        <TopPerformers performers={performers.slice(0, 5)} />
+        <TopPerformers performers={performers.slice(0, 5)} accent="dashboard" />
       </div>
     </div>
   )

@@ -66,6 +66,7 @@ if (searchQuery && projects.length > 0) {
           icon={Search}
           title="No projects found"
           description={`No projects match "${searchQuery}". Try a different search term.`}
+          data-testid="empty-state"
         />
       )
     }
@@ -75,6 +76,7 @@ if (searchQuery && projects.length > 0) {
         icon={Briefcase}
         title="No projects yet"
         description="Get started by creating your first project. Projects represent deals or engagements with your clients."
+        data-testid="empty-state"
       />
     )
   }
@@ -95,11 +97,12 @@ if (searchQuery && projects.length > 0) {
         </TableHeader>
         <TableBody>
           {projects.map((project) => (
-            <TableRow key={project.id}>
+            <TableRow key={project.id} data-testid="project-row">
               <TableCell>
                 <Link
                   href={`/dashboard/projects/${project.id}`}
                   className="font-medium hover:underline"
+                  data-testid="project-name"
                 >
                   {project.name}
                 </Link>
@@ -126,6 +129,7 @@ if (searchQuery && projects.length > 0) {
                       ? 'secondary'
                       : 'outline'
                   }
+                  data-testid="project-status-badge"
                 >
                   {project.status}
                 </Badge>
@@ -174,21 +178,22 @@ function ProjectsTableSkeleton() {
 export default async function ProjectsPage({
   searchParams,
 }: {
-  searchParams: { search?: string }
+  searchParams: { search?: string; create?: string }
 }) {
   const clientsResult = await getClients()
   const clients = clientsResult.data ?? []
+  const openCreateDialog = searchParams.create === '1' || searchParams.create === 'true'
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Projects</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">Projects</h1>
           <p className="text-muted-foreground">
             Manage your projects and commission plans
           </p>
         </div>
-        <ProjectFormDialog clients={clients} />
+        <ProjectFormDialog clients={clients} defaultOpen={openCreateDialog} />
       </div>
 
       <div className="flex items-center gap-4">
@@ -200,6 +205,7 @@ export default async function ProjectsPage({
               placeholder="Search projects..."
               defaultValue={searchParams.search}
               className="pl-9"
+              data-testid="project-search-input"
             />
           </div>
         </form>

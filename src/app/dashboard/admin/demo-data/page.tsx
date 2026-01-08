@@ -165,22 +165,27 @@ export default function DemoDataGeneratorPage() {
   }
 
   const clearDemoData = async () => {
-    if (!confirm('⚠️ This will delete ALL demo data. Are you sure?')) return
+    if (!confirm('⚠️ This will delete ALL data for your organization including:\n\n• All clients and projects\n• All sales transactions\n• All commission calculations and payouts\n• All product categories and territories\n• Integration settings and sync logs\n• Placeholder users\n\nThis action cannot be undone. Are you sure?')) return
 
     setLoading(true)
     setError('')
-    setStatus('Clearing demo data...')
+    setStatus('Clearing all organization data...')
 
     try {
       const response = await fetch('/api/admin/demo-data/clear', {
         method: 'DELETE',
       })
 
-      if (!response.ok) throw new Error('Failed to clear data')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to clear data')
+      }
 
       setStats({ clients: 0, projects: 0, sales: 0, commissions: 0 })
-      setStatus('✅ Demo data cleared')
+      setStatus('✅ All organization data cleared successfully')
     } catch (err: any) {
+      console.error('Error clearing data:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -190,7 +195,9 @@ export default function DemoDataGeneratorPage() {
   return (
     <div className="container mx-auto py-8 max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Demo Data Generator</h1>
+        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+          Demo Data Generator
+        </h1>
         <p className="text-muted-foreground">
           Generate realistic test data for your organization. All data created will be associated with your current organization.
         </p>
@@ -442,15 +449,25 @@ export default function DemoDataGeneratorPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button 
-            onClick={clearDemoData} 
+          <Button
+            onClick={clearDemoData}
             disabled={loading}
             variant="destructive"
           >
-            Clear All Demo Data
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Clearing...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Clear All Organization Data
+              </>
+            )}
           </Button>
           <p className="text-sm text-muted-foreground mt-2">
-            This will delete all clients, projects, sales, and commissions created through this tool
+            This will delete ALL data for your organization including clients, projects, sales, commissions, territories, product categories, integrations, and placeholder users. This action cannot be undone.
           </p>
         </CardContent>
       </Card>

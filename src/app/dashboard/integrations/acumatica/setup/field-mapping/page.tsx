@@ -71,6 +71,11 @@ export default function FieldMappingPage() {
     loadData();
   }, []);
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const loadData = async () => {
     try {
       const integration = await getAcumaticaIntegration();
@@ -233,7 +238,7 @@ export default function FieldMappingPage() {
     <div className="max-w-5xl mx-auto space-y-6 py-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
           Map Acumatica Fields
         </h1>
         <p className="text-muted-foreground mt-2">
@@ -242,7 +247,7 @@ export default function FieldMappingPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
           style={{ width: '42.86%' }}
@@ -258,9 +263,9 @@ export default function FieldMappingPage() {
       )}
 
       {/* Schema Info */}
-      <Alert className="border-blue-500/30 bg-blue-500/10">
-        <Info className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-blue-700 dark:text-blue-400">
+      <Alert className="border-indigo-500/30 bg-indigo-500/10">
+        <Info className="h-4 w-4 text-indigo-600" />
+        <AlertDescription className="text-indigo-700 dark:text-indigo-400">
           Discovered {schema.totalFields} fields from {schema.entity}
           {schema.customFieldCount > 0 && ` (including ${schema.customFieldCount} custom fields)`}
         </AlertDescription>
@@ -417,9 +422,9 @@ export default function FieldMappingPage() {
       {/* Optional Mappings */}
       <Card className="border-purple-500/20">
         <CardHeader>
-          <CardTitle>Optional Field Mappings</CardTitle>
+          <CardTitle>Additional Field Mappings</CardTitle>
           <CardDescription>
-            These fields are optional but can enhance your data
+            These fields can enhance your data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -429,7 +434,7 @@ export default function FieldMappingPage() {
             value={customerNameField}
             onChange={setCustomerNameField}
             fields={fieldsByType.string}
-            placeholder="(Optional) Select customer name field..."
+            placeholder="Select customer name field..."
           />
 
           <FieldSelector
@@ -438,7 +443,7 @@ export default function FieldMappingPage() {
             value={projectField}
             onChange={setProjectField}
             fields={fieldsByType.string}
-            placeholder="(Optional) Select project field..."
+            placeholder="Select project field..."
           />
 
           <FieldSelector
@@ -447,7 +452,7 @@ export default function FieldMappingPage() {
             value={descriptionField}
             onChange={setDescriptionField}
             fields={fieldsByType.string}
-            placeholder="(Optional) Select description field..."
+            placeholder="Select description field..."
           />
 
           <FieldSelector
@@ -456,7 +461,7 @@ export default function FieldMappingPage() {
             value={branchField}
             onChange={setBranchField}
             fields={fieldsByType.string}
-            placeholder="(Optional) Select branch field..."
+            placeholder="Select branch field..."
           />
         </CardContent>
       </Card>
@@ -554,7 +559,7 @@ function FieldSelector({
       </Select>
       <p className="text-sm text-muted-foreground">{description}</p>
       {selectedField?.sampleValue && (
-        <div className="text-xs text-muted-foreground bg-gray-100 dark:bg-gray-800 p-2 rounded font-mono">
+        <div className="text-xs text-muted-foreground bg-muted/60 p-2 rounded font-mono border border-border">
           Sample: {String(selectedField.sampleValue)}
         </div>
       )}

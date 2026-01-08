@@ -78,7 +78,7 @@ export function ReportsContent() {
     try {
       const [statsResult, trendsResult, performersResult] = await Promise.all([
         getDashboardStats(dateRange),
-        getCommissionTrends(12),
+        getCommissionTrends({ months: 12, dateRange }),
         getTopPerformers(dateRange, 50),
       ])
 
@@ -137,7 +137,7 @@ export function ReportsContent() {
       {/* Header with filters and export */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-cyan-600 to-cyan-500 bg-clip-text text-transparent">
             Performance Reports
           </h1>
           <p className="text-muted-foreground">
@@ -181,6 +181,7 @@ export function ReportsContent() {
           format="currency"
           icon={DollarSign}
           description={`${stats.salesCount} transactions`}
+          accent="reports"
         />
         <StatsCard
           title="Total Commissions"
@@ -188,6 +189,7 @@ export function ReportsContent() {
           format="currency"
           icon={TrendingUp}
           description={`${stats.commissionsCount} calculations`}
+          accent="reports"
         />
         <StatsCard
           title="Average Rate"
@@ -195,6 +197,7 @@ export function ReportsContent() {
           format="percentage"
           icon={BarChart3}
           description="Commission percentage"
+          accent="reports"
         />
         <StatsCard
           title="Active Salespeople"
@@ -202,6 +205,7 @@ export function ReportsContent() {
           format="number"
           icon={Users}
           description={`${stats.activeClientsCount} active clients`}
+          accent="reports"
         />
       </div>
 

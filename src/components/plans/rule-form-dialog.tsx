@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
+import { NumberInput } from '@/components/ui/number-input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -33,8 +33,8 @@ interface CommissionRule {
   ruleType: 'PERCENTAGE' | 'FLAT_AMOUNT' | 'TIERED'
   percentage?: number | null
   flatAmount?: number | null
-  tierThreshold?: number | null
-  tierPercentage?: number | null
+  minSaleAmount?: number | null
+  maxSaleAmount?: number | null
   minAmount?: number | null
   maxAmount?: number | null
   description?: string | null
@@ -58,6 +58,12 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
   const [error, setError] = useState<string | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
   const [ruleType, setRuleType] = useState<string>(rule?.ruleType || 'PERCENTAGE')
+  const [showSaleAmountFilters, setShowSaleAmountFilters] = useState(
+    !!rule?.minSaleAmount || !!rule?.maxSaleAmount
+  )
+  const [showCommissionCaps, setShowCommissionCaps] = useState(
+    !!rule?.minAmount || !!rule?.maxAmount
+  )
   const [showAdvanced, setShowAdvanced] = useState(!!rule?.scope && rule.scope !== 'GLOBAL')
   const [scope, setScope] = useState<string>(rule?.scope || 'GLOBAL')
   const [customerTier, setCustomerTier] = useState<string>(rule?.customerTier || '')
@@ -99,6 +105,8 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
       commissionPlanId: planId,
       ruleType,
       description: formData.get('description') as string,
+      minSaleAmount: formData.get('minSaleAmount') ? parseFloat(formData.get('minSaleAmount') as string) : undefined,
+      maxSaleAmount: formData.get('maxSaleAmount') ? parseFloat(formData.get('maxSaleAmount') as string) : undefined,
       minAmount: formData.get('minAmount') ? parseFloat(formData.get('minAmount') as string) : undefined,
       maxAmount: formData.get('maxAmount') ? parseFloat(formData.get('maxAmount') as string) : undefined,
     }
@@ -108,10 +116,6 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
       data.percentage = parseFloat(formData.get('percentage') as string)
     } else if (ruleType === 'FLAT_AMOUNT') {
       data.flatAmount = parseFloat(formData.get('flatAmount') as string)
-    } else if (ruleType === 'TIERED') {
-      data.percentage = parseFloat(formData.get('basePercentage') as string)
-      data.tierThreshold = parseFloat(formData.get('tierThreshold') as string)
-      data.tierPercentage = parseFloat(formData.get('tierPercentage') as string)
     }
 
     // Add scope fields if advanced mode is enabled
@@ -163,14 +167,14 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
         <DialogTrigger asChild>{trigger}</DialogTrigger>
       ) : (
         <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" data-testid="add-rule-button">
             <Plus className="mr-2 h-4 w-4" />
             Add Rule
           </Button>
         </DialogTrigger>
       )}
 
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[760px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>{isEdit ? 'Edit Rule' : 'Add Commission Rule'}</DialogTitle>
@@ -179,15 +183,15 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-4 py-4 sm:grid-cols-2">
             {error && (
-              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive sm:col-span-2">
                 {error}
               </div>
             )}
 
             {warnings.length > 0 && (
-              <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+              <div className="rounded-md bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800 sm:col-span-2">
                 <p className="font-medium mb-1">Warning:</p>
                 <ul className="list-disc list-inside space-y-1">
                   {warnings.map((warning, i) => (
@@ -197,44 +201,39 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
               </div>
             )}
 
-            <div className="grid gap-2">
+            <div className="grid gap-2 sm:col-span-1">
               <Label htmlFor="ruleType">
                 Rule Type <span className="text-destructive">*</span>
               </Label>
               <Select value={ruleType} onValueChange={setRuleType}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="rule-type-select">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PERCENTAGE">Percentage of Sale</SelectItem>
-                  <SelectItem value="FLAT_AMOUNT">Flat Amount</SelectItem>
-                  <SelectItem value="TIERED">Tiered (Different rates)</SelectItem>
+                  <SelectItem value="PERCENTAGE" data-testid="rule-type-percentage">Percentage of Sale</SelectItem>
+                  <SelectItem value="FLAT_AMOUNT" data-testid="rule-type-flat">Flat Amount</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* PERCENTAGE type fields */}
             {ruleType === 'PERCENTAGE' && (
-              <div className="grid gap-2">
+              <div className="grid gap-2 sm:col-span-1">
                 <Label htmlFor="percentage">
                   Percentage <span className="text-destructive">*</span>
                 </Label>
-                <div className="relative">
-                  <Input
-                    id="percentage"
-                    name="percentage"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    defaultValue={rule?.percentage || ''}
-                    placeholder="10"
-                    required
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    %
-                  </span>
-                </div>
+                <NumberInput
+                  id="percentage"
+                  name="percentage"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  defaultValue={rule?.percentage || ''}
+                  placeholder="10"
+                  endAdornment="%"
+                  required
+                  data-testid="rule-value-input"
+                />
                 <p className="text-xs text-muted-foreground">
                   E.g., 10% means $1,000 commission on $10,000 sale
                 </p>
@@ -243,147 +242,122 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
 
             {/* FLAT_AMOUNT type fields */}
             {ruleType === 'FLAT_AMOUNT' && (
-              <div className="grid gap-2">
+              <div className="grid gap-2 sm:col-span-1">
                 <Label htmlFor="flatAmount">
                   Amount <span className="text-destructive">*</span>
                 </Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    $
-                  </span>
-                  <Input
-                    id="flatAmount"
-                    name="flatAmount"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    defaultValue={rule?.flatAmount || ''}
-                    placeholder="500"
-                    className="pl-7"
-                    required
-                  />
-                </div>
+                <NumberInput
+                  id="flatAmount"
+                  name="flatAmount"
+                  step="0.01"
+                  min="0"
+                  defaultValue={rule?.flatAmount ?? '0.00'}
+                  placeholder="500"
+                  startAdornment="$"
+                  required
+                  data-testid="rule-value-input"
+                />
                 <p className="text-xs text-muted-foreground">
                   Fixed amount paid per sale, regardless of sale size
                 </p>
               </div>
             )}
 
-            {/* TIERED type fields */}
-            {ruleType === 'TIERED' && (
-              <>
+
+            {/* Sale Amount Filters */}
+            <div className="border-t pt-4 sm:col-span-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSaleAmountFilters(!showSaleAmountFilters)}
+                className="w-full justify-between"
+                aria-expanded={showSaleAmountFilters}
+              >
+                <span className="text-sm font-medium">Sale Amount Filters</span>
+                {showSaleAmountFilters ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+              <div className={`mt-3 space-y-3 ${showSaleAmountFilters ? '' : 'hidden'}`}>
+                <p className="text-xs text-muted-foreground">
+                  Apply this rule only to sales within a specific amount range. Leave blank to apply to all amounts.
+                </p>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="basePercentage">
-                      Base Rate <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="basePercentage"
-                        name="basePercentage"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        defaultValue={rule?.percentage || ''}
-                        placeholder="5"
-                        required
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        %
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label htmlFor="tierThreshold">
-                      Threshold <span className="text-destructive">*</span>
-                    </Label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        $
-                      </span>
-                      <Input
-                        id="tierThreshold"
-                        name="tierThreshold"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        defaultValue={rule?.tierThreshold || ''}
-                        placeholder="10000"
-                        className="pl-7"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="tierPercentage">
-                    Rate Above Threshold <span className="text-destructive">*</span>
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="tierPercentage"
-                      name="tierPercentage"
-                      type="number"
+                  <div className="space-y-2">
+                    <Label htmlFor="minSaleAmount">Minimum Sale</Label>
+                    <NumberInput
+                      id="minSaleAmount"
+                      name="minSaleAmount"
                       step="0.01"
                       min="0"
-                      max="100"
-                      defaultValue={rule?.tierPercentage || ''}
-                      placeholder="7"
-                      required
+                      defaultValue={rule?.minSaleAmount || ''}
+                      placeholder="0"
+                      startAdornment="$"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      %
-                    </span>
+                    <p className="text-xs text-muted-foreground">Sales must be at least this amount</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maxSaleAmount">Maximum Sale</Label>
+                    <NumberInput
+                      id="maxSaleAmount"
+                      name="maxSaleAmount"
+                      step="0.01"
+                      min="0"
+                      defaultValue={rule?.maxSaleAmount || ''}
+                      placeholder="No limit"
+                      startAdornment="$"
+                    />
+                    <p className="text-xs text-muted-foreground">Leave empty for no upper limit</p>
                   </div>
                 </div>
+                <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-950/20">
+                  <p className="text-xs text-blue-900 dark:text-blue-200">
+                    <strong>Example:</strong> Set min=$10,000 and max=$50,000 to apply this rule only to sales between
+                    $10k-$50k
+                  </p>
+                </div>
+              </div>
+            </div>
 
+            <div className="border-t pt-4 sm:col-span-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCommissionCaps(!showCommissionCaps)}
+                className="w-full justify-between"
+                aria-expanded={showCommissionCaps}
+              >
+                <span className="text-sm font-medium">Commission Caps</span>
+                {showCommissionCaps ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+              <div className={`mt-3 space-y-3 ${showCommissionCaps ? '' : 'hidden'}`}>
                 <p className="text-xs text-muted-foreground">
-                  Example: 5% up to $10,000, then 7% on amounts above
+                  Set minimum or maximum limits on the commission amount (not the sale amount).
                 </p>
-              </>
-            )}
-
-            {/* Optional caps */}
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-medium mb-3">Optional Caps</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="minAmount">Minimum</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      $
-                    </span>
-                    <Input
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="minAmount">Minimum Commission</Label>
+                    <NumberInput
                       id="minAmount"
                       name="minAmount"
-                      type="number"
                       step="0.01"
                       min="0"
                       defaultValue={rule?.minAmount || ''}
                       placeholder="0"
-                      className="pl-7"
+                      startAdornment="$"
                     />
                   </div>
-                </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="maxAmount">Maximum</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      $
-                    </span>
-                    <Input
+                  <div className="grid gap-2">
+                    <Label htmlFor="maxAmount">Maximum Commission</Label>
+                    <NumberInput
                       id="maxAmount"
                       name="maxAmount"
-                      type="number"
                       step="0.01"
                       min="0"
                       defaultValue={rule?.maxAmount || ''}
                       placeholder="No limit"
-                      className="pl-7"
+                      startAdornment="$"
                     />
                   </div>
                 </div>
@@ -391,7 +365,7 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
             </div>
 
             {/* Advanced: Rule Scope */}
-            <div className="border-t pt-4">
+            <div className="border-t pt-4 sm:col-span-2">
               <Button
                 type="button"
                 variant="ghost"
@@ -506,13 +480,13 @@ export function RuleFormDialog({ planId, rule, trigger }: RuleFormDialogProps) {
               )}
             </div>
 
-            <div className="grid gap-2">
-              <Label htmlFor="description">Notes (Optional)</Label>
+            <div className="grid gap-2 sm:col-span-2">
+              <Label htmlFor="description">Notes</Label>
               <Textarea
                 id="description"
                 name="description"
                 defaultValue={rule?.description || ''}
-                placeholder="Add any notes about this rule..."
+                placeholder="Add notes about this rule..."
                 rows={2}
               />
             </div>

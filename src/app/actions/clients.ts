@@ -178,7 +178,7 @@ export async function updateClient(clientId: string, data: UpdateClientInput) {
       throw new Error('Client not found')
     }
 
-    // Update client
+    // Update client (integration fields like externalId, externalSystem are preserved - not in updateClientSchema)
     const client = await prisma.client.update({
       where: { id: clientId },
       data: validatedData,

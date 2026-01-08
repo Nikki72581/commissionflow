@@ -18,7 +18,7 @@ import {
   FolderKanban,
   FileText,
   DollarSign,
-  Command,
+  HelpCircle,
   Building2,
   Moon,
   Sun,
@@ -100,26 +100,26 @@ export function EnhancedHeader({
   const quickActions = [
     {
       title: 'New Sale',
-      href: '/dashboard/sales/new',
+      href: '/dashboard/sales?create=1',
       icon: ShoppingCart,
       shortcut: '⌘S',
       adminOnly: true,
     },
     {
       title: 'New Client',
-      href: '/dashboard/clients/new',
+      href: '/dashboard/clients?create=1',
       icon: Users,
       shortcut: '⌘C',
     },
     {
       title: 'New Project',
-      href: '/dashboard/projects/new',
+      href: '/dashboard/projects?create=1',
       icon: FolderKanban,
       shortcut: '⌘P',
     },
     {
       title: 'New Commission Plan',
-      href: '/dashboard/plans/new',
+      href: '/dashboard/plans?create=1',
       icon: FileText,
       shortcut: '⌘L',
       adminOnly: true,
@@ -326,10 +326,9 @@ export function EnhancedHeader({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/keyboard-shortcuts">
-                  <Command className="mr-2 h-4 w-4" />
-                  <span>Keyboard Shortcuts</span>
-                  <DropdownMenuShortcut>?</DropdownMenuShortcut>
+                <Link href="/dashboard/help">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>User Help Guide</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

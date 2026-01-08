@@ -86,8 +86,15 @@ export default function DataSourceSelectionPage() {
     setError(null);
 
     try {
+      console.log('[Data Source Page] Starting Generic Inquiry discovery...');
+      console.log('[Data Source Page] Integration ID:', integrationId);
+
       // Discover Generic Inquiries (the primary data source)
       const inquiries = await discoverGenericInquiries(integrationId);
+
+      console.log('[Data Source Page] Discovery completed. Found inquiries:', inquiries.length);
+      console.log('[Data Source Page] Inquiries:', inquiries);
+
       setGenericInquiries(
         inquiries.map((gi) => ({
           name: gi.name,
@@ -100,20 +107,30 @@ export default function DataSourceSelectionPage() {
       setDataSourceType('GENERIC_INQUIRY');
 
       if (inquiries.length === 0) {
+        console.warn('[Data Source Page] No Generic Inquiries found');
         setError(
-          'No Generic Inquiries found. Please ensure:\n' +
-          '1. Create a Generic Inquiry in Acumatica (System > Customization > Generic Inquiry - SM208000)\n' +
-          '2. In the Generic Inquiry screen, check the "Expose via OData" checkbox\n' +
-          '3. Save the Generic Inquiry\n' +
-          '4. Verify your Acumatica user has permissions to access the Generic Inquiry'
+          'No Generic Inquiries found. Please ensure:\n\n' +
+          '1. Generic Inquiry OData is enabled in Acumatica (SM207045)\n' +
+          '2. You have created a Generic Inquiry in Acumatica (SM208000)\n' +
+          '3. The "Expose via OData" checkbox is checked on your Generic Inquiry\n' +
+          '4. You have saved the Generic Inquiry after checking the box\n' +
+          '5. Your Acumatica user has permissions to access Generic Inquiries'
         );
+      } else {
+        console.log('[Data Source Page] Successfully found Generic Inquiries:',
+          inquiries.map(i => i.name).join(', '));
       }
     } catch (error) {
-      console.error('Failed to discover Generic Inquiries:', error);
+      console.error('[Data Source Page] Failed to discover Generic Inquiries:', error);
+      console.error('[Data Source Page] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
       setError(
         error instanceof Error
           ? `Error: ${error.message}`
-          : 'Failed to discover Generic Inquiries. Make sure Generic Inquiry OData is enabled in your Acumatica instance.'
+          : 'Failed to discover Generic Inquiries'
       );
     } finally {
       setDiscovering(false);
@@ -141,6 +158,7 @@ export default function DataSourceSelectionPage() {
     }
   };
 
+
   const availableEntities = genericInquiries;
 
   const canContinue = selectedEntity !== '';
@@ -149,7 +167,7 @@ export default function DataSourceSelectionPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -158,7 +176,7 @@ export default function DataSourceSelectionPage() {
     <div className="max-w-4xl mx-auto space-y-6 py-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
           Choose Your Data Source
         </h1>
         <p className="text-muted-foreground mt-2">
@@ -167,7 +185,7 @@ export default function DataSourceSelectionPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
           style={{ width: '28.57%' }}
@@ -196,7 +214,7 @@ export default function DataSourceSelectionPage() {
       <Card className="border-purple-500/20">
         <CardHeader>
           <div className="flex items-center gap-2 mb-2">
-            <FileText className="h-6 w-6 text-blue-600" />
+            <FileText className="h-6 w-6 text-indigo-600" />
             <CardTitle>Generic Inquiry (OData)</CardTitle>
           </div>
           <CardDescription>
@@ -205,19 +223,19 @@ export default function DataSourceSelectionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="p-4 rounded-lg border border-blue-500/20 bg-blue-500/5">
+          <div className="p-4 rounded-lg border border-indigo-500/20 bg-indigo-500/5">
             <h4 className="font-semibold text-sm mb-2">What you'll need:</h4>
             <ul className="text-sm text-muted-foreground space-y-2">
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold">1.</span>
+                <span className="text-indigo-600 font-bold">1.</span>
                 <span>Create a Generic Inquiry in Acumatica that returns your invoice/commission data</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold">2.</span>
+                <span className="text-indigo-600 font-bold">2.</span>
                 <span>Publish the Generic Inquiry via OData in Acumatica</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-blue-600 font-bold">3.</span>
+                <span className="text-indigo-600 font-bold">3.</span>
                 <span>Click "Discover Generic Inquiries" below to see available inquiries</span>
               </li>
             </ul>
@@ -271,7 +289,7 @@ export default function DataSourceSelectionPage() {
                     className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
                       selectedEntity === entity.name
                         ? 'border-purple-500 bg-purple-500/5'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-purple-500/50'
+                        : 'border-border hover:border-purple-500/50'
                     }`}
                     onClick={() => setSelectedEntity(entity.name)}
                   >
@@ -285,7 +303,7 @@ export default function DataSourceSelectionPage() {
                           {entity.displayName}
                         </Label>
                         {entity.screenId && (
-                          <span className="px-2 py-0.5 text-xs font-mono bg-gray-500/10 text-gray-600 dark:text-gray-400 rounded">
+                          <span className="px-2 py-0.5 text-xs font-mono bg-muted/60 text-muted-foreground rounded">
                             {entity.screenId}
                           </span>
                         )}

@@ -59,7 +59,7 @@ interface CommissionDetailDialogProps {
     amount: number
     status: string
     calculatedAt: Date
-    metadata: CommissionMetadata | any
+    metadata?: CommissionMetadata | any
     salesTransaction?: {
       amount: number
       transactionDate: Date
@@ -68,7 +68,7 @@ interface CommissionDetailDialogProps {
     }
     commissionPlan: {
       name: string
-      commissionBasis?: string
+      commissionBasis?: string | null
     }
     user?: {
       firstName: string | null

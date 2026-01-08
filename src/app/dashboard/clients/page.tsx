@@ -54,20 +54,24 @@ if (searchQuery && clients.length > 0) {
   if (clients.length === 0) {
     if (searchQuery) {
       return (
-        <EmptyState
-          icon={Search}
-          title="No clients found"
-          description={`No clients match "${searchQuery}". Try a different search term.`}
-        />
+        <div data-testid="empty-state">
+          <EmptyState
+            icon={Search}
+            title="No clients found"
+            description={`No clients match "${searchQuery}". Try a different search term.`}
+          />
+        </div>
       )
     }
 
     return (
-      <EmptyState
-        icon={Users}
-        title="No clients yet"
-        description="Get started by adding your first client. Clients are the companies or individuals you work with."
-      />
+      <div data-testid="empty-state">
+        <EmptyState
+          icon={Users}
+          title="No clients yet"
+          description="Get started by adding your first client. Clients are the companies or individuals you work with."
+        />
+      </div>
     )
   }
 
@@ -90,11 +94,13 @@ if (searchQuery && clients.length > 0) {
           {clients.map((client) => (
             <TableRow
               key={client.id}
+              data-testid="client-row"
               className="hover:bg-purple-500/5 transition-colors border-b border-purple-500/5"
             >
               <TableCell>
                 <Link
                   href={`/dashboard/clients/${client.id}`}
+                  data-testid="client-name"
                   className="font-medium text-purple-700 dark:text-purple-400 hover:underline hover:text-purple-900 dark:hover:text-purple-300 transition-colors"
                 >
                   {client.name}
@@ -102,6 +108,7 @@ if (searchQuery && clients.length > 0) {
               </TableCell>
               <TableCell>
                 <Badge
+                  data-testid="client-status-badge"
                   variant={(client as any).status === 'ACTIVE' ? 'success' : (client as any).status === 'PROSPECTIVE' ? 'info' : (client as any).status === 'INACTIVE' ? 'secondary' : 'outline'}
                   className="font-medium"
                 >
@@ -162,7 +169,7 @@ function ClientsTableSkeleton() {
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: { search?: string }
+  searchParams: { search?: string; create?: string }
 }) {
   const territoriesResult = await getTerritories()
   const territories = territoriesResult.success ? territoriesResult.data || [] : []
@@ -170,24 +177,26 @@ export default async function ClientsPage({
   const clients = clientsResult.success ? clientsResult.data || [] : []
 
   const totalClients = clients.length
-  // Count clients with active projects
-  const clientsWithActiveProjects = clients.filter(c =>
-    c.projects.some((p: any) => p.status === 'active')
-  ).length
+  const activeClients = clients.filter((client) => {
+    const status = ((client as any).status ?? 'ACTIVE').toString().toLowerCase()
+    return status === 'active'
+  }).length
   const activeProjects = clients.reduce((sum, c) =>
     sum + c.projects.filter((p: any) => p.status === 'active').length, 0
   )
+
+  const openCreateDialog = searchParams.create === '1' || searchParams.create === 'true'
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">Clients</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">Clients</h1>
           <p className="text-muted-foreground">
             Manage your clients and their projects
           </p>
         </div>
-        <ClientFormDialog territories={territories} />
+        <ClientFormDialog territories={territories} defaultOpen={openCreateDialog} />
       </div>
 
       {/* Stats Cards */}
@@ -211,7 +220,7 @@ export default async function ClientsPage({
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Active Clients</p>
-              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{clientsWithActiveProjects}</p>
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{activeClients}</p>
             </div>
           </div>
         </div>
@@ -235,6 +244,7 @@ export default async function ClientsPage({
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               name="search"
+              data-testid="client-search-input"
               placeholder="Search clients..."
               defaultValue={searchParams.search}
               className="pl-9 border-purple-500/20 focus:border-purple-500/40 focus:ring-purple-500/20"

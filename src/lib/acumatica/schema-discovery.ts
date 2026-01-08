@@ -296,60 +296,60 @@ export class SchemaDiscoveryService {
   static async discoverGenericInquiries(
     client: AcumaticaClient
   ): Promise<InquiryInfo[]> {
-    // Try multiple OData endpoint formats for compatibility with different Acumatica versions
-    const endpointFormats = [
-      `/api/odata/gi/$metadata`,           // New format (24R2+) without tenant in path
-      `/odata/$metadata`,                  // Legacy format (OData v3)
-      `/odatav4/$metadata`,                // OData v4 DAC-based (not typically for GI, but worth trying)
-    ];
+    // Generic Inquiries in Acumatica are exposed via the /odata/$metadata endpoint
+    // This endpoint requires Basic Authentication instead of session cookies
+    const metadataUrl = '/odata/$metadata';
 
-    for (const metadataUrl of endpointFormats) {
-      try {
-        console.log(`[Schema Discovery] Trying Generic Inquiry OData endpoint: ${metadataUrl}`);
+    try {
+      console.log(`[Schema Discovery] Discovering Generic Inquiries from: ${metadataUrl}`);
+      console.log(`[Schema Discovery] Using Basic Authentication for OData endpoint`);
 
-        const response = await client.makeRequest("GET", metadataUrl);
+      const response = await client.makeBasicAuthRequest("GET", metadataUrl);
 
-        if (response.ok) {
-          console.log(`[Schema Discovery] Successfully connected to ${metadataUrl}`);
-          const metadataXml = await response.text();
-
-          console.log(`[Schema Discovery] Metadata XML length: ${metadataXml.length} characters`);
-          console.log(`[Schema Discovery] Metadata XML preview: ${metadataXml.substring(0, 500)}...`);
-
-          // Parse the OData metadata XML
-          const inquiries = this.parseGenericInquiryMetadata(metadataXml, client.apiVersion);
-
-          if (inquiries.length > 0) {
-            console.log(`[Schema Discovery] Found ${inquiries.length} Generic Inquiries using endpoint: ${metadataUrl}`);
-            console.log(`[Schema Discovery] Inquiry names: ${inquiries.map(i => i.name).join(', ')}`);
-            return inquiries;
-          } else {
-            console.warn(`[Schema Discovery] Endpoint ${metadataUrl} returned no Generic Inquiries`);
-            console.warn(`[Schema Discovery] This could mean: No EntitySet elements found in metadata, or parsing failed`);
-          }
-        } else {
-          const errorText = await response.text();
-          console.warn(
-            `[Schema Discovery] Endpoint ${metadataUrl} returned: ${response.status} ${response.statusText}`
-          );
-          console.warn(`[Schema Discovery] Error response body: ${errorText.substring(0, 500)}`);
-        }
-      } catch (error) {
-        console.warn(`[Schema Discovery] Failed to fetch from ${metadataUrl}:`, error);
-        // Continue to next endpoint format
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `[Schema Discovery] Failed to fetch Generic Inquiry metadata: ${response.status} ${response.statusText}`
+        );
+        console.error(`[Schema Discovery] Error response: ${errorText.substring(0, 500)}`);
+        throw new Error(`Failed to access Generic Inquiry OData endpoint: ${response.status} ${response.statusText}`);
       }
+
+      const metadataXml = await response.text();
+
+      console.log(`[Schema Discovery] Successfully retrieved metadata (${metadataXml.length} characters)`);
+
+      // Parse the OData metadata XML
+      const inquiries = this.parseGenericInquiryMetadata(metadataXml, client.apiVersion);
+
+      if (inquiries.length > 0) {
+        console.log(`[Schema Discovery] Found ${inquiries.length} Generic Inquiries`);
+        console.log(`[Schema Discovery] Inquiry names: ${inquiries.map(i => i.name).join(', ')}`);
+
+        // Update the endpoint for each inquiry
+        const updatedInquiries = inquiries.map(inq => ({
+          ...inq,
+          endpoint: `/odata/${inq.name}`,
+        }));
+
+        return updatedInquiries;
+      } else {
+        console.warn(`[Schema Discovery] No Generic Inquiries found in metadata`);
+        console.warn(`[Schema Discovery] This means no Generic Inquiries have been published via OData`);
+        console.warn(`[Schema Discovery] Please create a Generic Inquiry in Acumatica (SM208000) and check "Expose via OData"`);
+        return [];
+      }
+    } catch (error) {
+      console.error('[Schema Discovery] Error discovering Generic Inquiries:', error);
+      console.error(
+        '[Schema Discovery] Possible causes:\n' +
+        '  1. Generic Inquiry OData is not enabled in Acumatica (SM207045)\n' +
+        '  2. No Generic Inquiries have been published via OData (check "Expose via OData" in SM208000)\n' +
+        '  3. User lacks permissions to access OData endpoints\n' +
+        '  4. Authentication failed (Basic Auth required for OData)'
+      );
+      throw error;
     }
-
-    // All endpoint formats failed
-    console.error(
-      '[Schema Discovery] All Generic Inquiry OData endpoint formats failed. This typically means:\n' +
-      '  1. Generic Inquiry OData is not enabled in Acumatica\n' +
-      '  2. No Generic Inquiries have been published via OData (check "Expose via OData" in SM208000)\n' +
-      '  3. Your Acumatica user lacks permissions to access OData endpoints\n' +
-      `  Tried endpoints: ${endpointFormats.join(', ')}`
-    );
-
-    return [];
   }
 
   /**
@@ -361,9 +361,12 @@ export class SchemaDiscoveryService {
   ): Promise<FieldInfo[]> {
     try {
       // Generic Inquiries expose their schema through OData metadata
-      const metadataUrl = `/api/odata/gi/$metadata`;
+      // Use Basic Auth for OData endpoints
+      const metadataUrl = `/odata/$metadata`;
 
-      const response = await client.makeRequest("GET", metadataUrl);
+      console.log(`[Schema Discovery] Fetching schema for Generic Inquiry: ${inquiryName}`);
+
+      const response = await client.makeBasicAuthRequest("GET", metadataUrl);
 
       if (!response.ok) {
         throw new Error(
@@ -372,6 +375,8 @@ export class SchemaDiscoveryService {
       }
 
       const metadataXml = await response.text();
+
+      console.log(`[Schema Discovery] Parsing schema for ${inquiryName} from metadata`);
 
       // Parse the metadata for this specific inquiry
       return this.parseGenericInquirySchema(metadataXml, inquiryName);
@@ -404,7 +409,7 @@ export class SchemaDiscoveryService {
       inquiries.push({
         name: inquiryName,
         inquiryName: inquiryName,
-        endpoint: `/api/odata/gi/${inquiryName}`,
+        endpoint: `/odata/${inquiryName}`,
         displayName: inquiryName,
         description: `Generic Inquiry: ${inquiryName}`,
         isODataExposed: true,
@@ -529,7 +534,7 @@ export class SchemaDiscoveryService {
 
       entities.push({
         name: dacName,
-        endpoint: `/api/odata/dac/${dacName}`,
+        endpoint: `/odatav4/${dacName}`,
         displayName: dacName,
         description: `DAC: ${dacName}`,
       });
@@ -559,6 +564,7 @@ export class SchemaDiscoveryService {
   ): Promise<any[]> {
     try {
       let query = "";
+      let useBasicAuth = false;
 
       if (dataSource.type === "REST_API") {
         // Add expand query for entities with nested sections
@@ -572,13 +578,19 @@ export class SchemaDiscoveryService {
         const expandQuery = sectionsToExpand ? `&$expand=${sectionsToExpand.join(',')}` : '';
 
         query = `/entity/Default/${client.apiVersion}/${dataSource.entity}?$top=${limit}${expandQuery}`;
+        useBasicAuth = false;
       } else if (dataSource.type === "GENERIC_INQUIRY") {
-        query = `/api/odata/gi/${dataSource.entity}?$top=${limit}`;
+        // Generic Inquiry OData requires Basic Auth
+        query = `/odata/${dataSource.entity}?$top=${limit}`;
+        useBasicAuth = true;
       } else if (dataSource.type === "DAC_ODATA") {
-        query = `/api/odata/dac/${dataSource.entity}?$top=${limit}`;
+        query = `/odatav4/${dataSource.entity}?$top=${limit}`;
+        useBasicAuth = true;
       }
 
-      const response = await client.makeRequest("GET", query);
+      const response = useBasicAuth
+        ? await client.makeBasicAuthRequest("GET", query)
+        : await client.makeRequest("GET", query);
 
       if (!response.ok) {
         throw new Error(
@@ -667,10 +679,10 @@ export class SchemaDiscoveryService {
       fields = [...fields, ...expandedFields];
     } else if (dataSourceType === "GENERIC_INQUIRY") {
       fields = await this.getGenericInquirySchema(client, entityName);
-      endpoint = `/api/odata/gi/${entityName}`;
+      endpoint = `/odata/${entityName}`;
     } else if (dataSourceType === "DAC_ODATA") {
       fields = await this.getDacEntitySchema(client, entityName);
-      endpoint = `/api/odata/dac/${entityName}`;
+      endpoint = `/odatav4/${entityName}`;
     }
 
     const customFieldCount = fields.filter((f) => f.isCustom).length;

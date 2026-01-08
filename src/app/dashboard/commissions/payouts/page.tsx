@@ -68,6 +68,7 @@ export default function BulkPayoutsPage() {
         <PageHeader
           title="Bulk Payouts"
           description="Process multiple commission payments at once"
+          titleClassName="bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent"
           breadcrumbs={[
             { title: 'Commissions', href: '/dashboard/commissions' },
             { title: 'Bulk Payouts' }

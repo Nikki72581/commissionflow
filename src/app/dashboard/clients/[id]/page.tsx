@@ -39,7 +39,9 @@ async function ClientDetails({ clientId }: { clientId: string }) {
               </Button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">{client.name}</h1>
+              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
+                {client.name}
+              </h1>
               <p className="text-muted-foreground">
                 Client since {formatDate(client.createdAt)}
               </p>
@@ -129,7 +131,7 @@ async function ClientDetails({ clientId }: { clientId: string }) {
 
             {client.email && (
               <>
-                <Separator />
+                <Separator className="bg-purple-500/20" />
                 <div className="flex items-start gap-3">
                   <Mail className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div className="space-y-1">
@@ -172,7 +174,7 @@ async function ClientDetails({ clientId }: { clientId: string }) {
 
             {client.notes && (
               <>
-                <Separator />
+                <Separator className="bg-purple-500/20" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Notes</p>
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">{client.notes}</p>

@@ -242,7 +242,7 @@ export default function AcumaticaSetupPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -251,7 +251,7 @@ export default function AcumaticaSetupPage() {
     <div className="max-w-3xl mx-auto space-y-6 py-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
           Connect to Acumatica
         </h1>
         <p className="text-muted-foreground mt-2">
@@ -260,7 +260,7 @@ export default function AcumaticaSetupPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
           style={{ width: '14.29%' }}
@@ -437,7 +437,7 @@ export default function AcumaticaSetupPage() {
 
             {/* Show available companies */}
             {availableCompanies && availableCompanies.length > 0 && (
-              <Alert className="border-blue-500/50 bg-blue-500/10">
+              <Alert className="border-indigo-500/50 bg-indigo-500/10">
                 <AlertDescription>
                   <div className="space-y-2">
                     <p className="font-medium text-sm">Available Companies:</p>
@@ -447,9 +447,9 @@ export default function AcumaticaSetupPage() {
                           key={company.id}
                           type="button"
                           onClick={() => handleInputChange('companyId', company.id)}
-                          className="block w-full text-left px-3 py-2 text-sm rounded-md hover:bg-blue-500/20 transition-colors"
+                          className="block w-full text-left px-3 py-2 text-sm rounded-md hover:bg-indigo-500/20 transition-colors"
                         >
-                          <div className="font-mono font-medium text-blue-600 dark:text-blue-400">
+                          <div className="font-mono font-medium text-indigo-600 dark:text-indigo-400">
                             {company.id}
                           </div>
                           <div className="text-xs text-muted-foreground">

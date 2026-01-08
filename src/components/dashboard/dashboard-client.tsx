@@ -7,7 +7,7 @@ import { CommissionTrendsChart } from '@/components/dashboard/commission-trends-
 import { TopPerformers } from '@/components/dashboard/top-performers'
 import { DateRangePicker } from '@/components/dashboard/date-range-picker'
 import { ExportButton } from '@/components/dashboard/export-button'
-import { DateRange } from '@/lib/date-range'
+import { DateRange, formatDateRange, getDateRangeFromPreset } from '@/lib/date-range'
 import { CommissionExportData } from '@/lib/csv-export'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent } from '@/components/ui/card'
@@ -53,7 +53,9 @@ export function DashboardClient() {
   const [trends, setTrends] = useState<TrendData[]>([])
   const [performers, setPerformers] = useState<Performer[]>([])
   const [exportData, setExportData] = useState<CommissionExportData[]>([])
-  const [dateRange, setDateRange] = useState<DateRange | undefined>()
+  const [dateRange, setDateRange] = useState<DateRange>(() =>
+    getDateRangeFromPreset('thisMonth')
+  )
 
   useEffect(() => {
     fetchDashboardData(dateRange)
@@ -69,7 +71,11 @@ export function DashboardClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dateRange: range }),
         }).then(r => r.json()),
-        fetch('/api/dashboard/trends').then(r => r.json()),
+        fetch('/api/dashboard/trends', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dateRange: range }),
+        }).then(r => r.json()),
         fetch('/api/dashboard/performers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -114,9 +120,14 @@ export function DashboardClient() {
       {/* Header with filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">
+            Dashboard
+          </h1>
           <p className="text-muted-foreground">
             Overview of your sales and commission performance
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Showing {formatDateRange(dateRange)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -133,6 +144,7 @@ export function DashboardClient() {
           description={`${stats.salesCount} transactions`}
           icon={DollarSign}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Total Commissions"
@@ -140,6 +152,7 @@ export function DashboardClient() {
           description={`${stats.commissionsCount} calculated`}
           icon={TrendingUp}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Average Rate"
@@ -147,6 +160,7 @@ export function DashboardClient() {
           description="Commission percentage"
           icon={BarChart3}
           format="percentage"
+          accent="dashboard"
         />
         <StatsCard
           title="Active Plans"
@@ -154,6 +168,7 @@ export function DashboardClient() {
           description={`${stats.salesPeopleCount} salespeople`}
           icon={Users}
           format="number"
+          accent="dashboard"
         />
       </div>
 
@@ -165,6 +180,7 @@ export function DashboardClient() {
           description={`${stats.pendingCount} awaiting approval`}
           icon={Clock}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Approved"
@@ -172,6 +188,7 @@ export function DashboardClient() {
           description={`${stats.approvedCount} ready to pay`}
           icon={CheckCircle}
           format="currency"
+          accent="dashboard"
         />
         <StatsCard
           title="Paid"
@@ -179,13 +196,14 @@ export function DashboardClient() {
           description={`${stats.paidCount} completed`}
           icon={Wallet}
           format="currency"
+          accent="dashboard"
         />
       </div>
 
       {/* Charts and Performance */}
       <div className="grid gap-6 lg:grid-cols-2">
         <CommissionTrendsChart data={trends} />
-        <TopPerformers performers={performers.slice(0, 5)} />
+        <TopPerformers performers={performers.slice(0, 5)} accent="dashboard" />
       </div>
     </div>
   )

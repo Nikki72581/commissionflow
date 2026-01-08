@@ -12,7 +12,7 @@ import { Toaster as SonnerToaster } from 'sonner'
 import { ThemeWrapper } from '@/components/providers/theme-wrapper'
 import { prisma } from '@/lib/db'
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "CommissionFlow - AI-Powered Sales Commission Management",
@@ -45,7 +45,7 @@ export default async function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <body className={inter.className}>
+        <body className={`${inter.className} ${inter.variable}`}>
           <ThemeWrapper initialTheme={userTheme}>
             {children}
             <Toaster/>

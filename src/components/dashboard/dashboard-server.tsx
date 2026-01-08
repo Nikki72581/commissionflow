@@ -1,14 +1,16 @@
 import { Suspense } from 'react'
 import { getDashboardStats, getCommissionTrends, getTopPerformers } from '@/app/actions/dashboard'
+import { getDateRangeFromPreset } from '@/lib/date-range'
 import { DashboardContent } from './dashboard-content'
 import { DashboardSkeleton } from './dashboard-skeleton'
 
 async function DashboardData() {
+  const defaultDateRange = getDateRangeFromPreset('thisMonth')
   // Fetch all data in parallel on the server
   const [statsResult, trendsResult, performersResult] = await Promise.all([
-    getDashboardStats(undefined),
-    getCommissionTrends(12),
-    getTopPerformers(undefined, 10),
+    getDashboardStats(defaultDateRange),
+    getCommissionTrends({ dateRange: defaultDateRange }),
+    getTopPerformers(defaultDateRange, 10),
   ])
 
   const stats = statsResult.success ? statsResult.data : null
@@ -28,6 +30,7 @@ async function DashboardData() {
       initialStats={stats}
       initialTrends={trends}
       initialPerformers={performers}
+      initialDateRange={defaultDateRange}
     />
   )
 }

@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { ArrowLeft, ArrowRight, Loader2, Calendar, Filter, Settings, Database, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Filter, Settings, Database, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { getSyncSettings, saveSyncSettings, type SyncSettingsData } from '@/actions/integrations/acumatica/sync-settings';
 import { useToast } from '@/hooks/use-toast';
@@ -74,6 +74,11 @@ export default function SyncSettingsPage() {
 
   useEffect(() => {
     loadSettings();
+  }, []);
+
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, []);
 
   const loadSettings = async () => {
@@ -134,7 +139,7 @@ export default function SyncSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -152,7 +157,7 @@ export default function SyncSettingsPage() {
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
               Sync Settings
             </h1>
             <p className="text-muted-foreground mt-1">
@@ -163,55 +168,12 @@ export default function SyncSettingsPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
           style={{ width: '100%' }}
         />
       </div>
-
-      {/* Date Range Filtering */}
-      <Card className="border-purple-500/20">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-purple-600" />
-            <CardTitle>Date Range Filtering</CardTitle>
-          </div>
-          <CardDescription>
-            Control which invoices are imported based on their date
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="invoiceStartDate">
-                Start Date <span className="text-red-500">*</span>
-              </Label>
-              <Input
-                id="invoiceStartDate"
-                type="date"
-                value={formData.invoiceStartDate}
-                onChange={(e) => setFormData({ ...formData, invoiceStartDate: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Invoices before this date will not be imported
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="invoiceEndDate">End Date (Optional)</Label>
-              <Input
-                id="invoiceEndDate"
-                type="date"
-                value={formData.invoiceEndDate || ''}
-                onChange={(e) => setFormData({ ...formData, invoiceEndDate: e.target.value || null })}
-              />
-              <p className="text-xs text-muted-foreground">
-                Leave empty to continuously import new invoices
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Document Type Filtering */}
       <Card className="border-blue-500/20">
@@ -595,10 +557,10 @@ export default function SyncSettingsPage() {
       )}
 
       {/* Sync Schedule */}
-      <Card className="border-orange-500/20">
+      <Card className="border-primary/20">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-orange-600" />
+            <Clock className="h-5 w-5 text-primary" />
             <CardTitle>Sync Schedule</CardTitle>
           </div>
           <CardDescription>
@@ -670,7 +632,7 @@ export default function SyncSettingsPage() {
 
         <Button
           onClick={handleSaveAndContinue}
-          disabled={saving || !formData.invoiceStartDate}
+          disabled={saving}
           className="gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
         >
           {saving ? (

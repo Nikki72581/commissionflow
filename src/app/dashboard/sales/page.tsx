@@ -257,7 +257,7 @@ function SalesTableSkeleton() {
 export default async function SalesPage({
   searchParams,
 }: {
-  searchParams: { search?: string }
+  searchParams: { search?: string; create?: string }
 }) {
   const [projectsResult, clientsResult, usersResult, productCategoriesResult, orgSettingsResult] = await Promise.all([
     getProjects(),
@@ -279,11 +279,13 @@ const users = (usersResult.success ? (usersResult.data || []) : [])
 const productCategories = productCategoriesResult.success ? (productCategoriesResult.data || []) : []
 const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.requireProjects ?? false) : false
 
+  const openCreateDialog = searchParams.create === '1' || searchParams.create === 'true'
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">Sales Transactions</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">Sales Transactions</h1>
           <p className="text-muted-foreground">
             Track all sales and their commission calculations
           </p>
@@ -301,6 +303,7 @@ const requireProjects = orgSettingsResult.success ? (orgSettingsResult.data?.req
             users={users}
             productCategories={productCategories}
             requireProjects={requireProjects}
+            defaultOpen={openCreateDialog}
           />
         </div>
       </div>

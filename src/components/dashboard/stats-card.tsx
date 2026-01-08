@@ -1,6 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { LucideIcon } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { getSectionAccent, SectionAccent } from '@/lib/section-accent'
+import { cn } from '@/lib/utils'
 
 interface StatsCardProps {
   title: string
@@ -12,6 +14,7 @@ interface StatsCardProps {
     isPositive: boolean
   }
   format?: 'currency' | 'number' | 'percentage'
+  accent?: SectionAccent
 }
 
 export function StatsCard({
@@ -21,7 +24,9 @@ export function StatsCard({
   icon: Icon,
   trend,
   format = 'number',
+  accent = 'dashboard',
 }: StatsCardProps) {
+  const accentStyles = getSectionAccent(accent)
   const formattedValue = () => {
     if (typeof value === 'string') return value
 
@@ -37,17 +42,35 @@ export function StatsCard({
   }
 
   return (
-    <Card className="border-2 hover:border-blue-500/50 transition-all hover:shadow-lg hover:shadow-blue-500/10 bg-gradient-to-br from-card to-muted/20">
+    <Card
+      className={cn(
+        'border-2 transition-all hover:shadow-lg bg-gradient-to-br from-card to-muted/20',
+        accentStyles.cardBorder,
+        accentStyles.cardHover
+      )}
+    >
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
         {Icon && (
-          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+          <div
+            className={cn(
+              'h-10 w-10 rounded-lg bg-gradient-to-br flex items-center justify-center',
+              accentStyles.iconBg
+            )}
+          >
             <Icon className="h-5 w-5 text-white" />
           </div>
         )}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{formattedValue()}</div>
+        <div
+          className={cn(
+            'text-2xl font-bold bg-gradient-to-r bg-clip-text text-transparent',
+            accentStyles.valueGradient
+          )}
+        >
+          {formattedValue()}
+        </div>
         {description && (
           <p className="text-xs text-muted-foreground mt-1">{description}</p>
         )}

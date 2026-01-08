@@ -66,7 +66,9 @@ export function ClientActions({ client, territories = [] }: ClientActionsProps) 
             client={client}
             territories={territories}
             trigger={
-              <button className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+              <button
+                data-testid="edit-client-button"
+                className="relative flex w-full cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
               </button>
@@ -75,6 +77,7 @@ export function ClientActions({ client, territories = [] }: ClientActionsProps) 
           <DropdownMenuItem
             onClick={() => setShowDeleteDialog(true)}
             className="text-destructive"
+            data-testid="delete-client-button"
           >
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
@@ -83,7 +86,7 @@ export function ClientActions({ client, territories = [] }: ClientActionsProps) 
       </DropdownMenu>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent data-testid="confirm-delete-dialog">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -97,6 +100,7 @@ export function ClientActions({ client, territories = [] }: ClientActionsProps) 
               onClick={handleDelete}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="confirm-delete-button"
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>

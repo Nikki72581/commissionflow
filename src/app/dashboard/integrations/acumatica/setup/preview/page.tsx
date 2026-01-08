@@ -120,7 +120,7 @@ export default function PreviewPage() {
     <div className="max-w-6xl mx-auto space-y-6 py-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
           Preview Your Data
         </h1>
         <p className="text-muted-foreground mt-2">
@@ -129,7 +129,7 @@ export default function PreviewPage() {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div
           className="bg-gradient-to-r from-purple-600 to-blue-600 h-2 rounded-full transition-all"
           style={{ width: '71.43%' }}
@@ -225,8 +225,8 @@ export default function PreviewPage() {
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-lg border bg-blue-500/5 border-blue-500/20">
-                    <div className="text-2xl font-bold text-blue-600">
+                  <div className="p-4 rounded-lg border bg-indigo-500/5 border-indigo-500/20">
+                    <div className="text-2xl font-bold text-indigo-600">
                       {previewData.validation.totalRecords}
                     </div>
                     <div className="text-sm text-muted-foreground">
@@ -262,7 +262,7 @@ export default function PreviewPage() {
 
                 {/* Unmapped Salespeople Details */}
                 {previewData.validation.unmappedSalespeople.length > 0 && (
-                  <Alert className="border-purple-500/30 bg-purple-500/10">
+                  <Alert className="border-indigo-500/30 bg-indigo-500/10">
                     <AlertDescription>
                       <p className="font-semibold text-sm mb-2">
                         Unmapped Salespeople:

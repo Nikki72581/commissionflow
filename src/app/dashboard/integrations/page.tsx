@@ -112,7 +112,7 @@ export default async function IntegrationsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
             Integrations
           </h1>
           <p className="text-muted-foreground">
@@ -122,8 +122,10 @@ export default async function IntegrationsPage() {
         {acumaticaIntegration && (
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2">
-              <div className="h-3 w-3 rounded-full"
-                style={{ backgroundColor: acumaticaIntegration.status === 'ACTIVE' ? 'rgba(16,185,129,1)' : 'rgba(107,114,128,1)' }}
+              <div
+                className={`h-3 w-3 rounded-full ${
+                  acumaticaIntegration.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-muted-foreground'
+                }`}
               />
               <div className="text-sm text-muted-foreground">
                 Acumatica: {acumaticaIntegration.status === 'ACTIVE' ? 'Connected' : acumaticaIntegration.status}
@@ -203,7 +205,7 @@ export default async function IntegrationsPage() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="relative w-16 h-16 flex items-center justify-center bg-white dark:bg-slate-800 rounded-lg p-2 border border-purple-500/20">
+                  <div className="relative w-16 h-16 flex items-center justify-center bg-background rounded-lg p-2 border border-border">
                     <Image
                       src={integration.logo}
                       alt={`${integration.name} logo`}
@@ -272,9 +274,9 @@ export default async function IntegrationsPage() {
               <div className="space-y-4">
                 {/* Configuration Info */}
                 {integration.status === 'configured' && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg bg-blue-500/10 p-3 border border-blue-500/20">
-                    <Settings className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                    <span>Configuration complete. Ready to sync. <span className="font-medium text-blue-700 dark:text-blue-400">Click 'Sync' to import data</span></span>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg bg-muted/50 p-3 border border-border">
+                    <Settings className="h-4 w-4 text-primary" />
+                    <span>Configuration complete. Ready to sync. <span className="font-medium text-foreground">Click 'Sync' to import data</span></span>
                   </div>
                 )}
 
@@ -282,7 +284,7 @@ export default async function IntegrationsPage() {
                 {integration.status === 'connected' && integration.lastSync && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg bg-emerald-500/10 p-3 border border-emerald-500/20">
                     <Calendar className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                    <span>Last synchronized: <span className="font-medium text-emerald-700 dark:text-emerald-400">{integration.lastSync}</span></span>
+                    <span>Last synchronized: <span className="font-medium text-foreground">{integration.lastSync}</span></span>
                   </div>
                 )}
 
@@ -293,7 +295,7 @@ export default async function IntegrationsPage() {
                     {integration.features.map((feature, index) => (
                       <div
                         key={index}
-                        className="flex items-center gap-2 text-sm bg-white/50 dark:bg-slate-800/50 rounded-md p-2 border border-purple-500/10"
+                        className="flex items-center gap-2 text-sm bg-muted/40 rounded-md p-2 border border-border"
                       >
                         <CheckCircle className="h-4 w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
                         <span>{feature}</span>

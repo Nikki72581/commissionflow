@@ -41,7 +41,9 @@ async function PlanDetails({ planId }: { planId: string }) {
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-3xl font-bold tracking-tight">{plan.name}</h1>
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">
+                  {plan.name}
+                </h1>
                 <Badge variant={plan.isActive ? 'default' : 'outline'}>
                   {plan.isActive ? 'Active' : 'Inactive'}
                 </Badge>
@@ -108,7 +110,7 @@ async function PlanDetails({ planId }: { planId: string }) {
               </div>
             )}
 
-            <Separator />
+            <Separator className="bg-emerald-500/20" />
 
             <div className="space-y-1">
               <p className="text-sm font-medium">Statistics</p>

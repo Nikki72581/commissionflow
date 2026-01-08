@@ -199,13 +199,13 @@ export default function SettingsPage() {
   return (
     <div className="container max-w-4xl py-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">Settings</h1>
         <p className="text-muted-foreground mt-2">
           Manage your account settings and preferences
         </p>
       </div>
 
-      <Separator />
+      <Separator className="bg-indigo-500/20" />
 
       {/* Commission Setup Section */}
       <Card>
@@ -225,7 +225,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
                 <div className="space-y-1 flex-1">
                   <div className="flex items-center gap-2">
-                    <FolderKanban className="h-5 w-5 text-orange-600" />
+                    <FolderKanban className="h-5 w-5 text-primary" />
                     <Label htmlFor="requireProjects" className="font-semibold">Require Projects for Sales</Label>
                   </div>
                   <p className="text-sm text-muted-foreground">
@@ -245,7 +245,7 @@ export default function SettingsPage() {
             </div>
           )}
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="grid gap-4 md:grid-cols-3">
             {/* Product Categories */}
@@ -311,7 +311,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <Separator />
+      <Separator className="bg-indigo-500/20" />
 
       {/* Profile Settings */}
       <Card>
@@ -517,7 +517,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -535,7 +535,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -553,7 +553,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -612,7 +612,7 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="space-y-2">
             <Label>Two-Factor Authentication</Label>
@@ -624,7 +624,7 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          <Separator />
+          <Separator className="bg-indigo-500/20" />
 
           <div className="space-y-2">
             <Label>Account Created</Label>

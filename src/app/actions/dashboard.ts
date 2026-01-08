@@ -115,7 +115,13 @@ export async function getDashboardStats(dateRange?: DateRange) {
 /**
  * Get commission trends over time (monthly)
  */
-export async function getCommissionTrends(months: number = 12) {
+export async function getCommissionTrends({
+  months = 12,
+  dateRange,
+}: {
+  months?: number
+  dateRange?: DateRange
+} = {}) {
   try {
     const organizationId = await getOrganizationId()
 
@@ -129,10 +135,14 @@ export async function getCommissionTrends(months: number = 12) {
       },
     })
 
+    const filteredCalculations = dateRange
+      ? calculations.filter((calc) => isWithinDateRange(calc.calculatedAt, dateRange))
+      : calculations
+
     // Group by month
     const monthlyData = new Map<string, { sales: number; commissions: number; count: number }>()
 
-    calculations.forEach((calc) => {
+    filteredCalculations.forEach((calc) => {
       const date = new Date(calc.calculatedAt)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
       

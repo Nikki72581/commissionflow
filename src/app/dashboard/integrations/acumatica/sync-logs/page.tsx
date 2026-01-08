@@ -30,7 +30,7 @@ export default async function AcumaticaSyncLogsPage() {
             <span>/</span>
             <span>Sync Logs</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
             Acumatica Sync Logs
           </h1>
           <p className="text-muted-foreground mt-1">

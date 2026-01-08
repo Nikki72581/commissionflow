@@ -117,7 +117,9 @@ export default function MyCommissionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">My Commissions</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-pink-600 to-pink-500 bg-clip-text text-transparent">
+            My Commissions
+          </h1>
           <p className="text-muted-foreground">
             Track your sales performance and commission earnings
           </p>
@@ -144,6 +146,7 @@ export default function MyCommissionsPage() {
             description={`${stats.commissionsCount} commissions`}
             icon={DollarSign}
             format="currency"
+            accent="my"
           />
           <StatsCard
             title="Pending"
@@ -151,6 +154,7 @@ export default function MyCommissionsPage() {
             description={`${stats.pendingCount} awaiting approval`}
             icon={Clock}
             format="currency"
+            accent="my"
           />
           <StatsCard
             title="Approved"
@@ -158,6 +162,7 @@ export default function MyCommissionsPage() {
             description={`${stats.approvedCount} ready for payout`}
             icon={CheckCircle}
             format="currency"
+            accent="my"
           />
           <StatsCard
             title="Paid"
@@ -165,6 +170,7 @@ export default function MyCommissionsPage() {
             description={`${stats.paidCount} commissions paid`}
             icon={Wallet}
             format="currency"
+            accent="my"
           />
           <StatsCard
             title="Avg Commission"
@@ -172,6 +178,7 @@ export default function MyCommissionsPage() {
             description={`${formatCurrency(stats.totalSales)} in sales`}
             icon={TrendingUp}
             format="percentage"
+            accent="my"
           />
         </div>
       )}

@@ -12,7 +12,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getCommissionCalculations } from '@/app/actions/commission-calculations'
-import { CommissionActions } from '@/components/commissions/commission-actions'
 import { CommissionDetailDialog } from '@/components/commissions/commission-detail-dialog'
 import { CommissionFilters } from '@/components/commissions/commission-filters'
 import { formatDate, formatCurrency } from '@/lib/utils'
@@ -27,9 +26,11 @@ export const metadata = {
 async function CommissionsTable({
   searchQuery,
   statusFilter,
+  userIdFilter,
 }: {
   searchQuery?: string
   statusFilter?: string
+  userIdFilter?: string
 }) {
   const result = await getCommissionCalculations()
 
@@ -50,15 +51,32 @@ async function CommissionsTable({
     )
   }
 
+  // Filter by userId (salesperson)
+  if (userIdFilter && userIdFilter !== 'all') {
+    calculations = calculations.filter(
+      (calc) => calc.user.id === userIdFilter
+    )
+  }
+
   // Filter by search query
   if (searchQuery && calculations.length > 0) {
     const query = searchQuery.toLowerCase()
     calculations = calculations.filter(
-      (calc) =>
-        `${calc.user.firstName} ${calc.user.lastName}`.toLowerCase().includes(query) ||
-        calc.salesTransaction.project?.name.toLowerCase().includes(query) ||
-        calc.salesTransaction.project?.client.name.toLowerCase().includes(query) ||
-        calc.commissionPlan.name.toLowerCase().includes(query)
+      (calc) => {
+        const salespersonName = `${calc.user.firstName} ${calc.user.lastName}`.toLowerCase()
+        const projectName = calc.salesTransaction.project?.name?.toLowerCase() || ''
+        const projectClientName = calc.salesTransaction.project?.client?.name?.toLowerCase() || ''
+        const directClientName = calc.salesTransaction.client?.name?.toLowerCase() || ''
+        const planName = calc.commissionPlan.name.toLowerCase()
+
+        return (
+          salespersonName.includes(query) ||
+          projectName.includes(query) ||
+          projectClientName.includes(query) ||
+          directClientName.includes(query) ||
+          planName.includes(query)
+        )
+      }
     )
   }
 
@@ -102,7 +120,7 @@ async function CommissionsTable({
           <div className="text-sm text-muted-foreground">Total</div>
           <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{formatCurrency(totalAmount)}</div>
         </div>
-        <div className="rounded-lg border-2 hover:border-orange-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-orange-500/5 p-4">
+        <div className="rounded-lg border-2 hover:border-amber-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-amber-500/5 p-4">
           <div className="text-sm text-muted-foreground">Pending</div>
           <div className="text-2xl font-bold">{formatCurrency(pendingAmount)}</div>
           <Badge variant="outline" className="mt-1">
@@ -136,8 +154,8 @@ async function CommissionsTable({
               <TableHead>Commission</TableHead>
               <TableHead>Plan</TableHead>
               <TableHead>Project</TableHead>
+              <TableHead>Customer</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -192,12 +210,18 @@ async function CommissionsTable({
                       >
                         {calc.salesTransaction.project.name}
                       </Link>
-                      <div className="text-xs text-muted-foreground">
-                        {calc.salesTransaction.project.client.name}
-                      </div>
                     </>
                   ) : (
                     <div className="text-sm text-muted-foreground">No Project</div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {calc.salesTransaction.client?.name ? (
+                    <div className="text-sm">{calc.salesTransaction.client.name}</div>
+                  ) : calc.salesTransaction.project?.client?.name ? (
+                    <div className="text-sm">{calc.salesTransaction.project.client.name}</div>
+                  ) : (
+                    <div className="text-sm text-muted-foreground">No Customer</div>
                   )}
                 </TableCell>
                 <TableCell>
@@ -217,13 +241,6 @@ async function CommissionsTable({
     {formatDate((calc as any).paidAt)}
   </div>
 )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <CommissionActions
-                    calculationId={calc.id}
-                    status={calc.status}
-                    amount={calc.amount}
-                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -252,28 +269,59 @@ function CommissionsTableSkeleton() {
 }
 
 export default async function CommissionsPage(props: {
-  searchParams: Promise<{ search?: string; status?: string }>
+  searchParams: Promise<{ search?: string; status?: string; userId?: string }>
 }) {
   const searchParams = await props.searchParams
   const statusFilter = searchParams.status || 'all'
+  const userIdFilter = searchParams.userId || 'all'
+
+  // Fetch users for the salesperson filter
+  const { prisma } = await import('@/lib/db')
+  const { getCurrentUserWithOrg } = await import('@/lib/auth')
+  const currentUser = await getCurrentUserWithOrg()
+
+  const usersRaw = await prisma.user.findMany({
+    where: {
+      organizationId: currentUser.organizationId,
+      isPlaceholder: false,
+      firstName: { not: null },
+      lastName: { not: null },
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+    },
+    orderBy: [
+      { firstName: 'asc' },
+      { lastName: 'asc' },
+    ],
+  })
+
+  const users = usersRaw.map((u) => ({
+    id: u.id,
+    firstName: u.firstName!,
+    lastName: u.lastName!,
+  }))
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Commissions</h1>
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-emerald-500 bg-clip-text text-transparent">Commissions</h1>
           <p className="text-muted-foreground">
             Review and approve commission calculations
           </p>
         </div>
       </div>
 
-      <CommissionFilters />
+      <CommissionFilters users={users} />
 
       <Suspense fallback={<CommissionsTableSkeleton />}>
         <CommissionsTable
           searchQuery={searchParams.search}
           statusFilter={statusFilter}
+          userIdFilter={userIdFilter}
         />
       </Suspense>
     </div>

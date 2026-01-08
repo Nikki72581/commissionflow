@@ -11,15 +11,40 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 
-export function CommissionFilters() {
+interface User {
+  id: string
+  firstName: string
+  lastName: string
+}
+
+interface CommissionFiltersProps {
+  users?: User[]
+}
+
+export function CommissionFilters({ users = [] }: CommissionFiltersProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentSearch = searchParams.get('search') || ''
   const currentStatus = searchParams.get('status') || 'all'
+  const currentUserId = searchParams.get('userId') || 'all'
 
   const handleStatusChange = (status: string) => {
     const params = new URLSearchParams(searchParams.toString())
-    params.set('status', status)
+    if (status === 'all') {
+      params.delete('status')
+    } else {
+      params.set('status', status)
+    }
+    router.push(`/dashboard/commissions?${params.toString()}`)
+  }
+
+  const handleUserChange = (userId: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (userId === 'all') {
+      params.delete('userId')
+    } else {
+      params.set('userId', userId)
+    }
     router.push(`/dashboard/commissions?${params.toString()}`)
   }
 
@@ -51,6 +76,22 @@ export function CommissionFilters() {
           />
         </div>
       </form>
+
+      {users.length > 0 && (
+        <Select value={currentUserId} onValueChange={handleUserChange}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by salesperson" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Salespeople</SelectItem>
+            {users.map((user) => (
+              <SelectItem key={user.id} value={user.id}>
+                {user.firstName} {user.lastName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       <Select value={currentStatus} onValueChange={handleStatusChange}>
         <SelectTrigger className="w-[180px]">
