@@ -81,11 +81,62 @@ export default function CustomerTiersPage() {
 
       <Separator className="bg-indigo-500/20" />
 
+      {/* Overview Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="border-2 border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 to-indigo-500/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Tiers</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+                  {customerTiers.length}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 to-indigo-500/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
+                <Award className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">System-Defined</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+                  Locked
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 border-indigo-500/30 bg-gradient-to-br from-indigo-500/10 to-indigo-500/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center">
+                <Star className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Rule-Driven</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent">
+                  Flexible
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Info Card */}
-      <Card className="border-border bg-muted/40">
+      <Card className="border-indigo-500/20 bg-indigo-500/5">
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+            <Info className="h-5 w-5 text-indigo-600 flex-shrink-0 mt-0.5" />
             <div className="space-y-2">
               <p className="text-sm font-medium text-foreground">
                 Customer tiers are system-defined classifications
@@ -110,12 +161,15 @@ export default function CustomerTiersPage() {
         {customerTiers.map((tier) => {
           const Icon = tier.icon
           return (
-            <Card key={tier.name} className={`border-2 ${tier.borderColor}`}>
+            <Card
+              key={tier.name}
+              className="border-2 border-indigo-500/30 bg-gradient-to-br from-card to-muted/20 hover:border-indigo-500/50 hover:shadow-lg hover:shadow-indigo-500/10 transition-all"
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`p-3 rounded-lg ${tier.bgColor}`}>
-                      <Icon className={`h-6 w-6 ${tier.color}`} />
+                    <div className="p-3 rounded-lg bg-indigo-500/10">
+                      <Icon className="h-6 w-6 text-indigo-600" />
                     </div>
                     <div>
                       <CardTitle className="flex items-center gap-2">
@@ -155,7 +209,7 @@ export default function CustomerTiersPage() {
       </div>
 
       {/* How to Use Section */}
-      <Card>
+      <Card className="border-2 border-indigo-500/30 bg-gradient-to-br from-card to-muted/20">
         <CardHeader>
           <CardTitle>How to Use Customer Tiers</CardTitle>
           <CardDescription>
@@ -165,7 +219,7 @@ export default function CustomerTiersPage() {
         <CardContent className="space-y-4">
           <div className="space-y-3">
             <div className="flex gap-3">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold shrink-0">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-600 text-sm font-semibold shrink-0">
                 1
               </div>
               <div>
@@ -179,7 +233,7 @@ export default function CustomerTiersPage() {
             <Separator className="bg-indigo-500/20" />
 
             <div className="flex gap-3">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold shrink-0">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-600 text-sm font-semibold shrink-0">
                 2
               </div>
               <div>
@@ -193,7 +247,7 @@ export default function CustomerTiersPage() {
             <Separator className="bg-indigo-500/20" />
 
             <div className="flex gap-3">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-sm font-semibold shrink-0">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-600 text-sm font-semibold shrink-0">
                 3
               </div>
               <div>
@@ -213,7 +267,7 @@ export default function CustomerTiersPage() {
               </Button>
             </Link>
             <Link href="/dashboard/plans">
-              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
+              <Button className="bg-gradient-to-r from-indigo-600 to-indigo-500 hover:opacity-90">
                 <Award className="h-4 w-4 mr-2" />
                 Create Commission Rules
               </Button>
