@@ -27,80 +27,114 @@ async function getOrganizationId(): Promise<string> {
 }
 
 /**
- * Get comprehensive dashboard statistics
+ * Get comprehensive dashboard statistics (optimized with SQL aggregations)
  */
 export async function getDashboardStats(dateRange?: DateRange) {
   try {
     const organizationId = await getOrganizationId()
 
-    // Fetch all data
-    const [sales, calculations, plans, clients, users] = await Promise.all([
-      prisma.salesTransaction.findMany({
-        where: { organizationId },
-        include: {
-          commissionCalculations: true,
+    // Build date filter for SQL queries
+    const dateFilter = dateRange ? {
+      gte: dateRange.from,
+      lte: dateRange.to,
+    } : undefined
+
+    // Use SQL aggregations instead of fetching all records
+    const [
+      salesStats,
+      commissionsStats,
+      pendingStats,
+      approvedStats,
+      paidStats,
+      activePlansCount,
+      activeClientsCount,
+      salesPeopleCount,
+    ] = await Promise.all([
+      // Sales aggregation
+      prisma.salesTransaction.aggregate({
+        where: {
+          organizationId,
+          ...(dateFilter && { transactionDate: dateFilter }),
         },
+        _sum: { amount: true },
+        _count: true,
       }),
-      prisma.commissionCalculation.findMany({
-        where: { organizationId },
+      // All commissions aggregation
+      prisma.commissionCalculation.aggregate({
+        where: {
+          organizationId,
+          ...(dateFilter && { calculatedAt: dateFilter }),
+        },
+        _sum: { amount: true },
+        _count: true,
       }),
-      prisma.commissionPlan.findMany({
+      // Pending commissions aggregation
+      prisma.commissionCalculation.aggregate({
+        where: {
+          organizationId,
+          status: 'PENDING',
+          ...(dateFilter && { calculatedAt: dateFilter }),
+        },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      // Approved commissions aggregation
+      prisma.commissionCalculation.aggregate({
+        where: {
+          organizationId,
+          status: 'APPROVED',
+          ...(dateFilter && { calculatedAt: dateFilter }),
+        },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      // Paid commissions aggregation
+      prisma.commissionCalculation.aggregate({
+        where: {
+          organizationId,
+          status: 'PAID',
+          ...(dateFilter && { calculatedAt: dateFilter }),
+        },
+        _sum: { amount: true },
+        _count: true,
+      }),
+      // Active plans count
+      prisma.commissionPlan.count({
         where: { organizationId, isActive: true },
       }),
-      prisma.client.findMany({
+      // Active clients count
+      prisma.client.count({
         where: { organizationId },
       }),
-      prisma.user.findMany({
+      // Salespeople count
+      prisma.user.count({
         where: { organizationId, role: 'SALESPERSON' },
       }),
     ])
 
-    // Filter by date range if provided
-    const filteredSales = dateRange
-      ? sales.filter((sale) => isWithinDateRange(sale.transactionDate, dateRange))
-      : sales
-
-    const filteredCalculations = dateRange
-      ? calculations.filter((calc) => isWithinDateRange(calc.calculatedAt, dateRange))
-      : calculations
-
-    // Calculate stats
-    const totalSales = filteredSales.reduce((sum, sale) => sum + sale.amount, 0)
-    const totalCommissions = filteredCalculations.reduce((sum, calc) => sum + calc.amount, 0)
-    
-    const pendingCommissions = filteredCalculations
-      .filter((calc) => calc.status === 'PENDING')
-      .reduce((sum, calc) => sum + calc.amount, 0)
-    
-    const approvedCommissions = filteredCalculations
-      .filter((calc) => calc.status === 'APPROVED')
-      .reduce((sum, calc) => sum + calc.amount, 0)
-    
-    const paidCommissions = filteredCalculations
-      .filter((calc) => calc.status === 'PAID')
-      .reduce((sum, calc) => sum + calc.amount, 0)
-
-    const averageCommissionRate = totalSales > 0 
-      ? (totalCommissions / totalSales) * 100 
+    const totalSales = salesStats._sum.amount || 0
+    const totalCommissions = commissionsStats._sum.amount || 0
+    const averageCommissionRate = totalSales > 0
+      ? (totalCommissions / totalSales) * 100
       : 0
 
     return {
       success: true,
       data: {
         totalSales,
-        salesCount: filteredSales.length,
+        salesCount: salesStats._count,
         totalCommissions,
-        commissionsCount: filteredCalculations.length,
-        pendingCommissions,
-        pendingCount: filteredCalculations.filter((c) => c.status === 'PENDING').length,
-        approvedCommissions,
-        approvedCount: filteredCalculations.filter((c) => c.status === 'APPROVED').length,
-        paidCommissions,
-        paidCount: filteredCalculations.filter((c) => c.status === 'PAID').length,
+        commissionsCount: commissionsStats._count,
+        pendingCommissions: pendingStats._sum.amount || 0,
+        pendingCount: pendingStats._count,
+        approvedCommissions: approvedStats._sum.amount || 0,
+        approvedCount: approvedStats._count,
+        paidCommissions: paidStats._sum.amount || 0,
+        paidCount: paidStats._count,
         averageCommissionRate,
-        activePlansCount: plans.length,
-        activeClientsCount: clients.length,
-        salesPeopleCount: users.length,
+        activePlansCount,
+        activeClientsCount,
+        salesPeopleCount,
       },
     }
   } catch (error) {
@@ -113,7 +147,7 @@ export async function getDashboardStats(dateRange?: DateRange) {
 }
 
 /**
- * Get commission trends over time (monthly)
+ * Get commission trends over time (monthly) - Optimized with minimal data fetching
  */
 export async function getCommissionTrends({
   months = 12,
@@ -125,27 +159,39 @@ export async function getCommissionTrends({
   try {
     const organizationId = await getOrganizationId()
 
+    // Build date filter
+    const dateFilter = dateRange ? {
+      gte: dateRange.from,
+      lte: dateRange.to,
+    } : undefined
+
+    // Fetch only the fields we need for grouping
     const calculations = await prisma.commissionCalculation.findMany({
-      where: { organizationId },
-      include: {
-        salesTransaction: true,
+      where: {
+        organizationId,
+        ...(dateFilter && { calculatedAt: dateFilter }),
+      },
+      select: {
+        amount: true,
+        calculatedAt: true,
+        salesTransaction: {
+          select: {
+            amount: true,
+          },
+        },
       },
       orderBy: {
         calculatedAt: 'asc',
       },
     })
 
-    const filteredCalculations = dateRange
-      ? calculations.filter((calc) => isWithinDateRange(calc.calculatedAt, dateRange))
-      : calculations
-
     // Group by month
     const monthlyData = new Map<string, { sales: number; commissions: number; count: number }>()
 
-    filteredCalculations.forEach((calc) => {
+    calculations.forEach((calc) => {
       const date = new Date(calc.calculatedAt)
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
-      
+
       const existing = monthlyData.get(monthKey) || { sales: 0, commissions: 0, count: 0 }
       monthlyData.set(monthKey, {
         sales: existing.sales + calc.salesTransaction.amount,
@@ -179,24 +225,42 @@ export async function getCommissionTrends({
 }
 
 /**
- * Get top performing salespeople
+ * Get top performing salespeople - Optimized with selective field fetching
  */
 export async function getTopPerformers(dateRange?: DateRange, limit: number = 10) {
   try {
     const organizationId = await getOrganizationId()
 
+    // Build date filter
+    const dateFilter = dateRange ? {
+      gte: dateRange.from,
+      lte: dateRange.to,
+    } : undefined
+
+    // Fetch only the fields we need
     const calculations = await prisma.commissionCalculation.findMany({
-      where: { organizationId },
-      include: {
-        user: true,
-        salesTransaction: true,
+      where: {
+        organizationId,
+        ...(dateFilter && { calculatedAt: dateFilter }),
+      },
+      select: {
+        amount: true,
+        userId: true,
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        salesTransaction: {
+          select: {
+            amount: true,
+          },
+        },
       },
     })
-
-    // Filter by date range if provided
-    const filteredCalculations = dateRange
-      ? calculations.filter((calc) => isWithinDateRange(calc.calculatedAt, dateRange))
-      : calculations
 
     // Group by salesperson
     const performanceMap = new Map<string, {
@@ -209,7 +273,7 @@ export async function getTopPerformers(dateRange?: DateRange, limit: number = 10
       averageCommissionRate: number
     }>()
 
-    filteredCalculations.forEach((calc) => {
+    calculations.forEach((calc) => {
       const userId = calc.user.id
       const existing = performanceMap.get(userId) || {
         userId,

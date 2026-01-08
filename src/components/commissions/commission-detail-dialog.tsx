@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import { Info, TrendingUp, Calculator, DollarSign, CheckCircle2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -94,9 +94,17 @@ export function CommissionDetailDialog({
   trigger,
 }: CommissionDetailDialogProps) {
   const [open, setOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
-  const metadata = calculation.metadata as CommissionMetadata || {}
-  const hasDetailedBreakdown = metadata.selectedRule || metadata.appliedRules?.length
+  const handleOpenChange = (newOpen: boolean) => {
+    startTransition(() => {
+      setOpen(newOpen)
+    })
+  }
+
+  // Memoize expensive calculations
+  const metadata = useMemo(() => calculation.metadata as CommissionMetadata || {}, [calculation.metadata])
+  const hasDetailedBreakdown = useMemo(() => metadata.selectedRule || metadata.appliedRules?.length, [metadata])
 
   // Use provided values or fallback to calculation relations
   const saleAmount = salesAmount ?? calculation.salesTransaction?.amount ?? 0
@@ -105,12 +113,13 @@ export function CommissionDetailDialog({
   const saleInvoice = salesInvoice ?? calculation.salesTransaction?.invoiceNumber
   const personName = salespersonName ?? (calculation.user ? `${calculation.user.firstName || ''} ${calculation.user.lastName || ''}`.trim() : '')
 
-  const commissionRate = saleAmount > 0
-    ? (calculation.amount / saleAmount) * 100
-    : 0
+  const commissionRate = useMemo(() =>
+    saleAmount > 0 ? (calculation.amount / saleAmount) * 100 : 0,
+    [saleAmount, calculation.amount]
+  )
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button variant="outline" size="sm">

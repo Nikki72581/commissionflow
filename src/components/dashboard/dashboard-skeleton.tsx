@@ -12,6 +12,15 @@ export function DashboardSkeleton() {
         <Skeleton className="h-10 w-32" />
       </div>
 
+      <StatsSkeleton />
+      <ChartsSkeleton />
+    </div>
+  )
+}
+
+export function StatsSkeleton() {
+  return (
+    <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
@@ -35,19 +44,23 @@ export function DashboardSkeleton() {
           </Card>
         ))}
       </div>
+    </>
+  )
+}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardContent className="p-6">
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-6">
-            <Skeleton className="h-64 w-full" />
-          </CardContent>
-        </Card>
-      </div>
+export function ChartsSkeleton() {
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <Card>
+        <CardContent className="p-6">
+          <Skeleton className="h-64 w-full" />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-6">
+          <Skeleton className="h-64 w-full" />
+        </CardContent>
+      </Card>
     </div>
   )
 }

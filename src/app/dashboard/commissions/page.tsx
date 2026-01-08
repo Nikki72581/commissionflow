@@ -10,6 +10,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { getCommissionCalculations } from '@/app/actions/commission-calculations'
 import { CommissionDetailDialog } from '@/components/commissions/commission-detail-dialog'
@@ -186,9 +187,13 @@ async function CommissionsTable({
                     <CommissionDetailDialog
                       calculation={calc}
                       trigger={
-                        <button className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-7 px-3 text-blue-600 dark:text-blue-400">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-3 text-blue-600 dark:text-blue-400 hover:bg-accent hover:text-accent-foreground"
+                        >
                           View Breakdown
-                        </button>
+                        </Button>
                       }
                     />
                   </div>

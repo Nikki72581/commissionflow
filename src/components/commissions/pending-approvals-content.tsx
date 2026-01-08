@@ -315,9 +315,13 @@ export function PendingApprovalsContent({ commissions }: PendingApprovalsContent
                           <CommissionDetailDialog
                             calculation={item}
                             trigger={
-                              <button className="inline-flex items-center justify-center rounded-md text-xs font-medium transition-colors hover:bg-accent hover:text-accent-foreground h-7 px-3 text-blue-600 dark:text-blue-400">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-3 text-blue-600 dark:text-blue-400 hover:bg-accent hover:text-accent-foreground"
+                              >
                                 View Breakdown
-                              </button>
+                              </Button>
                             }
                           />
                         </div>
