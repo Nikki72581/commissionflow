@@ -180,7 +180,8 @@ export async function POST(req: NextRequest) {
     const sales = []
     const commissions = []
     const skipped = []
-    const startDate = new Date('2024-01-01')
+    const now = new Date()
+    const startDate = new Date(now.getFullYear(), 0, 1)
     const endDate = new Date()
 
     for (let i = 0; i < count; i++) {
@@ -279,10 +280,8 @@ export async function POST(req: NextRequest) {
       let approvedAt: Date | null = null
       let paidAt: Date | null = null
 
-      if (daysSince < 7) {
+      if (daysSince < 14) {
         status = CommissionStatus.PENDING
-      } else if (daysSince < 14) {
-        status = CommissionStatus.CALCULATED
       } else if (daysSince < 30) {
         status = CommissionStatus.APPROVED
         approvedAt = new Date(transactionDate.getTime() + 7 * 24 * 60 * 60 * 1000)
