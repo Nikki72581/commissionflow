@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { updateUserProfile, getUserProfile, updateNotificationPreferences, getOrganizationSettings, updateOrganizationSettings, updateThemePreference } from '@/app/actions/settings'
-import { User, Bell, Shield, Loader2, ShoppingCart, MapPin, Award, ChevronRight, Settings, FolderKanban, Palette, Sun, Moon, Monitor } from 'lucide-react'
+import { User, Bell, Shield, Loader2, ShoppingCart, MapPin, Award, ChevronRight, Settings, FolderKanban, Palette, Sun, Moon, Monitor, Key } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { useTheme } from '@/components/providers/theme-provider'
 import Link from 'next/link'
@@ -247,7 +247,7 @@ export default function SettingsPage() {
 
           <Separator className="bg-indigo-500/20" />
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Product Categories */}
             <Link href="/dashboard/settings/product-categories">
               <Card className="cursor-pointer transition-all hover:shadow-md border-2 hover:border-primary/50">
@@ -307,6 +307,28 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </Link>
+
+            {/* API Keys - Admin Only */}
+            {isAdmin && (
+              <Link href="/dashboard/settings/api-keys">
+                <Card className="cursor-pointer transition-all hover:shadow-md border-2 hover:border-primary/50">
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Key className="h-5 w-5 text-orange-600" />
+                          <h3 className="font-semibold">API Keys</h3>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Manage API keys for external integrations and webhooks
+                        </p>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
           </div>
         </CardContent>
       </Card>
