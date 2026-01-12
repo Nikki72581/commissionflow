@@ -90,12 +90,36 @@ export function hasScope(context: ApiContext, requiredScope: string): boolean {
 
 /**
  * Higher-order function to wrap API route handlers with authentication
+ * Supports both static routes and dynamic routes with params
  */
+export function withApiAuth<TRouteContext = unknown>(
+  handler: (
+    request: NextRequest,
+    context: ApiContext,
+    routeContext: TRouteContext
+  ) => Promise<NextResponse>,
+  options?: { requiredScope?: string }
+): (request: NextRequest, routeContext: TRouteContext) => Promise<NextResponse>
+
 export function withApiAuth(
   handler: (request: NextRequest, context: ApiContext) => Promise<NextResponse>,
   options?: { requiredScope?: string }
+): (request: NextRequest) => Promise<NextResponse>
+
+export function withApiAuth<TRouteContext = unknown>(
+  handler:
+    | ((
+        request: NextRequest,
+        context: ApiContext,
+        routeContext: TRouteContext
+      ) => Promise<NextResponse>)
+    | ((request: NextRequest, context: ApiContext) => Promise<NextResponse>),
+  options?: { requiredScope?: string }
 ) {
-  return async (request: NextRequest): Promise<NextResponse> => {
+  return async (
+    request: NextRequest,
+    routeContext?: TRouteContext
+  ): Promise<NextResponse> => {
     const startTime = Date.now()
 
     // Authenticate request
@@ -145,8 +169,22 @@ export function withApiAuth(
     }
 
     try {
-      // Execute handler
-      const response = await handler(request, context)
+      // Execute handler - supports both 2 and 3 parameter signatures
+      const response =
+        handler.length === 3
+          ? await (
+              handler as (
+                request: NextRequest,
+                context: ApiContext,
+                routeContext: TRouteContext
+              ) => Promise<NextResponse>
+            )(request, context, routeContext as TRouteContext)
+          : await (
+              handler as (
+                request: NextRequest,
+                context: ApiContext
+              ) => Promise<NextResponse>
+            )(request, context)
       const duration = Date.now() - startTime
 
       // Log successful request (fire and forget to avoid blocking)

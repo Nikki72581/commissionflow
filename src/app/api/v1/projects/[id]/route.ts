@@ -18,12 +18,13 @@ export const GET = withApiAuth(
   async (
     request: NextRequest,
     context: ApiContext,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
+      const { id } = await params
       const project = await prisma.project.findFirst({
         where: {
-          id: params.id,
+          id: id,
           organizationId: context.organizationId,
         },
         include: {
@@ -57,15 +58,16 @@ export const PUT = withApiAuth(
   async (
     request: NextRequest,
     context: ApiContext,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
+      const { id } = await params
       const body = await request.json()
       const validatedData = updateProjectSchema.parse(body)
 
       // Verify exists and belongs to organization
       const existing = await prisma.project.findFirst({
-        where: { id: params.id, organizationId: context.organizationId },
+        where: { id: id, organizationId: context.organizationId },
       })
 
       if (!existing) {
@@ -84,7 +86,7 @@ export const PUT = withApiAuth(
       }
 
       const updated = await prisma.project.update({
-        where: { id: params.id },
+        where: { id: id },
         data: {
           ...(validatedData.name && { name: validatedData.name }),
           ...(validatedData.description !== undefined && {
@@ -110,7 +112,7 @@ export const PUT = withApiAuth(
       await createAuditLog({
         action: 'sale_updated',
         entityType: 'project',
-        entityId: params.id,
+        entityId: id,
         description: `Project updated via API: ${updated.name}`,
         metadata: { source: 'api', apiKeyId: context.apiKeyId },
         organizationId: context.organizationId,
@@ -132,11 +134,12 @@ export const DELETE = withApiAuth(
   async (
     request: NextRequest,
     context: ApiContext,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
+      const { id } = await params
       const project = await prisma.project.findFirst({
-        where: { id: params.id, organizationId: context.organizationId },
+        where: { id: id, organizationId: context.organizationId },
         include: {
           _count: {
             select: { salesTransactions: true, commissionPlans: true },
@@ -160,14 +163,14 @@ export const DELETE = withApiAuth(
       }
 
       await prisma.project.delete({
-        where: { id: params.id },
+        where: { id: id },
       })
 
       // Audit log
       await createAuditLog({
         action: 'sale_deleted',
         entityType: 'project',
-        entityId: params.id,
+        entityId: id,
         description: `Project deleted via API: ${project.name}`,
         metadata: { source: 'api', apiKeyId: context.apiKeyId },
         organizationId: context.organizationId,

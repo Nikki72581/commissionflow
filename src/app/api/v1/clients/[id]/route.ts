@@ -18,12 +18,13 @@ export const GET = withApiAuth(
   async (
     request: NextRequest,
     context: ApiContext,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
+      const { id } = await params
       const client = await prisma.client.findFirst({
         where: {
-          id: params.id,
+          id: id,
           organizationId: context.organizationId,
         },
         include: {
@@ -57,15 +58,16 @@ export const PUT = withApiAuth(
   async (
     request: NextRequest,
     context: ApiContext,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
+      const { id } = await params
       const body = await request.json()
       const validatedData = updateClientSchema.parse(body)
 
       // Verify exists and belongs to organization
       const existing = await prisma.client.findFirst({
-        where: { id: params.id, organizationId: context.organizationId },
+        where: { id: id, organizationId: context.organizationId },
       })
 
       if (!existing) {
@@ -84,7 +86,7 @@ export const PUT = withApiAuth(
       }
 
       const updated = await prisma.client.update({
-        where: { id: params.id },
+        where: { id: id },
         data: {
           ...(validatedData.name && { name: validatedData.name }),
           ...(validatedData.email !== undefined && {
@@ -115,7 +117,7 @@ export const PUT = withApiAuth(
       await createAuditLog({
         action: 'sale_updated',
         entityType: 'client',
-        entityId: params.id,
+        entityId: id,
         description: `Client updated via API: ${updated.name}`,
         metadata: { source: 'api', apiKeyId: context.apiKeyId },
         organizationId: context.organizationId,
@@ -137,11 +139,12 @@ export const DELETE = withApiAuth(
   async (
     request: NextRequest,
     context: ApiContext,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
     try {
+      const { id } = await params
       const client = await prisma.client.findFirst({
-        where: { id: params.id, organizationId: context.organizationId },
+        where: { id: id, organizationId: context.organizationId },
         include: {
           _count: {
             select: { projects: true, salesTransactions: true },
@@ -162,14 +165,14 @@ export const DELETE = withApiAuth(
       }
 
       await prisma.client.delete({
-        where: { id: params.id },
+        where: { id: id },
       })
 
       // Audit log
       await createAuditLog({
         action: 'sale_deleted',
         entityType: 'client',
-        entityId: params.id,
+        entityId: id,
         description: `Client deleted via API: ${client.name}`,
         metadata: { source: 'api', apiKeyId: context.apiKeyId },
         organizationId: context.organizationId,
