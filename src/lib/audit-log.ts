@@ -30,6 +30,10 @@ export type AuditAction =
   // Integration actions
   | 'integration_sync'
   | 'integration_sync_reverted'
+  // API actions
+  | 'api_key_created'
+  | 'api_key_revoked'
+  | 'api_request'
 
 export type EntityType = 
   | 'commission'

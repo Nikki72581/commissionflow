@@ -212,6 +212,8 @@ model Organization {
   productCategories      ProductCategory[]
   territories            Territory[]
   acumaticaIntegration   AcumaticaIntegration?
+  apiKeys                ApiKey[]
+  apiUsageLogs           ApiUsageLog[]
 
   @@map("organizations")
 }
@@ -249,6 +251,8 @@ model User {
   salesTransactions      SalesTransaction[]
   commissionCalculations CommissionCalculation[]
   payouts                Payout[]
+  createdApiKeys         ApiKey[]                @relation("ApiKeyCreator")
+  revokedApiKeys         ApiKey[]                @relation("ApiKeyRevoker")
 
   @@index([organizationId])
   @@index([clerkId])
@@ -728,4 +732,76 @@ model IntegrationSyncLog {
   @@index([integrationId])
   @@index([startedAt])
   @@map("integration_sync_logs")
+}
+
+// ============================================
+// API MODELS
+// ============================================
+
+model ApiKey {
+  id             String   @id @default(cuid())
+  name           String   // User-friendly name (e.g., "Production Integration")
+  key            String   @unique // Hashed API key (SHA-256)
+  keyPrefix      String   // First 12 chars for display (e.g., "cf_live_12345...")
+  organizationId String
+  createdById    String
+
+  // Permissions & Scope
+  scopes    Json    // Array of permissions: ["sales:read", "sales:write", etc.]
+  isActive  Boolean @default(true)
+  rateLimit Int     @default(1000) // Requests per hour
+
+  // Security
+  lastUsedAt  DateTime?
+  expiresAt   DateTime? // Optional expiration
+  ipWhitelist Json? // Optional array of allowed IPs
+
+  // Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  revokedAt   DateTime?
+  revokedById String?
+
+  // Relations
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User          @relation("ApiKeyCreator", fields: [createdById], references: [id])
+  revokedBy    User?         @relation("ApiKeyRevoker", fields: [revokedById], references: [id])
+  usageLogs    ApiUsageLog[]
+
+  @@index([organizationId])
+  @@index([key])
+  @@index([keyPrefix])
+  @@index([isActive])
+  @@map("api_keys")
+}
+
+model ApiUsageLog {
+  id             String   @id @default(cuid())
+  apiKeyId       String
+  organizationId String
+
+  // Request Details
+  endpoint   String // e.g., "/api/v1/sales"
+  method     String // GET, POST, PUT, DELETE
+  statusCode Int
+
+  // Context
+  ipAddress    String?
+  userAgent    String?
+  requestSize  Int? // Bytes
+  responseSize Int? // Bytes
+  duration     Int? // Milliseconds
+
+  // Metadata
+  errorMessage String?
+  createdAt    DateTime @default(now())
+
+  // Relations
+  apiKey       ApiKey       @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([apiKeyId])
+  @@index([organizationId])
+  @@index([createdAt])
+  @@map("api_usage_logs")
 }
