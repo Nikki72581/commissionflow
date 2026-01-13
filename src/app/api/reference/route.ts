@@ -42,12 +42,32 @@ const config = {
       --scalar-background-1: oklch(0.129 0.042 264.695);
       --scalar-background-2: oklch(0.208 0.042 265.755);
       --scalar-color-1: oklch(0.984 0.003 247.858);
-      --scalar-color-2: oklch(0.704 0.04 256.788);
+      --scalar-color-2: oklch(0.85 0.04 256.788);
     }
 
     .dark .scalar-card {
       border-color: oklch(0.271 0.044 265.205);
       background: oklch(0.208 0.042 265.755);
+    }
+
+    /* Enhanced font readability in dark mode */
+    .dark .scalar-app {
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .dark .scalar-app h1,
+    .dark .scalar-app h2,
+    .dark .scalar-app h3,
+    .dark .scalar-app h4 {
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .dark .scalar-app code,
+    .dark .scalar-app pre {
+      font-weight: 450;
     }
   `,
 };
