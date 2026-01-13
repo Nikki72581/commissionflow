@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
 import { createApiKeyAction, getApiKeys, revokeApiKeyAction } from '@/app/actions/api-keys'
-import { Key, Loader2, Plus, Copy, AlertTriangle, Clock, Shield, CheckCircle2, X } from 'lucide-react'
+import { Key, Loader2, Plus, Copy, AlertTriangle, Clock, Shield, CheckCircle2, X, BookOpen, ExternalLink } from 'lucide-react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -197,6 +197,44 @@ export default function ApiKeysPage() {
       </div>
 
       <Separator className="bg-indigo-500/20" />
+
+      {/* API Documentation Card */}
+      <Card className="border-2 border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-purple-500/5">
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <CardTitle>API Documentation</CardTitle>
+              <CardDescription className="mt-1">
+                Learn how to integrate with the CommissionFlow API
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            After creating your API key, visit our comprehensive documentation to get started with the CommissionFlow API.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Link href="/developers" target="_blank">
+              <Button variant="outline" className="w-full sm:w-auto">
+                <BookOpen className="h-4 w-4 mr-2" />
+                View Developer Docs
+                <ExternalLink className="h-3 w-3 ml-2" />
+              </Button>
+            </Link>
+            <Link href="/api/reference" target="_blank">
+              <Button variant="outline" className="w-full sm:w-auto">
+                <Key className="h-4 w-4 mr-2" />
+                API Reference
+                <ExternalLink className="h-3 w-3 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Alert Messages */}
       {error && (
