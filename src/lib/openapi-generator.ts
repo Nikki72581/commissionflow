@@ -175,6 +175,57 @@ export function generateOpenApiSpec() {
               description: 'Items per page (max 100)',
             },
           ],
+          'x-codeSamples': [
+            {
+              lang: 'javascript',
+              label: 'JavaScript (fetch)',
+              source: `const response = await fetch('https://app.commissionflow.com/api/v1/sales?page=1&limit=50', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer cf_live_your_api_key'
+  }
+});
+
+const data = await response.json();
+console.log(data.data.transactions);`,
+            },
+            {
+              lang: 'typescript',
+              label: 'TypeScript',
+              source: `interface SalesResponse {
+  data: {
+    transactions: Array<{
+      id: string;
+      amount: number;
+      transactionDate: string;
+      userId: string;
+    }>;
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+}
+
+const response = await fetch('https://app.commissionflow.com/api/v1/sales?page=1&limit=50', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer cf_live_your_api_key'
+  }
+});
+
+const data: SalesResponse = await response.json();
+console.log(data.data.transactions);`,
+            },
+            {
+              lang: 'shell',
+              label: 'cURL',
+              source: `curl -X GET "https://app.commissionflow.com/api/v1/sales?page=1&limit=50" \\
+  -H "Authorization: Bearer cf_live_your_api_key"`,
+            },
+          ],
           responses: {
             '200': {
               description: 'Success',
@@ -240,6 +291,94 @@ export function generateOpenApiSpec() {
               },
             },
           },
+          'x-codeSamples': [
+            {
+              lang: 'javascript',
+              label: 'JavaScript (fetch)',
+              source: `const response = await fetch('https://app.commissionflow.com/api/v1/sales', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer cf_live_your_api_key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    amount: 5000,
+    transactionDate: '2024-01-15',
+    userId: 'user_abc123',
+    projectId: 'proj_xyz789',
+    description: 'Q1 Software License Sale'
+  })
+});
+
+const data = await response.json();
+console.log(data);`,
+            },
+            {
+              lang: 'typescript',
+              label: 'TypeScript',
+              source: `interface CreateSaleRequest {
+  amount: number;
+  transactionDate: string;
+  userId: string;
+  projectId?: string;
+  clientId?: string;
+  description?: string;
+  invoiceNumber?: string;
+  productCategoryId?: string;
+  transactionType?: 'SALE' | 'RETURN' | 'ADJUSTMENT';
+}
+
+interface CreateSaleResponse {
+  data: {
+    id: string;
+    amount: number;
+    transactionDate: string;
+    userId: string;
+  };
+  message: string;
+}
+
+const createSale = async (sale: CreateSaleRequest): Promise<CreateSaleResponse> => {
+  const response = await fetch('https://app.commissionflow.com/api/v1/sales', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer cf_live_your_api_key',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(sale)
+  });
+
+  if (!response.ok) {
+    throw new Error(\`API Error: \${response.status}\`);
+  }
+
+  return await response.json();
+};
+
+// Usage
+const result = await createSale({
+  amount: 5000,
+  transactionDate: '2024-01-15',
+  userId: 'user_abc123',
+  projectId: 'proj_xyz789',
+  description: 'Q1 Software License Sale'
+});`,
+            },
+            {
+              lang: 'shell',
+              label: 'cURL',
+              source: `curl -X POST https://app.commissionflow.com/api/v1/sales \\
+  -H "Authorization: Bearer cf_live_your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "amount": 5000,
+    "transactionDate": "2024-01-15",
+    "userId": "user_abc123",
+    "projectId": "proj_xyz789",
+    "description": "Q1 Software License Sale"
+  }'`,
+            },
+          ],
           responses: {
             '201': {
               description: 'Created',
@@ -455,6 +594,82 @@ export function generateOpenApiSpec() {
               },
             },
           },
+          'x-codeSamples': [
+            {
+              lang: 'javascript',
+              label: 'JavaScript (fetch)',
+              source: `const response = await fetch('https://app.commissionflow.com/api/v1/clients', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer cf_live_your_api_key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    name: 'Acme Corporation',
+    email: 'contact@acme.com',
+    phone: '+1-555-0123',
+    tier: 'ENTERPRISE',
+    status: 'ACTIVE'
+  })
+});
+
+const data = await response.json();
+console.log(data);`,
+            },
+            {
+              lang: 'typescript',
+              label: 'TypeScript',
+              source: `interface CreateClientRequest {
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  tier?: 'STANDARD' | 'VIP' | 'NEW' | 'ENTERPRISE';
+  status?: 'ACTIVE' | 'INACTIVE' | 'PROSPECTIVE' | 'CHURNED';
+  territoryId?: string;
+}
+
+const createClient = async (client: CreateClientRequest) => {
+  const response = await fetch('https://app.commissionflow.com/api/v1/clients', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer cf_live_your_api_key',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(client)
+  });
+
+  if (!response.ok) {
+    throw new Error(\`API Error: \${response.status}\`);
+  }
+
+  return await response.json();
+};
+
+// Usage
+const result = await createClient({
+  name: 'Acme Corporation',
+  email: 'contact@acme.com',
+  phone: '+1-555-0123',
+  tier: 'ENTERPRISE',
+  status: 'ACTIVE'
+});`,
+            },
+            {
+              lang: 'shell',
+              label: 'cURL',
+              source: `curl -X POST https://app.commissionflow.com/api/v1/clients \\
+  -H "Authorization: Bearer cf_live_your_api_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Acme Corporation",
+    "email": "contact@acme.com",
+    "phone": "+1-555-0123",
+    "tier": "ENTERPRISE",
+    "status": "ACTIVE"
+  }'`,
+            },
+          ],
           responses: {
             '201': {
               description: 'Created',

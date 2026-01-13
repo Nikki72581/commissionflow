@@ -31,6 +31,7 @@ export default function App() {
           <nav className="hidden md:flex items-center space-x-6">
             <a href="#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
             <a href="#pricing" className="text-sm hover:text-blue-600 transition-colors">Pricing</a>
+            <Link href="/developers" className="text-sm hover:text-blue-600 transition-colors">Developers</Link>
             <Link href="/sign-in" className="text-sm hover:text-blue-600 transition-colors">Sign In</Link>
             <Link href="/sign-in">
               <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
@@ -48,6 +49,7 @@ export default function App() {
           <div className="md:hidden border-t bg-background p-4 space-y-4">
             <a href="#features" className="block text-sm hover:text-blue-600">Features</a>
             <a href="#pricing" className="block text-sm hover:text-blue-600">Pricing</a>
+            <Link href="/developers" className="block text-sm hover:text-blue-600">Developers</Link>
             <Link href="/sign-in" className="block text-sm hover:text-blue-600">Sign In</Link>
             <Link href="/sign-in" className="block w-full">
               <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">Get Started</Button>
