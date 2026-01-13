@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ApiReference } from '@scalar/nextjs-api-reference';
 
 export default function DevelopersPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -179,67 +178,43 @@ export default function DevelopersPage() {
 
       {/* API Reference Section */}
       <section className="py-12" id="endpoints">
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 max-w-4xl">
           <div className="mb-8 text-center">
             <h2 className="text-3xl font-bold mb-3">API Reference</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
               Explore all available endpoints. Click "Try It" to test API calls directly from your browser.
             </p>
           </div>
 
-          <ApiReference
-            configuration={{
-              spec: {
-                url: '/api/v1/openapi.json',
-              },
-              theme: 'default',
-              hideModels: false,
-              hideDownloadButton: false,
-              defaultHttpClient: {
-                targetKey: 'javascript',
-                clientKey: 'fetch',
-              },
-              customCss: `
-                /* Match CommissionFlow brand colors */
-                .scalar-app {
-                  --scalar-color-1: oklch(0.208 0.042 265.755);
-                  --scalar-color-2: oklch(0.704 0.04 256.788);
-                  --scalar-color-accent: #2563eb;
-                  --scalar-radius: 0.625rem;
-                  --scalar-font: var(--font-inter, system-ui, sans-serif);
-                }
-
-                /* Gradient buttons */
-                .scalar-api-client__send-button {
-                  background: linear-gradient(to right, #2563eb, #9333ea) !important;
-                  border: none !important;
-                }
-
-                .scalar-api-client__send-button:hover {
-                  opacity: 0.9;
-                }
-
-                /* Match card styling */
-                .scalar-card {
-                  border-radius: 0.75rem;
-                  border: 1px solid oklch(0.929 0.013 255.508);
-                }
-
-                /* Dark mode support */
-                .dark .scalar-app {
-                  --scalar-background-1: oklch(0.129 0.042 264.695);
-                  --scalar-background-2: oklch(0.208 0.042 265.755);
-                  --scalar-color-1: oklch(0.984 0.003 247.858);
-                  --scalar-color-2: oklch(0.704 0.04 256.788);
-                }
-
-                .dark .scalar-card {
-                  border-color: oklch(0.271 0.044 265.205);
-                  background: oklch(0.208 0.042 265.755);
-                }
-              `,
-            }}
-          />
+          <Card className="border-2">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-6">
+                <div className="h-16 w-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto">
+                  <Code className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Interactive API Documentation</h3>
+                  <p className="text-muted-foreground text-sm mb-6">
+                    View the full API reference with interactive examples and the ability to test endpoints in real-time.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Link href="/api/reference">
+                    <Button size="lg" className="px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
+                      <Code className="mr-2 h-5 w-5" />
+                      View API Reference
+                    </Button>
+                  </Link>
+                  <a href="/api/v1/openapi.json" target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" size="lg" className="px-8 border-2">
+                      Download OpenAPI Spec
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    </Button>
+                  </a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
