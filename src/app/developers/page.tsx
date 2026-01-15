@@ -226,7 +226,7 @@ export default function DevelopersPage() {
             Our team is here to help you integrate successfully.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="mailto:support@commissionflow.com">
+            <a href="mailto:support@junova.io">
               <Button variant="outline" size="lg" className="px-8 border-2">
                 Contact Support
               </Button>
@@ -255,7 +255,7 @@ export default function DevelopersPage() {
             <div className="flex gap-6 text-sm text-muted-foreground">
               <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
               <a href="/terms" className="hover:text-foreground transition-colors">Terms</a>
-              <a href="mailto:contact@commissionflow.com" className="hover:text-foreground transition-colors">Contact</a>
+              <a href="mailto:contact@junova.io" className="hover:text-foreground transition-colors">Contact</a>
             </div>
           </div>
         </div>

@@ -342,9 +342,9 @@ export default function App() {
             </div>
             <p className="text-sm text-muted-foreground">&copy; 2024 CommissionFlow. All rights reserved.</p>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-blue-600 transition-colors">Privacy</a>
-              <a href="#" className="hover:text-blue-600 transition-colors">Terms</a>
-              <a href="#" className="hover:text-blue-600 transition-colors">Contact</a>
+              <Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-blue-600 transition-colors">Terms</Link>
+              <Link href="/contact" className="hover:text-blue-600 transition-colors">Contact</Link>
             </div>
           </div>
         </div>

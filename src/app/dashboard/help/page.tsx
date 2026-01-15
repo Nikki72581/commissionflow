@@ -448,7 +448,7 @@ export default async function HelpPage() {
             </Button>
 
             <Button variant="outline" className="justify-start gap-2 h-auto py-3" asChild>
-              <a href="mailto:support@commissionflow.com">
+              <a href="mailto:support@junova.io">
                 <ExternalLink className="h-4 w-4" />
                 <div className="text-left">
                   <div className="font-semibold">Contact Support</div>

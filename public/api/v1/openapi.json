@@ -6,7 +6,7 @@
     "description": "REST API for managing sales transactions, clients, projects, and commissions",
     "contact": {
       "name": "CommissionFlow Support",
-      "email": "support@commissionflow.com"
+      "email": "support@junova.io"
     }
   },
   "servers": [
