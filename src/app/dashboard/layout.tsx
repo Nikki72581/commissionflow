@@ -3,6 +3,7 @@ import { SidebarWrapper } from '@/components/navigation/sidebar-wrapper'
 import { EnhancedHeader } from '@/components/navigation/enhanced-header'
 import { MobileBottomNav } from '@/components/navigation/mobile-navigation'
 import { getCurrentUserWithOrg } from '@/lib/auth'
+import { canInviteMembers, canAccessERP } from '@/lib/features'
 
 import { prisma } from '@/lib/db'
 
@@ -24,6 +25,12 @@ export default async function DashboardLayout({
         : { user: { clerkId: user.clerkId } }),
     },
   })
+
+  // Get feature access for sidebar badges
+  const [hasTeamFeature, hasERPFeature] = await Promise.all([
+    canInviteMembers(),
+    canAccessERP(),
+  ])
 
   const userName = `${user.firstName} ${user.lastName}`
   const userEmail = user.email
@@ -51,6 +58,8 @@ export default async function DashboardLayout({
             pendingCount={pendingCount}
             userName={userName}
             organizationName={organizationName}
+            hasTeamFeature={hasTeamFeature}
+            hasERPFeature={hasERPFeature}
           />
         </aside>
 

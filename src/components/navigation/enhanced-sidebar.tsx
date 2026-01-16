@@ -25,6 +25,7 @@ import {
   Plug,
   ChevronLeft,
   Menu,
+  Sparkles,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -47,6 +48,7 @@ interface NavItem {
   salesPersonOnly?: boolean
   iconColor?: string
   sectionColor?: string
+  premiumFeature?: 'team' | 'erp' // For showing Pro badge when feature is not available
 }
 
 // Navigation structure
@@ -187,6 +189,7 @@ const navigation: NavItem[] = [
         icon: Plug,
         iconColor: 'text-indigo-600 dark:text-indigo-400',
         adminOnly: true,
+        premiumFeature: 'erp',
       },
       {
         title: 'Audit Logs',
@@ -200,6 +203,13 @@ const navigation: NavItem[] = [
         href: '/dashboard/settings',
         icon: Settings,
         iconColor: 'text-indigo-600 dark:text-indigo-400',
+        adminOnly: true,
+      },
+      {
+        title: 'Billing',
+        href: '/dashboard/settings/billing',
+        icon: CreditCard,
+        iconColor: 'text-amber-600 dark:text-amber-400',
         adminOnly: true,
       },
       {
@@ -226,6 +236,8 @@ interface EnhancedSidebarProps {
   unpaidCount?: number
   userName?: string
   organizationName?: string
+  hasTeamFeature?: boolean
+  hasERPFeature?: boolean
 }
 
 export function EnhancedSidebar({
@@ -234,6 +246,8 @@ export function EnhancedSidebar({
   unpaidCount = 0,
   userName,
   organizationName,
+  hasTeamFeature = true,
+  hasERPFeature = true,
 }: EnhancedSidebarProps) {
   const pathname = usePathname()
 
@@ -306,6 +320,13 @@ export function EnhancedSidebar({
     return badge
   }
 
+  const getProBadge = (premiumFeature?: 'team' | 'erp') => {
+    if (!premiumFeature) return null
+    if (premiumFeature === 'team' && !hasTeamFeature) return 'Pro'
+    if (premiumFeature === 'erp' && !hasERPFeature) return 'Pro'
+    return null
+  }
+
   const isActive = (href?: string) => {
     if (!href) return false
     // Exact match for dashboard
@@ -323,6 +344,7 @@ export function EnhancedSidebar({
     const isExpanded = expandedSections.includes(item.title)
     const active = isActive(item.href)
     const badgeValue = getBadgeValue(item.badge)
+    const proBadge = getProBadge(item.premiumFeature)
 
     // Section with children
     if (hasChildren) {
@@ -406,7 +428,12 @@ export function EnhancedSidebar({
                 )}
               >
                 <Icon className={cn('h-5 w-5 transition-colors', item.iconColor, active && 'scale-110')} />
-                {badgeValue && (
+                {proBadge && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-r from-amber-500 to-yellow-500">
+                    <Sparkles className="h-2.5 w-2.5 text-white" />
+                  </span>
+                )}
+                {badgeValue && !proBadge && (
                   <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                     {badgeValue}
                   </span>
@@ -415,6 +442,7 @@ export function EnhancedSidebar({
             </TooltipTrigger>
             <TooltipContent side="right" className="font-medium">
               {item.title}
+              {proBadge && <span className="ml-2 text-amber-500">(Pro)</span>}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -436,7 +464,13 @@ export function EnhancedSidebar({
         {!isCollapsed && (
           <>
             <span className="flex-1">{item.title}</span>
-            {badgeValue && (
+            {proBadge && (
+              <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-[10px] px-1.5 py-0.5">
+                <Sparkles className="h-3 w-3 mr-0.5" />
+                {proBadge}
+              </Badge>
+            )}
+            {badgeValue && !proBadge && (
               <Badge variant={item.badgeVariant || 'default'}>
                 {badgeValue}
               </Badge>

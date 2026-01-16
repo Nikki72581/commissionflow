@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { UserPlus, X } from 'lucide-react'
+import { UserPlus, X, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -23,8 +23,13 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { inviteTeamMembers, createPlaceholderUsers } from '@/app/actions/users'
 import { toast } from 'sonner'
+import Link from 'next/link'
 
-export function AddTeamMemberDialog() {
+interface AddTeamMemberDialogProps {
+  canInvite?: boolean
+}
+
+export function AddTeamMemberDialog({ canInvite = true }: AddTeamMemberDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [mode, setMode] = useState<'invite' | 'placeholder'>('invite')
@@ -179,63 +184,85 @@ export function AddTeamMemberDialog() {
           </TabsList>
 
           <TabsContent value="invite" className="space-y-4 py-4">
-            <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-sm">
-              <p className="font-medium text-blue-700 dark:text-blue-400">Send email invitations immediately</p>
-              <p className="text-blue-600 dark:text-blue-300 mt-1">
-                Team members will receive an email to join and can access the system right away.
-              </p>
-            </div>
-
-            {inviteEmails.map((email, index) => (
-              <div key={index} className="flex gap-2">
-                <div className="flex-1">
-                  <Label htmlFor={`email-${index}`}>Email Address</Label>
-                  <Input
-                    id={`email-${index}`}
-                    type="email"
-                    placeholder="email@example.com"
-                    value={email}
-                    onChange={(e) => updateInviteEmail(index, e.target.value)}
-                    disabled={loading}
-                  />
+            {canInvite ? (
+              <>
+                <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 text-sm">
+                  <p className="font-medium text-blue-700 dark:text-blue-400">Send email invitations immediately</p>
+                  <p className="text-blue-600 dark:text-blue-300 mt-1">
+                    Team members will receive an email to join and can access the system right away.
+                  </p>
                 </div>
-                {inviteEmails.length > 1 && (
+
+                {inviteEmails.map((email, index) => (
+                  <div key={index} className="flex gap-2">
+                    <div className="flex-1">
+                      <Label htmlFor={`email-${index}`}>Email Address</Label>
+                      <Input
+                        id={`email-${index}`}
+                        type="email"
+                        placeholder="email@example.com"
+                        value={email}
+                        onChange={(e) => updateInviteEmail(index, e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
+                    {inviteEmails.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => removeInviteEmailField(index)}
+                        disabled={loading}
+                        className="mt-7"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addInviteEmailField}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  Add Another Email
+                </Button>
+
+                <div className="flex gap-2 justify-end pt-4">
                   <Button
-                    type="button"
                     variant="outline"
-                    size="icon"
-                    onClick={() => removeInviteEmailField(index)}
+                    onClick={() => setOpen(false)}
                     disabled={loading}
-                    className="mt-7"
                   >
-                    <X className="h-4 w-4" />
+                    Cancel
                   </Button>
-                )}
+                  <Button onClick={handleInvite} disabled={loading}>
+                    {loading ? 'Sending...' : 'Send Invitations'}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-500/10 dark:to-yellow-500/10 p-6 text-center">
+                <div className="mx-auto mb-4 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 p-3 w-fit">
+                  <Sparkles className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
+                  Upgrade to Team Plan
+                </h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mb-4">
+                  Team invitations require a Team plan. Upgrade to invite team members and give
+                  salespeople visibility into their commissions.
+                </p>
+                <Link href="/dashboard/settings/billing">
+                  <Button className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white">
+                    View Plans
+                  </Button>
+                </Link>
               </div>
-            ))}
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addInviteEmailField}
-              disabled={loading}
-              className="w-full"
-            >
-              Add Another Email
-            </Button>
-
-            <div className="flex gap-2 justify-end pt-4">
-              <Button
-                variant="outline"
-                onClick={() => setOpen(false)}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleInvite} disabled={loading}>
-                {loading ? 'Sending...' : 'Send Invitations'}
-              </Button>
-            </div>
+            )}
           </TabsContent>
 
           <TabsContent value="placeholder" className="space-y-4 py-4">

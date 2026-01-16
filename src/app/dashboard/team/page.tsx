@@ -20,6 +20,8 @@ import { AddTeamMemberDialog } from '@/components/team/add-team-member-dialog'
 import { PendingInvitations } from '@/components/team/pending-invitations'
 import { EditUserDialog } from '@/components/team/edit-user-dialog'
 import { PlaceholderUserActions } from '@/components/team/placeholder-user-actions'
+import { canInviteMembers } from '@/lib/features'
+import { UpgradePrompt } from '@/components/upgrade-prompt'
 
 export const dynamic = 'force-dynamic'
 
@@ -287,6 +289,7 @@ export default async function TeamPage({
   const user = await getCurrentUserWithOrg()
   const stats = await getTeamStats(user.organizationId)
   const isAdmin = user.role === 'ADMIN'
+  const canInvite = await canInviteMembers()
 
   const teamMetrics = [
     {
@@ -327,8 +330,18 @@ export default async function TeamPage({
             View and manage your team members
           </p>
         </div>
-        {isAdmin && <AddTeamMemberDialog />}
+        {isAdmin && <AddTeamMemberDialog canInvite={canInvite} />}
       </div>
+
+      {/* Upgrade Prompt for Team Invitations */}
+      {isAdmin && !canInvite && (
+        <UpgradePrompt
+          feature="invite_members"
+          variant="banner"
+          title="Upgrade to invite team members"
+          description="Team plan lets you invite salespeople and give them visibility into their commissions."
+        />
+      )}
 
       {/* Team Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -352,8 +365,8 @@ export default async function TeamPage({
         ))}
       </div>
 
-      {/* Pending Invitations - Admin Only */}
-      {isAdmin && <PendingInvitations />}
+      {/* Pending Invitations - Admin Only with invite permissions */}
+      {isAdmin && canInvite && <PendingInvitations />}
 
       {/* Search Bar */}
       <div className="flex items-center gap-4">

@@ -22,6 +22,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getAcumaticaIntegration } from '@/actions/integrations/acumatica/connection'
 import { AcumaticaIntegrationActions } from '@/components/integrations/acumatica-integration-actions'
+import { canAccessERP } from '@/lib/features'
+import { UpgradePrompt } from '@/components/upgrade-prompt'
 
 export const dynamic = 'force-dynamic'
 
@@ -102,6 +104,9 @@ export default async function IntegrationsPage() {
   // Verify admin access
   await requireAdmin()
 
+  // Check if user has ERP integration access
+  const hasERPAccess = await canAccessERP()
+
   const acumaticaIntegration = await getAcumaticaIntegration()
   const integrations = await getIntegrations()
   const connectedCount = integrations.filter(i => i.status === 'connected').length
@@ -135,6 +140,16 @@ export default async function IntegrationsPage() {
           </div>
         )}
       </div>
+
+      {/* Upgrade Prompt for ERP Access */}
+      {!hasERPAccess && (
+        <UpgradePrompt
+          feature="erp_integration"
+          variant="card"
+          title="Upgrade for ERP Integrations"
+          description="Connect CommissionFlow to Acumatica, Sage, Dynamics, and other ERP systems to automatically sync sales data and calculate commissions."
+        />
+      )}
 
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -248,16 +263,25 @@ export default async function IntegrationsPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  {integration.status === 'connected' && integration.id === 'acumatica' ? (
+                  {integration.status === 'connected' && integration.id === 'acumatica' && hasERPAccess ? (
                     <AcumaticaIntegrationActions setupUrl={integration.setupUrl || '/dashboard/integrations/acumatica/setup'} />
-                  ) : integration.status === 'connected' ? (
+                  ) : integration.status === 'connected' && hasERPAccess ? (
                     <Button variant="outline" size="sm" className="gap-2">
                       Manage
                     </Button>
-                  ) : integration.comingSoon ? (
+                  ) : integration.comingSoon || !hasERPAccess ? (
                     <Button disabled className="gap-2">
-                      <Clock className="h-4 w-4" />
-                      Coming Soon
+                      {integration.comingSoon ? (
+                        <>
+                          <Clock className="h-4 w-4" />
+                          Coming Soon
+                        </>
+                      ) : (
+                        <>
+                          <Plug className="h-4 w-4" />
+                          Upgrade Required
+                        </>
+                      )}
                     </Button>
                   ) : (
                     <Link href={integration.setupUrl || '#'}>

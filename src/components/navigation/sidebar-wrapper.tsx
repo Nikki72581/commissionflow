@@ -8,6 +8,8 @@ interface SidebarWrapperProps {
   pendingCount: number
   userName: string
   organizationName: string
+  hasTeamFeature?: boolean
+  hasERPFeature?: boolean
 }
 
 export function SidebarWrapper(props: SidebarWrapperProps) {
