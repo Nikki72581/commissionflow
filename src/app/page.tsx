@@ -1,16 +1,77 @@
 'use client';
-//test comment
+
 import { CheckCircle, Zap, Shield, TrendingUp, Users, DollarSign, ArrowRight, Sparkles, BarChart3, Lock, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+
+// Animated counter hook for stats
+function useCountUp(end: number, duration: number = 2000, startOnView: boolean = true) {
+  const [count, setCount] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!startOnView) {
+      setHasStarted(true);
+    }
+  }, [startOnView]);
+
+  useEffect(() => {
+    if (startOnView && ref.current) {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting && !hasStarted) {
+            setHasStarted(true);
+          }
+        },
+        { threshold: 0.5 }
+      );
+      observer.observe(ref.current);
+      return () => observer.disconnect();
+    }
+  }, [startOnView, hasStarted]);
+
+  useEffect(() => {
+    if (!hasStarted) return;
+
+    let startTime: number;
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.floor(easeOutQuart * end));
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    requestAnimationFrame(animate);
+  }, [hasStarted, end, duration]);
+
+  return { count, ref };
+}
+
+// Animated stat component
+function AnimatedStat({ value, suffix, label }: { value: number; suffix: string; label: string }) {
+  const { count, ref } = useCountUp(value, 2000);
+  return (
+    <div ref={ref} className="text-center">
+      <div className="text-3xl md:text-5xl font-display font-black text-gradient">
+        {count}{suffix}
+      </div>
+      <div className="text-sm text-muted-foreground mt-2 font-medium tracking-wide uppercase">
+        {label}
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen noise-overlay relative">
       <div className="w-full bg-amber-50 border-b border-amber-200">
         <div className="container mx-auto px-4 py-2 text-sm text-amber-900 flex items-center gap-2">
           <Shield className="h-4 w-4 text-amber-700" />
@@ -20,13 +81,13 @@ export default function App() {
         </div>
       </div>
       {/* Header */}
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border/50 glass sticky top-0 z-50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+          <div className="flex items-center space-x-3">
+            <div className="h-9 w-9 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/25 animate-gradient">
               <DollarSign className="h-5 w-5 text-white" />
             </div>
-            <span className="font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CommissionFlow</span>
+            <span className="font-display font-bold text-lg text-gradient">CommissionFlow</span>
           </div>
           <nav className="hidden md:flex items-center space-x-6">
             <a href="#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
@@ -59,108 +120,118 @@ export default function App() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative py-20 md:py-32 overflow-hidden">
-        {/* Background gradient blobs */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      <section className="relative py-24 md:py-40 overflow-hidden">
+        {/* Enhanced background with gradient mesh */}
+        <div className="absolute inset-0 -z-10 gradient-mesh opacity-40"></div>
+
+        {/* Floating gradient orbs */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-20 left-[15%] w-[500px] h-[500px] bg-blue-500/30 rounded-full blur-[120px] animate-float"></div>
+          <div className="absolute bottom-20 right-[15%] w-[400px] h-[400px] bg-purple-500/25 rounded-full blur-[100px] animate-float" style={{ animationDelay: '-3s' }}></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-pink-500/15 rounded-full blur-[140px] animate-float" style={{ animationDelay: '-1.5s' }}></div>
         </div>
-        
-        <div className="container mx-auto px-4 text-center relative">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 mb-8">
-            <Sparkles className="h-4 w-4 text-blue-600" />
-            <span className="text-sm">AI-Powered Commission Intelligence</span>
+
+        <div className="container mx-auto px-4 text-center relative z-10">
+          {/* Badge with entrance animation */}
+          <div className="animate-fade-up inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass border border-blue-500/30 mb-10 shadow-lg shadow-blue-500/10">
+            <Sparkles className="h-4 w-4 text-blue-500" />
+            <span className="text-sm font-medium">AI-Powered Commission Intelligence</span>
           </div>
-          
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6">
+
+          {/* Headline with staggered animation */}
+          <h1 className="animate-fade-up delay-100 font-display text-5xl md:text-7xl lg:text-8xl font-black tracking-tight mb-8 leading-[0.95]">
             Sales Commission
             <br />
             Management,{' '}
-            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <span className="text-gradient animate-gradient inline-block">
               Reimagined
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+
+          {/* Subheadline */}
+          <p className="animate-fade-up delay-200 text-lg md:text-xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
             Ditch the spreadsheets. Harness AI to design, calculate, and manage sales commissions with complete confidence and transparency.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+
+          {/* CTA buttons */}
+          <div className="animate-fade-up delay-300 flex flex-col sm:flex-row gap-4 justify-center mb-6">
             <Link href="/sign-in">
-              <Button size="lg" className="px-8 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
+              <Button size="lg" className="px-10 h-14 text-base bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 shadow-xl shadow-purple-500/25 transition-all hover:shadow-2xl hover:shadow-purple-500/30 hover:-translate-y-0.5">
                 Start Free Trial <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
             <a href="#pricing">
-              <Button variant="outline" size="lg" className="px-8 border-2">
+              <Button variant="outline" size="lg" className="px-10 h-14 text-base border-2 hover:bg-primary/5 transition-all hover:-translate-y-0.5">
                 View Pricing
               </Button>
             </a>
           </div>
-          <p className="text-sm text-muted-foreground">🎉 No credit card required • 14-day free trial • Setup in minutes</p>
-          
-          {/* Stats bar */}
-          <div className="mt-16 grid grid-cols-3 gap-8 max-w-2xl mx-auto">
-            <div>
-              <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">99.9%</div>
-              <div className="text-sm text-muted-foreground mt-1">Accuracy Rate</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">10hrs</div>
-              <div className="text-sm text-muted-foreground mt-1">Saved Per Month</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">5min</div>
-              <div className="text-sm text-muted-foreground mt-1">Setup Time</div>
+
+          <p className="animate-fade-up delay-400 text-sm text-muted-foreground">No credit card required • 14-day free trial • Setup in minutes</p>
+
+          {/* Animated Stats bar */}
+          <div className="animate-fade-up delay-500 mt-20 grid grid-cols-3 gap-8 max-w-3xl mx-auto p-8 rounded-2xl glass border border-border/50">
+            <AnimatedStat value={99} suffix="%" label="Accuracy Rate" />
+            <div className="border-l border-border/50"></div>
+            <AnimatedStat value={10} suffix="hrs" label="Saved Monthly" />
+            <div className="col-span-3 border-t border-border/50 -mx-8 my-0"></div>
+            <div className="col-span-3">
+              <AnimatedStat value={5} suffix="min" label="Setup Time" />
             </div>
           </div>
         </div>
       </section>
 
       {/* Problem Section */}
-      <section className="py-20 bg-gradient-to-b from-muted/50 to-background">
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-muted/30 via-muted/50 to-background -z-10"></div>
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-5xl font-bold mb-4">The Commission Nightmare</h2>
-              <p className="text-xl text-muted-foreground">Sound familiar? You're not alone.</p>
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="font-display text-4xl md:text-6xl font-black mb-5 tracking-tight">The Commission Nightmare</h2>
+              <p className="text-xl text-muted-foreground">Sound familiar? You&apos;re not alone.</p>
             </div>
-            
+
             <div className="grid md:grid-cols-3 gap-6">
-              <Card className="border-2 hover:border-primary/40 transition-all hover:shadow-lg hover:shadow-primary/10 bg-gradient-to-br from-card to-muted/20 group">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                    <BarChart3 className="h-6 w-6 text-primary" />
+              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-card/80 to-card shadow-xl shadow-black/5 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-500 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <CardHeader className="relative">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                    <BarChart3 className="h-7 w-7 text-white" />
                   </div>
-                  <CardTitle>Spreadsheet Hell</CardTitle>
+                  <CardTitle className="font-display text-xl font-bold">Spreadsheet Hell</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative">
                   <p className="text-muted-foreground leading-relaxed">
                     Manually tracking sales and calculating commissions in Excel is error-prone, time-consuming, and completely unsustainable as you scale.
                   </p>
                 </CardContent>
               </Card>
-              
-              <Card className="border-2 hover:border-primary/40 transition-all hover:shadow-lg hover:shadow-primary/10 bg-gradient-to-br from-card to-muted/20 group">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                    <Users className="h-6 w-6 text-primary" />
+
+              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-card/80 to-card shadow-xl shadow-black/5 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-500 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <CardHeader className="relative">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-4 shadow-lg shadow-purple-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                    <Users className="h-7 w-7 text-white" />
                   </div>
-                  <CardTitle>Zero Transparency</CardTitle>
+                  <CardTitle className="font-display text-xl font-bold">Zero Transparency</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative">
                   <p className="text-muted-foreground leading-relaxed">
-                    Salespeople can't see their earnings in real-time, leading to constant questions, frustration, disputes, and missed motivation.
+                    Salespeople can&apos;t see their earnings in real-time, leading to constant questions, frustration, disputes, and missed motivation.
                   </p>
                 </CardContent>
               </Card>
-              
-              <Card className="border-2 hover:border-primary/40 transition-all hover:shadow-lg hover:shadow-primary/10 bg-gradient-to-br from-card to-muted/20 group">
-                <CardHeader>
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
-                    <TrendingUp className="h-6 w-6 text-primary" />
+
+              <Card className="group relative overflow-hidden border-0 bg-gradient-to-br from-card/80 to-card shadow-xl shadow-black/5 hover:shadow-2xl hover:shadow-pink-500/10 transition-all duration-500 hover:-translate-y-2">
+                <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                <CardHeader className="relative">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center mb-4 shadow-lg shadow-pink-500/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                    <TrendingUp className="h-7 w-7 text-white" />
                   </div>
-                  <CardTitle>Complex Plans</CardTitle>
+                  <CardTitle className="font-display text-xl font-bold">Complex Plans</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="relative">
                   <p className="text-muted-foreground leading-relaxed">
                     Designing fair commission structures that motivate your team without breaking your budget is incredibly difficult and risky.
                   </p>
@@ -172,24 +243,27 @@ export default function App() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/2 left-0 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/4 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+      <section id="features" className="py-28 relative overflow-hidden">
+        {/* Subtle background */}
+        <div className="absolute inset-0 -z-10 gradient-mesh opacity-20"></div>
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-1/3 left-0 w-[400px] h-[400px] bg-purple-500/20 rounded-full blur-[100px] animate-float" style={{ animationDelay: '-2s' }}></div>
+          <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-blue-500/15 rounded-full blur-[120px] animate-float"></div>
         </div>
-        
+
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-block px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 mb-4">
-              <span className="text-sm font-semibold text-blue-600">POWERFUL FEATURES</span>
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass border border-purple-500/30 mb-6 shadow-lg shadow-purple-500/10">
+              <Zap className="h-4 w-4 text-purple-500" />
+              <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Powerful Features</span>
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Everything You Need,<br />Nothing You Don't</h2>
+            <h2 className="font-display text-4xl md:text-6xl font-black mb-6 tracking-tight">Everything You Need,<br />Nothing You Don&apos;t</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Built for modern sales teams who demand accuracy, transparency, and speed
             </p>
           </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
             <FeatureCard
               icon={<Zap className="h-7 w-7" />}
               title="AI-Powered Plan Builder"
@@ -231,13 +305,15 @@ export default function App() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-24 bg-gradient-to-b from-background via-muted/30 to-background">
+      <section id="pricing" className="py-28 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-muted/20 via-muted/40 to-background -z-10"></div>
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-block px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 mb-4">
-              <span className="text-sm font-semibold text-blue-600">PRICING</span>
+          <div className="text-center mb-20">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass border border-blue-500/30 mb-6 shadow-lg shadow-blue-500/10">
+              <DollarSign className="h-4 w-4 text-blue-500" />
+              <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Pricing</span>
             </div>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Simple, Transparent Pricing</h2>
+            <h2 className="font-display text-4xl md:text-6xl font-black mb-6 tracking-tight">Simple, Transparent Pricing</h2>
             <p className="text-xl text-muted-foreground">Choose the plan that fits your team. Scale as you grow.</p>
           </div>
 
@@ -303,26 +379,31 @@ export default function App() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 -z-10"></div>
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl md:text-6xl font-bold mb-6">
+      <section className="py-32 relative overflow-hidden">
+        {/* Rich gradient background */}
+        <div className="absolute inset-0 -z-10 gradient-mesh opacity-30"></div>
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-500/20 rounded-full blur-[150px]"></div>
+        </div>
+
+        <div className="container mx-auto px-4 text-center relative z-10">
+          <h2 className="font-display text-4xl md:text-7xl font-black mb-8 tracking-tight leading-[1.1]">
             Ready to Transform Your<br />
-            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <span className="text-gradient">
               Commission Process?
             </span>
           </h2>
-          <p className="text-lg md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-2xl text-muted-foreground mb-12 max-w-3xl mx-auto leading-relaxed">
             Join hundreds of forward-thinking companies that have eliminated commission headaches forever.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-5 justify-center">
             <Link href="/sign-in">
-              <Button size="lg" className="px-10 bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90">
-                Start Your Free Trial <ArrowRight className="ml-2 h-5 w-5" />
+              <Button size="lg" className="px-12 h-16 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 shadow-2xl shadow-purple-500/30 transition-all hover:shadow-purple-500/40 hover:-translate-y-1">
+                Start Your Free Trial <ArrowRight className="ml-3 h-5 w-5" />
               </Button>
             </Link>
             <Link href="/dashboard">
-              <Button variant="outline" size="lg" className="px-10 border-2">
+              <Button variant="outline" size="lg" className="px-12 h-16 text-lg border-2 hover:bg-primary/5 transition-all hover:-translate-y-1">
                 View Demo Dashboard
               </Button>
             </Link>
@@ -331,20 +412,20 @@ export default function App() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t py-12 bg-muted/30">
+      <footer className="border-t border-border/50 py-16 bg-muted/20">
         <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center space-x-3">
+              <div className="h-10 w-10 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
                 <DollarSign className="h-5 w-5 text-white" />
               </div>
-              <span className="font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">CommissionFlow</span>
+              <span className="font-display font-bold text-lg text-gradient">CommissionFlow</span>
             </div>
-            <p className="text-sm text-muted-foreground">&copy; 2024 CommissionFlow. All rights reserved.</p>
-            <div className="flex gap-6 text-sm text-muted-foreground">
-              <Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-blue-600 transition-colors">Terms</Link>
-              <Link href="/contact" className="hover:text-blue-600 transition-colors">Contact</Link>
+            <p className="text-sm text-muted-foreground">&copy; 2025 CommissionFlow. All rights reserved.</p>
+            <div className="flex gap-8 text-sm">
+              <Link href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</Link>
+              <Link href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms</Link>
+              <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
             </div>
           </div>
         </div>
@@ -353,76 +434,96 @@ export default function App() {
   );
 }
 
-function FeatureCard({ 
-  icon, 
-  title, 
+function FeatureCard({
+  icon,
+  title,
   description,
   gradient
-}: { 
-  icon: React.ReactNode; 
-  title: string; 
+}: {
+  icon: React.ReactNode;
+  title: string;
   description: string;
   gradient: string;
 }) {
   return (
-    <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 group bg-gradient-to-br from-card to-muted/20">
-      <CardHeader>
-        <div className={`h-14 w-14 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+    <Card className="group relative overflow-hidden border-0 bg-card/50 backdrop-blur-sm shadow-xl shadow-black/5 hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+      {/* Hover gradient overlay */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient.replace('from-', 'from-').replace('to-', 'to-')}/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+      {/* Subtle border glow on hover */}
+      <div className="absolute inset-0 rounded-xl border border-white/10 group-hover:border-white/20 transition-colors duration-500"></div>
+      <CardHeader className="relative">
+        <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-5 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500`}>
           <div className="text-white">{icon}</div>
         </div>
-        <CardTitle>{title}</CardTitle>
+        <CardTitle className="font-display text-xl font-bold">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
         <p className="text-muted-foreground leading-relaxed">{description}</p>
       </CardContent>
     </Card>
   );
 }
 
-function PricingCard({ 
-  name, 
-  price, 
-  description, 
-  features, 
-  highlighted = false 
-}: { 
-  name: string; 
-  price: string; 
-  description: string; 
-  features: string[]; 
+function PricingCard({
+  name,
+  price,
+  description,
+  features,
+  highlighted = false
+}: {
+  name: string;
+  price: string;
+  description: string;
+  features: string[];
   highlighted?: boolean;
 }) {
   return (
-    <Card className={`relative transition-all hover:-translate-y-2 ${
-      highlighted 
-        ? 'border-2 border-blue-600 shadow-2xl shadow-blue-600/20 bg-gradient-to-br from-card to-blue-500/5' 
-        : 'border-2 hover:border-blue-500/30 hover:shadow-xl'
+    <Card className={`group relative transition-all duration-500 hover:-translate-y-2 overflow-hidden ${
+      highlighted
+        ? 'border-0 shadow-2xl shadow-purple-500/20 bg-gradient-to-br from-card via-card to-purple-500/10 scale-105 z-10'
+        : 'border-0 shadow-xl shadow-black/5 hover:shadow-2xl bg-card/80'
     }`}>
+      {/* Glow effect for highlighted */}
       {highlighted && (
-        <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-full">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"></div>
+      )}
+      {/* Border */}
+      <div className={`absolute inset-0 rounded-xl border ${highlighted ? 'border-purple-500/30' : 'border-white/10 group-hover:border-white/20'} transition-colors`}></div>
+
+      {highlighted && (
+        <div className="absolute -top-px left-1/2 -translate-x-1/2 px-6 py-1.5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white text-xs font-bold rounded-b-xl shadow-lg uppercase tracking-wider">
           Most Popular
         </div>
       )}
-      <CardHeader>
-        <CardTitle>{name}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+      <CardHeader className="relative pt-8">
+        <CardTitle className="font-display text-xl font-bold">{name}</CardTitle>
+        <CardDescription className="text-muted-foreground">{description}</CardDescription>
         <div className="mt-6">
-          <span className={`text-4xl font-bold ${highlighted ? 'bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent' : ''}`}>
+          <span className={`font-display text-5xl font-black ${highlighted ? 'text-gradient' : ''}`}>
             {price}
           </span>
-          {price !== 'Custom' && <span className="text-muted-foreground">/mo</span>}
+          {price !== 'Custom' && <span className="text-muted-foreground text-lg">/mo</span>}
         </div>
       </CardHeader>
-      <CardContent>
-        <ul className="space-y-3 mb-8">
+      <CardContent className="relative">
+        <ul className="space-y-4 mb-8">
           {features.map((feature, i) => (
             <li key={i} className="flex items-start gap-3">
-              <CheckCircle className={`h-5 w-5 flex-shrink-0 mt-0.5 ${highlighted ? 'text-blue-600' : 'text-muted-foreground'}`} />
+              <div className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${highlighted ? 'bg-gradient-to-br from-blue-500 to-purple-500' : 'bg-muted'}`}>
+                <CheckCircle className={`h-3.5 w-3.5 ${highlighted ? 'text-white' : 'text-muted-foreground'}`} />
+              </div>
               <span className="text-sm leading-relaxed">{feature}</span>
             </li>
           ))}
         </ul>
-        <Button className={`w-full ${highlighted ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90' : ''}`} variant={highlighted ? 'default' : 'outline'}>
+        <Button
+          className={`w-full h-12 font-semibold transition-all ${
+            highlighted
+              ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30'
+              : 'hover:bg-primary/10'
+          }`}
+          variant={highlighted ? 'default' : 'outline'}
+        >
           Get Started {highlighted && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </CardContent>
