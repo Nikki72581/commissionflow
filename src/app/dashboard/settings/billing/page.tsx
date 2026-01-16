@@ -44,61 +44,39 @@ interface Plan {
   features: PlanFeature[]
   highlighted?: boolean
   current?: boolean
+  comingSoon?: boolean
 }
 
 const plans: Plan[] = [
   {
-    id: 'starter',
-    name: 'Starter',
+    id: 'free',
+    name: 'Free',
     description: 'For individuals and small teams getting started',
-    price: '$29',
+    price: '$0',
     priceDetail: '/month',
     features: [
-      { name: 'Up to 5 salespeople', included: true },
-      { name: 'Basic commission plans', included: true },
+      { name: 'Unlimited salespeople', included: true },
+      { name: 'Commission plans', included: true },
       { name: 'CSV data import', included: true },
+      { name: 'Basic reporting', included: true },
       { name: 'Email support', included: true },
-      { name: 'Team invitations', included: false, feature: 'invite_members' },
-      { name: 'ERP integrations', included: false, feature: 'erp_integration' },
-      { name: 'Advanced reporting', included: false, feature: 'advanced_reporting' },
-      { name: 'API access', included: false, feature: 'api_access' },
     ],
   },
   {
-    id: 'growth',
-    name: 'Growth',
+    id: 'team',
+    name: 'Team',
     description: 'For growing teams that need more power',
-    price: '$79',
-    priceDetail: '/month',
+    price: 'TBD',
+    priceDetail: '',
     highlighted: true,
+    comingSoon: true,
     features: [
-      { name: 'Up to 20 salespeople', included: true },
-      { name: 'Advanced commission plans', included: true },
-      { name: 'CSV data import', included: true },
+      { name: 'Everything in Free', included: true },
+      { name: 'Team invitations', included: true, feature: 'invite_members' },
+      { name: 'ERP integrations', included: true, feature: 'erp_integration' },
+      { name: 'Advanced reporting', included: true, feature: 'advanced_reporting' },
+      { name: 'API access', included: true, feature: 'api_access' },
       { name: 'Priority support', included: true },
-      { name: 'Team invitations', included: true, feature: 'invite_members' },
-      { name: 'ERP integrations', included: true, feature: 'erp_integration' },
-      { name: 'Advanced reporting', included: true, feature: 'advanced_reporting' },
-      { name: 'API access', included: true, feature: 'api_access' },
-    ],
-  },
-  {
-    id: 'professional',
-    name: 'Professional',
-    description: 'For established organizations with complex needs',
-    price: '$149',
-    priceDetail: '/month',
-    features: [
-      { name: 'Up to 50 salespeople', included: true },
-      { name: 'Custom commission workflows', included: true },
-      { name: 'All data import options', included: true },
-      { name: 'Dedicated support', included: true },
-      { name: 'Team invitations', included: true, feature: 'invite_members' },
-      { name: 'ERP integrations', included: true, feature: 'erp_integration' },
-      { name: 'Advanced reporting', included: true, feature: 'advanced_reporting' },
-      { name: 'API access', included: true, feature: 'api_access' },
-      { name: 'SSO/SAML', included: true },
-      { name: 'White-label options', included: true },
     ],
   },
 ]
@@ -107,13 +85,10 @@ async function CurrentPlanSection() {
   const features = await getOrgFeatures()
 
   // Determine current plan based on features
-  let currentPlan = 'starter'
-  if (features.includes('invite_members')) {
-    currentPlan = features.length >= 4 ? 'professional' : 'growth'
-  }
+  const hasTeamFeatures = features.includes('invite_members')
+  const currentPlan = hasTeamFeatures ? 'team' : 'free'
 
   const planInfo = plans.find((p) => p.id === currentPlan) || plans[0]
-  const hasTeamFeatures = features.includes('invite_members')
 
   return (
     <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-purple-500/5">
@@ -223,21 +198,23 @@ function PlanCard({ plan, isCurrent }: { plan: Plan; isCurrent: boolean }) {
   return (
     <Card
       className={`relative ${
-        plan.highlighted
+        plan.highlighted && !plan.comingSoon
           ? 'border-2 border-primary shadow-lg shadow-primary/10'
+          : plan.comingSoon
+          ? 'border-2 border-dashed border-muted-foreground/30'
           : isCurrent
           ? 'border-2 border-emerald-500/50'
           : ''
       }`}
     >
-      {plan.highlighted && (
+      {plan.comingSoon && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <Badge className="bg-gradient-to-r from-primary to-purple-600 text-white">
-            Most Popular
+          <Badge variant="secondary" className="bg-muted">
+            Coming Soon
           </Badge>
         </div>
       )}
-      {isCurrent && (
+      {isCurrent && !plan.comingSoon && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <Badge variant="success">Current Plan</Badge>
         </div>
@@ -248,19 +225,23 @@ function PlanCard({ plan, isCurrent }: { plan: Plan; isCurrent: boolean }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-baseline gap-1">
-          <span className="text-4xl font-bold">{plan.price}</span>
-          <span className="text-muted-foreground">{plan.priceDetail}</span>
+          <span className={`text-4xl font-bold ${plan.comingSoon ? 'text-muted-foreground' : ''}`}>
+            {plan.price}
+          </span>
+          {plan.priceDetail && (
+            <span className="text-muted-foreground">{plan.priceDetail}</span>
+          )}
         </div>
 
         <ul className="space-y-2">
           {plan.features.map((feature, index) => (
             <li key={index} className="flex items-start gap-2 text-sm">
               {feature.included ? (
-                <CheckCircle className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                <CheckCircle className={`h-4 w-4 mt-0.5 shrink-0 ${plan.comingSoon ? 'text-muted-foreground' : 'text-emerald-500'}`} />
               ) : (
                 <div className="h-4 w-4 rounded-full border-2 border-muted mt-0.5 shrink-0" />
               )}
-              <span className={feature.included ? '' : 'text-muted-foreground'}>
+              <span className={feature.included && !plan.comingSoon ? '' : 'text-muted-foreground'}>
                 {feature.name}
               </span>
             </li>
@@ -269,15 +250,15 @@ function PlanCard({ plan, isCurrent }: { plan: Plan; isCurrent: boolean }) {
 
         <Button
           className={`w-full ${
-            plan.highlighted
+            plan.highlighted && !plan.comingSoon
               ? 'bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90'
               : ''
           }`}
-          variant={isCurrent ? 'outline' : plan.highlighted ? 'default' : 'outline'}
-          disabled={isCurrent}
+          variant={isCurrent || plan.comingSoon ? 'outline' : plan.highlighted ? 'default' : 'outline'}
+          disabled={isCurrent || plan.comingSoon}
         >
-          {isCurrent ? 'Current Plan' : 'Upgrade'}
-          {!isCurrent && <ArrowRight className="ml-2 h-4 w-4" />}
+          {isCurrent ? 'Current Plan' : plan.comingSoon ? 'Coming Soon' : 'Upgrade'}
+          {!isCurrent && !plan.comingSoon && <ArrowRight className="ml-2 h-4 w-4" />}
         </Button>
       </CardContent>
     </Card>
@@ -288,13 +269,11 @@ async function PricingSection() {
   const features = await getOrgFeatures()
 
   // Determine current plan based on features
-  let currentPlanId = 'starter'
-  if (features.includes('invite_members')) {
-    currentPlanId = features.length >= 4 ? 'professional' : 'growth'
-  }
+  const hasTeamFeatures = features.includes('invite_members')
+  const currentPlanId = hasTeamFeatures ? 'team' : 'free'
 
   return (
-    <div className="grid gap-6 md:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 max-w-2xl mx-auto">
       {plans.map((plan) => (
         <PlanCard key={plan.id} plan={plan} isCurrent={plan.id === currentPlanId} />
       ))}

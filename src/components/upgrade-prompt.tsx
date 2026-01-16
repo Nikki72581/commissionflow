@@ -29,7 +29,7 @@ const featureDescriptions: Record<Feature, string> = {
 }
 
 const teamPlanFeatures = [
-  'Invite unlimited team members',
+  'Invite team members',
   'ERP integrations (Acumatica, Sage, Dynamics)',
   'Advanced reporting & analytics',
   'Role-based access control',
@@ -73,7 +73,7 @@ export function UpgradePrompt({
             disabled={isLoading}
             className="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white shrink-0"
           >
-            {isLoading ? 'Loading...' : 'Upgrade Now'}
+            {isLoading ? 'Loading...' : 'View Plans'}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
@@ -151,15 +151,8 @@ export function UpgradePrompt({
             className="flex-1 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white"
             size="lg"
           >
-            {isLoading ? 'Loading...' : 'Upgrade to Team Plan'}
+            {isLoading ? 'Loading...' : 'View Plans'}
             <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push('/dashboard/settings/billing')}
-            className="border-amber-300 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-500/10"
-          >
-            View All Plans
           </Button>
         </div>
       </CardContent>

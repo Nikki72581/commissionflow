@@ -91,7 +91,6 @@ export default function App() {
           </div>
           <nav className="hidden md:flex items-center space-x-6">
             <a href="#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
-            <a href="#pricing" className="text-sm hover:text-blue-600 transition-colors">Pricing</a>
             <Link href="/developers" className="text-sm hover:text-blue-600 transition-colors">Developers</Link>
             <Link href="/sign-in" className="text-sm hover:text-blue-600 transition-colors">Sign In</Link>
             <Link href="/sign-in">
@@ -109,7 +108,6 @@ export default function App() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-background p-4 space-y-4">
             <a href="#features" className="block text-sm hover:text-blue-600">Features</a>
-            <a href="#pricing" className="block text-sm hover:text-blue-600">Pricing</a>
             <Link href="/developers" className="block text-sm hover:text-blue-600">Developers</Link>
             <Link href="/sign-in" className="block text-sm hover:text-blue-600">Sign In</Link>
             <Link href="/sign-in" className="block w-full">
@@ -160,9 +158,9 @@ export default function App() {
                 Start Free Trial <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <a href="#pricing">
+            <a href="#features">
               <Button variant="outline" size="lg" className="px-10 h-14 text-base border-2 hover:bg-primary/5 transition-all hover:-translate-y-0.5">
-                View Pricing
+                Learn More
               </Button>
             </a>
           </div>
@@ -304,80 +302,6 @@ export default function App() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-28 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-muted/20 via-muted/40 to-background -z-10"></div>
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-20">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass border border-blue-500/30 mb-6 shadow-lg shadow-blue-500/10">
-              <DollarSign className="h-4 w-4 text-blue-500" />
-              <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Pricing</span>
-            </div>
-            <h2 className="font-display text-4xl md:text-6xl font-black mb-6 tracking-tight">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-muted-foreground">Choose the plan that fits your team. Scale as you grow.</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            <PricingCard
-              name="Starter"
-              price="$29"
-              description="Perfect for small teams"
-              features={[
-                'Up to 5 salespeople',
-                'Basic commission plans',
-                'CSV import/export',
-                'Email support',
-                'Mobile app access',
-              ]}
-            />
-            <PricingCard
-              name="Growth"
-              price="$79"
-              description="For growing businesses"
-              features={[
-                'Up to 20 salespeople',
-                'AI plan assistant',
-                'Advanced analytics',
-                'Priority support',
-                'API access',
-                'Custom integrations',
-              ]}
-              highlighted
-            />
-            <PricingCard
-              name="Professional"
-              price="$149"
-              description="For established teams"
-              features={[
-                'Up to 50 salespeople',
-                'White-label options',
-                'Custom workflows',
-                'Dedicated support',
-                'SSO/SAML',
-                'Advanced security',
-              ]}
-            />
-            <PricingCard
-              name="Enterprise"
-              price="Custom"
-              description="For large organizations"
-              features={[
-                'Unlimited salespeople',
-                'Custom everything',
-                'SLA guarantees',
-                'Account manager',
-                'On-premise options',
-                'Training & onboarding',
-              ]}
-            />
-          </div>
-          
-          <p className="text-center text-muted-foreground mt-10">
-            All plans include a 14-day free trial. No credit card required. Cancel anytime.
-          </p>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-32 relative overflow-hidden">
         {/* Rich gradient background */}
@@ -464,69 +388,3 @@ function FeatureCard({
   );
 }
 
-function PricingCard({
-  name,
-  price,
-  description,
-  features,
-  highlighted = false
-}: {
-  name: string;
-  price: string;
-  description: string;
-  features: string[];
-  highlighted?: boolean;
-}) {
-  return (
-    <Card className={`group relative transition-all duration-500 hover:-translate-y-2 overflow-hidden ${
-      highlighted
-        ? 'border-0 shadow-2xl shadow-purple-500/20 bg-gradient-to-br from-card via-card to-purple-500/10 scale-105 z-10'
-        : 'border-0 shadow-xl shadow-black/5 hover:shadow-2xl bg-card/80'
-    }`}>
-      {/* Glow effect for highlighted */}
-      {highlighted && (
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"></div>
-      )}
-      {/* Border */}
-      <div className={`absolute inset-0 rounded-xl border ${highlighted ? 'border-purple-500/30' : 'border-white/10 group-hover:border-white/20'} transition-colors`}></div>
-
-      {highlighted && (
-        <div className="absolute -top-px left-1/2 -translate-x-1/2 px-6 py-1.5 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white text-xs font-bold rounded-b-xl shadow-lg uppercase tracking-wider">
-          Most Popular
-        </div>
-      )}
-      <CardHeader className="relative pt-8">
-        <CardTitle className="font-display text-xl font-bold">{name}</CardTitle>
-        <CardDescription className="text-muted-foreground">{description}</CardDescription>
-        <div className="mt-6">
-          <span className={`font-display text-5xl font-black ${highlighted ? 'text-gradient' : ''}`}>
-            {price}
-          </span>
-          {price !== 'Custom' && <span className="text-muted-foreground text-lg">/mo</span>}
-        </div>
-      </CardHeader>
-      <CardContent className="relative">
-        <ul className="space-y-4 mb-8">
-          {features.map((feature, i) => (
-            <li key={i} className="flex items-start gap-3">
-              <div className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${highlighted ? 'bg-gradient-to-br from-blue-500 to-purple-500' : 'bg-muted'}`}>
-                <CheckCircle className={`h-3.5 w-3.5 ${highlighted ? 'text-white' : 'text-muted-foreground'}`} />
-              </div>
-              <span className="text-sm leading-relaxed">{feature}</span>
-            </li>
-          ))}
-        </ul>
-        <Button
-          className={`w-full h-12 font-semibold transition-all ${
-            highlighted
-              ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30'
-              : 'hover:bg-primary/10'
-          }`}
-          variant={highlighted ? 'default' : 'outline'}
-        >
-          Get Started {highlighted && <ArrowRight className="ml-2 h-4 w-4" />}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}

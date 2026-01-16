@@ -105,14 +105,11 @@ export default function OnboardingPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="STARTER">Starter - $29/mo</SelectItem>
-                  <SelectItem value="GROWTH">Growth - $79/mo</SelectItem>
-                  <SelectItem value="PROFESSIONAL">Professional - $149/mo</SelectItem>
-                  <SelectItem value="ENTERPRISE">Enterprise - Custom</SelectItem>
+                  <SelectItem value="STARTER">Free</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                14-day free trial on all plans
+                Start free and upgrade anytime as your needs grow
               </p>
             </div>
 
