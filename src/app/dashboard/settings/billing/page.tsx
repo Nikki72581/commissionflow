@@ -66,10 +66,9 @@ const plans: Plan[] = [
     id: 'team',
     name: 'Team',
     description: 'For growing teams that need more power',
-    price: 'TBD',
-    priceDetail: '',
+    price: '$49',
+    priceDetail: '/month',
     highlighted: true,
-    comingSoon: true,
     features: [
       { name: 'Everything in Free', included: true },
       { name: 'Team invitations', included: true, feature: 'invite_members' },
@@ -145,7 +144,7 @@ async function CurrentPlanSection() {
                 </p>
                 <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                   Get team invitations, ERP integrations, advanced reporting, and more with the
-                  Growth plan.
+                  Team plan.
                 </p>
               </div>
             </div>

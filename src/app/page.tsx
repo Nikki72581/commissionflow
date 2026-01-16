@@ -1,6 +1,6 @@
 'use client';
 
-import { CheckCircle, Zap, Shield, TrendingUp, Users, DollarSign, ArrowRight, Sparkles, BarChart3, Lock, Menu, X } from 'lucide-react';
+import { CheckCircle, Zap, Shield, TrendingUp, Users, DollarSign, ArrowRight, Sparkles, BarChart3, Lock, Menu, X, Plug, Key } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState, useEffect, useRef } from 'react';
@@ -91,6 +91,7 @@ export default function App() {
           </div>
           <nav className="hidden md:flex items-center space-x-6">
             <a href="#features" className="text-sm hover:text-blue-600 transition-colors">Features</a>
+            <a href="#pricing" className="text-sm hover:text-blue-600 transition-colors">Pricing</a>
             <Link href="/developers" className="text-sm hover:text-blue-600 transition-colors">Developers</Link>
             <Link href="/sign-in" className="text-sm hover:text-blue-600 transition-colors">Sign In</Link>
             <Link href="/sign-in">
@@ -108,6 +109,7 @@ export default function App() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t bg-background p-4 space-y-4">
             <a href="#features" className="block text-sm hover:text-blue-600">Features</a>
+            <a href="#pricing" className="block text-sm hover:text-blue-600">Pricing</a>
             <Link href="/developers" className="block text-sm hover:text-blue-600">Developers</Link>
             <Link href="/sign-in" className="block text-sm hover:text-blue-600">Sign In</Link>
             <Link href="/sign-in" className="block w-full">
@@ -299,6 +301,128 @@ export default function App() {
               gradient="from-blue-600 to-purple-600"
             />
           </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-28 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/30 to-background -z-10"></div>
+
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full glass border border-blue-500/30 mb-6 shadow-lg shadow-blue-500/10">
+              <DollarSign className="h-4 w-4 text-blue-500" />
+              <span className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Pricing</span>
+            </div>
+            <h2 className="font-display text-4xl md:text-6xl font-black mb-6 tracking-tight">Simple, Transparent Pricing</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Start free and upgrade when you&apos;re ready to unlock powerful team features
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* Free Plan */}
+            <Card className="relative overflow-hidden border-2 border-border bg-card/50 backdrop-blur-sm shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+              <CardHeader className="pb-4">
+                <CardTitle className="font-display text-2xl font-bold">Free</CardTitle>
+                <CardDescription className="text-base">For individuals getting started</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-5xl font-black">$0</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
+                    <span>Unlimited salespeople</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
+                    <span>Commission plan builder</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
+                    <span>CSV data import</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
+                    <span>Basic reporting</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />
+                    <span>Email support</span>
+                  </li>
+                </ul>
+
+                <Link href="/sign-in" className="block">
+                  <Button variant="outline" className="w-full h-12 text-base border-2">
+                    Get Started Free
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Team Plan */}
+            <Card className="relative overflow-hidden border-2 border-purple-500/50 bg-gradient-to-br from-purple-500/5 to-blue-500/5 shadow-xl shadow-purple-500/10 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500 hover:-translate-y-2">
+              <div className="absolute top-4 right-4">
+                <span className="px-3 py-1 text-xs font-semibold bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full">
+                  Most Popular
+                </span>
+              </div>
+              <CardHeader className="pb-4">
+                <CardTitle className="font-display text-2xl font-bold">Team</CardTitle>
+                <CardDescription className="text-base">For growing teams that need more power</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-5xl font-black">$49</span>
+                  <span className="text-muted-foreground">/month</span>
+                </div>
+
+                <ul className="space-y-3">
+                  <li className="flex items-center gap-3">
+                    <CheckCircle className="h-5 w-5 text-purple-500 shrink-0" />
+                    <span className="font-medium">Everything in Free, plus:</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Users className="h-5 w-5 text-purple-500 shrink-0" />
+                    <span>Team invitations & collaboration</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Plug className="h-5 w-5 text-purple-500 shrink-0" />
+                    <span>ERP integrations (Acumatica, Sage, Dynamics)</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <BarChart3 className="h-5 w-5 text-purple-500 shrink-0" />
+                    <span>Advanced reporting & analytics</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Key className="h-5 w-5 text-purple-500 shrink-0" />
+                    <span>API access for custom integrations</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Sparkles className="h-5 w-5 text-purple-500 shrink-0" />
+                    <span>Priority support</span>
+                  </li>
+                </ul>
+
+                <Link href="/sign-in" className="block">
+                  <Button className="w-full h-12 text-base bg-gradient-to-r from-purple-600 to-blue-600 hover:opacity-90 shadow-lg shadow-purple-500/25">
+                    Start Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+
+          <p className="text-center text-muted-foreground mt-8">
+            Need custom enterprise pricing?{' '}
+            <Link href="/contact" className="text-purple-600 hover:text-purple-700 font-medium">
+              Contact us
+            </Link>
+          </p>
         </div>
       </section>
 
