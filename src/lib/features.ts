@@ -5,18 +5,22 @@ export type Feature = 'invite_members' | 'erp_integration' | 'advanced_reporting
 
 /**
  * Check if the current organization has access to a feature.
- * Uses Clerk's feature-based access control.
+ *
+ * TEMPORARY: All features are enabled for all plans while Clerk billing is being configured.
+ * TODO: Re-enable Clerk feature checking once plan/feature configuration is verified.
  */
 export async function hasFeature(feature: Feature): Promise<boolean> {
-  const { has, orgId } = await auth()
+  const { orgId } = await auth()
 
-  // No org = no premium features
+  // No org = no features
   if (!orgId) {
     return false
   }
 
-  // Check if the organization has the feature via Clerk's billing/subscription
-  return has?.({ feature }) ?? false
+  // TEMPORARY: Allow all features for all plans
+  // Once Clerk billing is configured, replace with:
+  // return has?.({ feature }) ?? false
+  return true
 }
 
 /**
