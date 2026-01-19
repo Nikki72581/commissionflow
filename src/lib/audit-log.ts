@@ -1,4 +1,4 @@
-import { prisma } from './db'
+import { prisma } from "./db";
 
 /**
  * Audit Log Service
@@ -7,62 +7,66 @@ import { prisma } from './db'
 
 export type AuditAction =
   // Commission actions
-  | 'commission_created'
-  | 'commission_approved'
-  | 'commission_paid'
-  | 'commission_rejected'
-  | 'bulk_payout_processed'
+  | "commission_created"
+  | "commission_approved"
+  | "commission_paid"
+  | "commission_rejected"
+  | "bulk_payout_processed"
+  // Adjustment actions
+  | "adjustment_created"
+  | "adjustment_deleted"
   // Sale actions
-  | 'sale_created'
-  | 'sale_updated'
-  | 'sale_deleted'
+  | "sale_created"
+  | "sale_updated"
+  | "sale_deleted"
   // Plan actions
-  | 'plan_created'
-  | 'plan_updated'
-  | 'plan_activated'
-  | 'plan_deactivated'
+  | "plan_created"
+  | "plan_updated"
+  | "plan_activated"
+  | "plan_deactivated"
   // User actions
-  | 'user_invited'
-  | 'user_role_changed'
-  | 'user_removed'
+  | "user_invited"
+  | "user_role_changed"
+  | "user_removed"
   // Settings actions
-  | 'settings_updated'
+  | "settings_updated"
   // Integration actions
-  | 'integration_sync'
-  | 'integration_sync_reverted'
+  | "integration_sync"
+  | "integration_sync_reverted"
   // API actions
-  | 'api_key_created'
-  | 'api_key_revoked'
-  | 'api_request'
+  | "api_key_created"
+  | "api_key_revoked"
+  | "api_request";
 
-export type EntityType = 
-  | 'commission'
-  | 'sale'
-  | 'plan'
-  | 'user'
-  | 'client'
-  | 'project'
-  | 'organization'
-  | 'settings'
-  | 'integration'
+export type EntityType =
+  | "commission"
+  | "commission_adjustment"
+  | "sale"
+  | "plan"
+  | "user"
+  | "client"
+  | "project"
+  | "organization"
+  | "settings"
+  | "integration";
 
 export interface CreateAuditLogParams {
   // Who
-  userId?: string
-  userName?: string
-  userEmail?: string
-  
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+
   // What
-  action: AuditAction
-  entityType: EntityType
-  entityId?: string
-  description: string
-  metadata?: Record<string, any>
-  
+  action: AuditAction;
+  entityType: EntityType;
+  entityId?: string;
+  description: string;
+  metadata?: Record<string, any>;
+
   // Where
-  organizationId: string
-  ipAddress?: string
-  userAgent?: string
+  organizationId: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 /**
@@ -84,16 +88,17 @@ export async function createAuditLog(params: CreateAuditLogParams) {
         ipAddress: params.ipAddress,
         userAgent: params.userAgent,
       },
-    })
+    });
 
-    return { success: true, data: auditLog }
+    return { success: true, data: auditLog };
   } catch (error) {
-    console.error('Error creating audit log:', error)
+    console.error("Error creating audit log:", error);
     // Don't throw - audit logs shouldn't break the main flow
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create audit log',
-    }
+      error:
+        error instanceof Error ? error.message : "Failed to create audit log",
+    };
   }
 }
 
@@ -101,96 +106,96 @@ export async function createAuditLog(params: CreateAuditLogParams) {
  * Create audit log for commission approval
  */
 export async function logCommissionApproval(params: {
-  commissionId: string
-  amount: number
-  salespersonId: string
-  salespersonName: string
+  commissionId: string;
+  amount: number;
+  salespersonId: string;
+  salespersonName: string;
   approvedBy: {
-    id: string
-    name: string
-    email: string
-  }
-  organizationId: string
-  ipAddress?: string
+    id: string;
+    name: string;
+    email: string;
+  };
+  organizationId: string;
+  ipAddress?: string;
 }) {
   return createAuditLog({
     userId: params.approvedBy.id,
     userName: params.approvedBy.name,
     userEmail: params.approvedBy.email,
-    action: 'commission_approved',
-    entityType: 'commission',
+    action: "commission_approved",
+    entityType: "commission",
     entityId: params.commissionId,
     description: `Approved commission of $${params.amount.toFixed(2)} for ${params.salespersonName}`,
     metadata: {
       amount: params.amount,
       salespersonId: params.salespersonId,
       salespersonName: params.salespersonName,
-      oldStatus: 'PENDING',
-      newStatus: 'APPROVED',
+      oldStatus: "PENDING",
+      newStatus: "APPROVED",
     },
     organizationId: params.organizationId,
     ipAddress: params.ipAddress,
-  })
+  });
 }
 
 /**
  * Create audit log for commission payment
  */
 export async function logCommissionPayment(params: {
-  commissionId: string
-  amount: number
-  salespersonId: string
-  salespersonName: string
+  commissionId: string;
+  amount: number;
+  salespersonId: string;
+  salespersonName: string;
   paidBy: {
-    id: string
-    name: string
-    email: string
-  }
-  organizationId: string
-  ipAddress?: string
+    id: string;
+    name: string;
+    email: string;
+  };
+  organizationId: string;
+  ipAddress?: string;
 }) {
   return createAuditLog({
     userId: params.paidBy.id,
     userName: params.paidBy.name,
     userEmail: params.paidBy.email,
-    action: 'commission_paid',
-    entityType: 'commission',
+    action: "commission_paid",
+    entityType: "commission",
     entityId: params.commissionId,
     description: `Marked commission of $${params.amount.toFixed(2)} as paid for ${params.salespersonName}`,
     metadata: {
       amount: params.amount,
       salespersonId: params.salespersonId,
       salespersonName: params.salespersonName,
-      oldStatus: 'APPROVED',
-      newStatus: 'PAID',
+      oldStatus: "APPROVED",
+      newStatus: "PAID",
     },
     organizationId: params.organizationId,
     ipAddress: params.ipAddress,
-  })
+  });
 }
 
 /**
  * Create audit log for bulk payout
  */
 export async function logBulkPayout(params: {
-  totalAmount: number
-  commissionsCount: number
-  salespeopleCount: number
-  calculationIds: string[]
+  totalAmount: number;
+  commissionsCount: number;
+  salespeopleCount: number;
+  calculationIds: string[];
   processedBy: {
-    id: string
-    name: string
-    email: string
-  }
-  organizationId: string
-  ipAddress?: string
+    id: string;
+    name: string;
+    email: string;
+  };
+  organizationId: string;
+  ipAddress?: string;
 }) {
   return createAuditLog({
     userId: params.processedBy.id,
     userName: params.processedBy.name,
     userEmail: params.processedBy.email,
-    action: 'bulk_payout_processed',
-    entityType: 'commission',
+    action: "bulk_payout_processed",
+    entityType: "commission",
     description: `Processed bulk payout of $${params.totalAmount.toFixed(2)} for ${params.commissionsCount} commissions across ${params.salespeopleCount} salespeople`,
     metadata: {
       totalAmount: params.totalAmount,
@@ -200,31 +205,31 @@ export async function logBulkPayout(params: {
     },
     organizationId: params.organizationId,
     ipAddress: params.ipAddress,
-  })
+  });
 }
 
 /**
  * Create audit log for sale creation
  */
 export async function logSaleCreated(params: {
-  saleId: string
-  amount: number
-  clientName: string
-  projectName: string
+  saleId: string;
+  amount: number;
+  clientName: string;
+  projectName: string;
   createdBy: {
-    id: string
-    name: string
-    email: string
-  }
-  organizationId: string
-  ipAddress?: string
+    id: string;
+    name: string;
+    email: string;
+  };
+  organizationId: string;
+  ipAddress?: string;
 }) {
   return createAuditLog({
     userId: params.createdBy.id,
     userName: params.createdBy.name,
     userEmail: params.createdBy.email,
-    action: 'sale_created',
-    entityType: 'sale',
+    action: "sale_created",
+    entityType: "sale",
     entityId: params.saleId,
     description: `Created sale of $${params.amount.toFixed(2)} for ${params.clientName} - ${params.projectName}`,
     metadata: {
@@ -234,30 +239,30 @@ export async function logSaleCreated(params: {
     },
     organizationId: params.organizationId,
     ipAddress: params.ipAddress,
-  })
+  });
 }
 
 /**
  * Create audit log for plan changes
  */
 export async function logPlanUpdated(params: {
-  planId: string
-  planName: string
-  changes: Record<string, any>
+  planId: string;
+  planName: string;
+  changes: Record<string, any>;
   updatedBy: {
-    id: string
-    name: string
-    email: string
-  }
-  organizationId: string
-  ipAddress?: string
+    id: string;
+    name: string;
+    email: string;
+  };
+  organizationId: string;
+  ipAddress?: string;
 }) {
   return createAuditLog({
     userId: params.updatedBy.id,
     userName: params.updatedBy.name,
     userEmail: params.updatedBy.email,
-    action: 'plan_updated',
-    entityType: 'plan',
+    action: "plan_updated",
+    entityType: "plan",
     entityId: params.planId,
     description: `Updated commission plan "${params.planName}"`,
     metadata: {
@@ -266,63 +271,63 @@ export async function logPlanUpdated(params: {
     },
     organizationId: params.organizationId,
     ipAddress: params.ipAddress,
-  })
+  });
 }
 
 /**
  * Get audit logs with filters
  */
 export async function getAuditLogs(params: {
-  organizationId: string
-  userId?: string
-  action?: AuditAction
-  entityType?: EntityType
-  entityId?: string
-  startDate?: Date
-  endDate?: Date
-  limit?: number
-  offset?: number
+  organizationId: string;
+  userId?: string;
+  action?: AuditAction;
+  entityType?: EntityType;
+  entityId?: string;
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+  offset?: number;
 }) {
   try {
     const whereClause: any = {
       organizationId: params.organizationId,
-    }
+    };
 
     if (params.userId) {
-      whereClause.userId = params.userId
+      whereClause.userId = params.userId;
     }
 
     if (params.action) {
-      whereClause.action = params.action
+      whereClause.action = params.action;
     }
 
     if (params.entityType) {
-      whereClause.entityType = params.entityType
+      whereClause.entityType = params.entityType;
     }
 
     if (params.entityId) {
-      whereClause.entityId = params.entityId
+      whereClause.entityId = params.entityId;
     }
 
     if (params.startDate || params.endDate) {
-      whereClause.createdAt = {}
+      whereClause.createdAt = {};
       if (params.startDate) {
-        whereClause.createdAt.gte = params.startDate
+        whereClause.createdAt.gte = params.startDate;
       }
       if (params.endDate) {
-        whereClause.createdAt.lte = params.endDate
+        whereClause.createdAt.lte = params.endDate;
       }
     }
 
     const [logs, total] = await Promise.all([
       prisma.auditLog.findMany({
         where: whereClause,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         take: params.limit || 50,
         skip: params.offset || 0,
       }),
       prisma.auditLog.count({ where: whereClause }),
-    ])
+    ]);
 
     return {
       success: true,
@@ -331,13 +336,14 @@ export async function getAuditLogs(params: {
         total,
         hasMore: (params.offset || 0) + logs.length < total,
       },
-    }
+    };
   } catch (error) {
-    console.error('Error fetching audit logs:', error)
+    console.error("Error fetching audit logs:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch audit logs',
-    }
+      error:
+        error instanceof Error ? error.message : "Failed to fetch audit logs",
+    };
   }
 }
 
@@ -345,28 +351,28 @@ export async function getAuditLogs(params: {
  * Get audit logs for a specific entity
  */
 export async function getEntityAuditHistory(params: {
-  organizationId: string
-  entityType: EntityType
-  entityId: string
-  limit?: number
+  organizationId: string;
+  entityType: EntityType;
+  entityId: string;
+  limit?: number;
 }) {
   return getAuditLogs({
     organizationId: params.organizationId,
     entityType: params.entityType,
     entityId: params.entityId,
     limit: params.limit,
-  })
+  });
 }
 
 /**
  * Get recent activity (for dashboard)
  */
 export async function getRecentActivity(params: {
-  organizationId: string
-  limit?: number
+  organizationId: string;
+  limit?: number;
 }) {
   return getAuditLogs({
     organizationId: params.organizationId,
     limit: params.limit || 10,
-  })
+  });
 }

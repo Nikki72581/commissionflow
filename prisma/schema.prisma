@@ -187,6 +187,13 @@ enum RulePriority {
   DEFAULT // Lowest - 50
 }
 
+enum AdjustmentType {
+  RETURN // Return/refund affecting commission
+  CLAWBACK // Commission clawback
+  OVERRIDE // Manual override by admin
+  SPLIT_CREDIT // Split credit adjustment
+}
+
 // ============================================
 // CORE MODELS
 // ============================================
@@ -201,19 +208,20 @@ model Organization {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  users                  User[]
-  clients                Client[]
-  projects               Project[]
-  commissionPlans        CommissionPlan[]
-  salesTransactions      SalesTransaction[]
-  commissionCalculations CommissionCalculation[]
-  payouts                Payout[]
-  auditLogs              AuditLog[]
-  productCategories      ProductCategory[]
-  territories            Territory[]
-  acumaticaIntegration   AcumaticaIntegration?
-  apiKeys                ApiKey[]
-  apiUsageLogs           ApiUsageLog[]
+  users                   User[]
+  clients                 Client[]
+  projects                Project[]
+  commissionPlans         CommissionPlan[]
+  salesTransactions       SalesTransaction[]
+  commissionCalculations  CommissionCalculation[]
+  commissionAdjustments   CommissionAdjustment[]
+  payouts                 Payout[]
+  auditLogs               AuditLog[]
+  productCategories       ProductCategory[]
+  territories             Territory[]
+  acumaticaIntegration    AcumaticaIntegration?
+  apiKeys                 ApiKey[]
+  apiUsageLogs            ApiUsageLog[]
 
   @@map("organizations")
 }
@@ -253,6 +261,7 @@ model User {
   payouts                Payout[]
   createdApiKeys         ApiKey[]                @relation("ApiKeyCreator")
   revokedApiKeys         ApiKey[]                @relation("ApiKeyRevoker")
+  appliedAdjustments     CommissionAdjustment[]  @relation("AdjustmentAppliedBy")
 
   @@index([organizationId])
   @@index([clerkId])
@@ -487,6 +496,7 @@ model SalesTransaction {
   parentTransaction      SalesTransaction?       @relation("Returns", fields: [parentTransactionId], references: [id])
   returns                SalesTransaction[]      @relation("Returns")
   commissionCalculations CommissionCalculation[]
+  relatedAdjustments     CommissionAdjustment[]  @relation("AdjustmentRelatedTransaction")
 
   @@unique([organizationId, externalId, externalSystem])
   @@index([organizationId])
@@ -520,12 +530,45 @@ model CommissionCalculation {
   user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   payout           Payout?          @relation(fields: [payoutId], references: [id])
   payoutId         String?
+  adjustments      CommissionAdjustment[]
 
   @@index([organizationId])
   @@index([salesTransactionId])
   @@index([userId])
   @@index([status])
   @@map("commission_calculations")
+}
+
+model CommissionAdjustment {
+  id                      String         @id @default(cuid())
+  commissionCalculationId String
+  organizationId          String
+
+  type                    AdjustmentType // RETURN, CLAWBACK, OVERRIDE, SPLIT_CREDIT
+  amount                  Float          // Negative for deductions, positive for additions
+  reason                  String?        // User-visible reason
+  notes                   String?        // Admin-only internal notes
+
+  // Related records
+  relatedTransactionId    String?        // For RETURN type, links to the return transaction
+
+  // Audit trail
+  appliedById             String
+  appliedAt               DateTime       @default(now())
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+
+  // Relations
+  commissionCalculation   CommissionCalculation @relation(fields: [commissionCalculationId], references: [id], onDelete: Cascade)
+  organization            Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  appliedBy               User                  @relation("AdjustmentAppliedBy", fields: [appliedById], references: [id])
+  relatedTransaction      SalesTransaction?     @relation("AdjustmentRelatedTransaction", fields: [relatedTransactionId], references: [id], onDelete: SetNull)
+
+  @@index([commissionCalculationId])
+  @@index([organizationId])
+  @@index([appliedById])
+  @@index([type])
+  @@map("commission_adjustments")
 }
 
 model Payout {

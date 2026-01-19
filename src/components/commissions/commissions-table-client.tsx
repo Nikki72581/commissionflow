@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useState, useMemo } from 'react'
-import Link from 'next/link'
-import { Search } from 'lucide-react'
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import { Search } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -10,63 +10,64 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
-import { TablePagination } from '@/components/ui/table-pagination'
-import { CommissionDetailDialog } from '@/components/commissions/commission-detail-dialog'
-import { Card } from '@/components/ui/card'
-import { formatDate, formatCurrency } from '@/lib/utils'
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TablePagination } from "@/components/ui/table-pagination";
+import { CommissionDetailDialog } from "@/components/commissions/commission-detail-dialog";
+import { CommissionExplainDialog } from "@/components/commissions/commission-explain-dialog";
+import { Card } from "@/components/ui/card";
+import { formatDate, formatCurrency } from "@/lib/utils";
 
 interface CommissionsTableClientProps {
-  calculations: any[]
-  searchQuery?: string
+  calculations: any[];
+  searchQuery?: string;
 }
 
 export function CommissionsTableClient({
   calculations,
   searchQuery,
 }: CommissionsTableClientProps) {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(25)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   // Calculate pagination
-  const totalRecords = calculations.length
-  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize))
+  const totalRecords = calculations.length;
+  const totalPages = Math.max(1, Math.ceil(totalRecords / pageSize));
 
   // Reset to page 1 if current page is out of bounds
-  const safePage = currentPage > totalPages ? 1 : currentPage
+  const safePage = currentPage > totalPages ? 1 : currentPage;
   if (safePage !== currentPage) {
-    setCurrentPage(safePage)
+    setCurrentPage(safePage);
   }
 
   const paginatedCalculations = useMemo(() => {
-    const startIndex = (safePage - 1) * pageSize
-    const endIndex = startIndex + pageSize
-    return calculations.slice(startIndex, endIndex)
-  }, [calculations, safePage, pageSize])
+    const startIndex = (safePage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return calculations.slice(startIndex, endIndex);
+  }, [calculations, safePage, pageSize]);
 
   // Calculate totals by status
-  const totalAmount = calculations.reduce((sum, calc) => sum + calc.amount, 0)
+  const totalAmount = calculations.reduce((sum, calc) => sum + calc.amount, 0);
   const pendingAmount = calculations
-    .filter((c) => c.status === 'PENDING')
-    .reduce((sum, calc) => sum + calc.amount, 0)
+    .filter((c) => c.status === "PENDING")
+    .reduce((sum, calc) => sum + calc.amount, 0);
   const approvedAmount = calculations
-    .filter((c) => c.status === 'APPROVED')
-    .reduce((sum, calc) => sum + calc.amount, 0)
+    .filter((c) => c.status === "APPROVED")
+    .reduce((sum, calc) => sum + calc.amount, 0);
   const paidAmount = calculations
-    .filter((c) => c.status === 'PAID')
-    .reduce((sum, calc) => sum + calc.amount, 0)
+    .filter((c) => c.status === "PAID")
+    .reduce((sum, calc) => sum + calc.amount, 0);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-  }
+    setCurrentPage(page);
+  };
 
   const handlePageSizeChange = (newPageSize: number) => {
-    setPageSize(newPageSize)
-    setCurrentPage(1)
-  }
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
 
   if (calculations.length === 0) {
     return (
@@ -75,7 +76,7 @@ export function CommissionsTableClient({
         title="No commissions found"
         description="No commissions match your filters. Try adjusting your search."
       />
-    )
+    );
   }
 
   return (
@@ -90,23 +91,27 @@ export function CommissionsTableClient({
         </div>
         <div className="rounded-lg border-2 hover:border-amber-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-amber-500/5 p-4">
           <div className="text-sm text-muted-foreground">Pending</div>
-          <div className="text-2xl font-bold">{formatCurrency(pendingAmount)}</div>
+          <div className="text-2xl font-bold">
+            {formatCurrency(pendingAmount)}
+          </div>
           <Badge variant="outline" className="mt-1">
-            {calculations.filter((c) => c.status === 'PENDING').length} items
+            {calculations.filter((c) => c.status === "PENDING").length} items
           </Badge>
         </div>
         <div className="rounded-lg border-2 hover:border-green-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-green-500/5 p-4">
           <div className="text-sm text-muted-foreground">Approved</div>
-          <div className="text-2xl font-bold">{formatCurrency(approvedAmount)}</div>
+          <div className="text-2xl font-bold">
+            {formatCurrency(approvedAmount)}
+          </div>
           <Badge variant="secondary" className="mt-1">
-            {calculations.filter((c) => c.status === 'APPROVED').length} items
+            {calculations.filter((c) => c.status === "APPROVED").length} items
           </Badge>
         </div>
         <div className="rounded-lg border-2 hover:border-blue-500/50 transition-all hover:shadow-lg bg-gradient-to-br from-card to-blue-500/5 p-4">
           <div className="text-sm text-muted-foreground">Paid</div>
           <div className="text-2xl font-bold">{formatCurrency(paidAmount)}</div>
           <Badge variant="default" className="mt-1">
-            {calculations.filter((c) => c.status === 'PAID').length} items
+            {calculations.filter((c) => c.status === "PAID").length} items
           </Badge>
         </div>
       </div>
@@ -114,8 +119,10 @@ export function CommissionsTableClient({
       {/* Mobile Card View */}
       <div className="space-y-3 md:hidden">
         {paginatedCalculations.map((calc) => {
-          const customerName = calc.salesTransaction.client?.name ||
-            calc.salesTransaction.project?.client?.name || null
+          const customerName =
+            calc.salesTransaction.client?.name ||
+            calc.salesTransaction.project?.client?.name ||
+            null;
 
           return (
             <Card key={calc.id} className="p-4">
@@ -126,16 +133,20 @@ export function CommissionsTableClient({
                     {formatCurrency(calc.amount)}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {((calc.amount / calc.salesTransaction.amount) * 100).toFixed(1)}% of {formatCurrency(calc.salesTransaction.amount)}
+                    {(
+                      (calc.amount / calc.salesTransaction.amount) *
+                      100
+                    ).toFixed(1)}
+                    % of {formatCurrency(calc.salesTransaction.amount)}
                   </div>
                 </div>
                 <Badge
                   variant={
-                    calc.status === 'PAID'
-                      ? 'success'
-                      : calc.status === 'APPROVED'
-                      ? 'info'
-                      : 'warning'
+                    calc.status === "PAID"
+                      ? "success"
+                      : calc.status === "APPROVED"
+                        ? "info"
+                        : "warning"
                   }
                 >
                   {calc.status}
@@ -147,7 +158,9 @@ export function CommissionsTableClient({
                 <div className="font-medium">
                   {calc.user.firstName} {calc.user.lastName}
                 </div>
-                <div className="text-sm text-muted-foreground">{calc.user.email}</div>
+                <div className="text-sm text-muted-foreground">
+                  {calc.user.email}
+                </div>
               </div>
 
               {/* Info Grid */}
@@ -189,29 +202,33 @@ export function CommissionsTableClient({
               </div>
 
               {/* Paid Date if applicable */}
-              {calc.status === 'PAID' && (calc as any).paidAt && (
+              {calc.status === "PAID" && (calc as any).paidAt && (
                 <div className="text-xs text-muted-foreground mb-3">
                   Paid on {formatDate((calc as any).paidAt)}
                 </div>
               )}
 
-              {/* View Details Button */}
-              <div className="pt-3 border-t">
+              {/* View Details Buttons */}
+              <div className="pt-3 border-t flex gap-2">
+                <CommissionExplainDialog
+                  calculationId={calc.id}
+                  trigger={
+                    <Button variant="outline" size="sm" className="flex-1">
+                      Explain
+                    </Button>
+                  }
+                />
                 <CommissionDetailDialog
                   calculation={calc}
                   trigger={
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                    >
-                      View Breakdown
+                    <Button variant="outline" size="sm" className="flex-1">
+                      Details
                     </Button>
                   }
                 />
               </div>
             </Card>
-          )
+          );
         })}
       </div>
 
@@ -241,7 +258,9 @@ export function CommissionsTableClient({
                     <div className="font-medium">
                       {calc.user.firstName} {calc.user.lastName}
                     </div>
-                    <div className="text-sm text-muted-foreground">{calc.user.email}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {calc.user.email}
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">
@@ -253,20 +272,38 @@ export function CommissionsTableClient({
                       {formatCurrency(calc.amount)}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {((calc.amount / calc.salesTransaction.amount) * 100).toFixed(1)}% of sale
+                      {(
+                        (calc.amount / calc.salesTransaction.amount) *
+                        100
+                      ).toFixed(1)}
+                      % of sale
                     </div>
-                    <CommissionDetailDialog
-                      calculation={calc}
-                      trigger={
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-3 text-blue-600 dark:text-blue-400 hover:bg-accent hover:text-accent-foreground"
-                        >
-                          View Breakdown
-                        </Button>
-                      }
-                    />
+                    <div className="flex gap-1">
+                      <CommissionExplainDialog
+                        calculationId={calc.id}
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-amber-600 dark:text-amber-400 hover:bg-accent hover:text-accent-foreground"
+                          >
+                            Explain
+                          </Button>
+                        }
+                      />
+                      <CommissionDetailDialog
+                        calculation={calc}
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-blue-600 dark:text-blue-400 hover:bg-accent hover:text-accent-foreground"
+                          >
+                            Details
+                          </Button>
+                        }
+                      />
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -286,31 +323,39 @@ export function CommissionsTableClient({
                       {calc.salesTransaction.project.name}
                     </Link>
                   ) : (
-                    <div className="text-sm text-muted-foreground">No Project</div>
+                    <div className="text-sm text-muted-foreground">
+                      No Project
+                    </div>
                   )}
                 </TableCell>
                 <TableCell>
                   {calc.salesTransaction.client?.name ? (
-                    <div className="text-sm">{calc.salesTransaction.client.name}</div>
+                    <div className="text-sm">
+                      {calc.salesTransaction.client.name}
+                    </div>
                   ) : calc.salesTransaction.project?.client?.name ? (
-                    <div className="text-sm">{calc.salesTransaction.project.client.name}</div>
+                    <div className="text-sm">
+                      {calc.salesTransaction.project.client.name}
+                    </div>
                   ) : (
-                    <div className="text-sm text-muted-foreground">No Customer</div>
+                    <div className="text-sm text-muted-foreground">
+                      No Customer
+                    </div>
                   )}
                 </TableCell>
                 <TableCell>
                   <Badge
                     variant={
-                      calc.status === 'PAID'
-                        ? 'default'
-                        : calc.status === 'APPROVED'
-                        ? 'secondary'
-                        : 'outline'
+                      calc.status === "PAID"
+                        ? "default"
+                        : calc.status === "APPROVED"
+                          ? "secondary"
+                          : "outline"
                     }
                   >
                     {calc.status}
                   </Badge>
-                  {calc.status === 'PAID' && (calc as any).paidAt && (
+                  {calc.status === "PAID" && (calc as any).paidAt && (
                     <div className="text-xs text-muted-foreground mt-1">
                       {formatDate((calc as any).paidAt)}
                     </div>
@@ -332,5 +377,5 @@ export function CommissionsTableClient({
         onPageSizeChange={handlePageSizeChange}
       />
     </div>
-  )
+  );
 }

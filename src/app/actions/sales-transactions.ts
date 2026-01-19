@@ -1,44 +1,46 @@
-'use server'
+"use server";
 
-import { auth } from '@clerk/nextjs/server'
-import { revalidatePath } from 'next/cache'
-import { prisma } from '@/lib/db'
+import { auth } from "@clerk/nextjs/server";
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/db";
 import {
   calculateCommission,
   calculateCommissionWithPrecedence,
+  calculateCommissionWithTrace,
   type CalculationContext,
+  type ExtendedCalculationContext,
   type ScopedCommissionRule,
-} from '@/lib/commission-calculator'
-import { calculateNetSalesAmount } from '@/lib/net-sales-calculator'
+} from "@/lib/commission-calculator";
+import { calculateNetSalesAmount } from "@/lib/net-sales-calculator";
 import {
   createSalesTransactionSchema,
   updateSalesTransactionSchema,
-} from '@/lib/validations/sales-transaction'
+} from "@/lib/validations/sales-transaction";
 import type {
   CreateSalesTransactionInput,
   UpdateSalesTransactionInput,
-} from '@/lib/validations/sales-transaction'
+} from "@/lib/validations/sales-transaction";
 
 /**
  * Get organization ID for current user
  */
 async function getOrganizationId(): Promise<string> {
-  const { userId } = await auth()
-  
+  const { userId } = await auth();
+
   if (!userId) {
-    throw new Error('Unauthorized')
+    throw new Error("Unauthorized");
   }
 
   const user = await prisma.user.findUnique({
     where: { clerkId: userId },
     select: { organizationId: true },
-  })
+  });
 
   if (!user?.organizationId) {
-    throw new Error('User not associated with an organization')
+    throw new Error("User not associated with an organization");
   }
 
-  return user.organizationId
+  return user.organizationId;
 }
 
 // ============================================
@@ -48,31 +50,35 @@ async function getOrganizationId(): Promise<string> {
 /**
  * Create a new sales transaction and calculate commission
  */
-export async function createSalesTransaction(data: CreateSalesTransactionInput) {
+export async function createSalesTransaction(
+  data: CreateSalesTransactionInput,
+) {
   try {
-    const organizationId = await getOrganizationId()
+    const organizationId = await getOrganizationId();
 
     // Validate input
-    const validatedData = createSalesTransactionSchema.parse(data)
+    const validatedData = createSalesTransactionSchema.parse(data);
 
     // Get organization settings to check if projects are required
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: { requireProjects: true },
-    })
+    });
 
     if (!organization) {
-      throw new Error('Organization not found')
+      throw new Error("Organization not found");
     }
 
     // Enforce project requirement if enabled
     if (organization.requireProjects && !validatedData.projectId) {
-      throw new Error('Project is required for sales transactions in this organization')
+      throw new Error(
+        "Project is required for sales transactions in this organization",
+      );
     }
 
     // Verify project belongs to organization (if project is provided)
-    let project = null
-    let client = null
+    let project = null;
+    let client = null;
 
     if (validatedData.projectId) {
       project = await prisma.project.findFirst({
@@ -91,12 +97,12 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
             include: { rules: true },
           },
         },
-      })
+      });
 
       if (!project) {
-        throw new Error('Project not found')
+        throw new Error("Project not found");
       }
-      client = project.client
+      client = project.client;
     } else if (validatedData.clientId) {
       // If no project but client is provided, fetch client directly
       client = await prisma.client.findFirst({
@@ -107,32 +113,38 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         include: {
           territory: true,
         },
-      })
+      });
 
       if (!client) {
-        throw new Error('Client not found')
+        throw new Error("Client not found");
       }
     }
 
-    // Verify user belongs to organization
+    // Verify user belongs to organization and fetch necessary fields for trace
     const user = await prisma.user.findFirst({
       where: {
         id: validatedData.userId,
         organizationId,
       },
-    })
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+      },
+    });
 
     if (!user) {
-      throw new Error('Salesperson not found')
+      throw new Error("Salesperson not found");
     }
 
     // Determine which commission plan to use
-    let commissionPlanId = validatedData.commissionPlanId
+    let commissionPlanId = validatedData.commissionPlanId;
 
     if (!commissionPlanId) {
       if (project && project.commissionPlans.length > 0) {
         // Use project's first active plan if no specific plan provided
-        commissionPlanId = project.commissionPlans[0].id
+        commissionPlanId = project.commissionPlans[0].id;
       } else if (client) {
         // Look for client-level plans (plans associated with client's projects)
         const clientPlans = await prisma.commissionPlan.findMany({
@@ -145,10 +157,10 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
           },
           include: { rules: true },
           take: 1,
-        })
+        });
 
         if (clientPlans.length > 0) {
-          commissionPlanId = clientPlans[0].id
+          commissionPlanId = clientPlans[0].id;
         } else {
           // Fall back to organization-wide plans (plans with no project)
           const orgPlans = await prisma.commissionPlan.findMany({
@@ -159,17 +171,17 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
             },
             include: { rules: true },
             take: 1,
-          })
+          });
 
           if (orgPlans.length > 0) {
-            commissionPlanId = orgPlans[0].id
+            commissionPlanId = orgPlans[0].id;
           }
         }
       }
     }
 
     // Verify commission plan if provided
-    let commissionPlan = null
+    let commissionPlan = null;
     if (commissionPlanId) {
       commissionPlan = await prisma.commissionPlan.findFirst({
         where: {
@@ -178,22 +190,22 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
           isActive: true,
         },
         include: { rules: true },
-      })
+      });
 
       if (!commissionPlan) {
-        throw new Error('Commission plan not found or inactive')
+        throw new Error("Commission plan not found or inactive");
       }
     }
 
     // Convert date string to Date object
-    const transactionDate = new Date(validatedData.transactionDate)
+    const transactionDate = new Date(validatedData.transactionDate);
 
     // Create transaction
     const transaction = await prisma.salesTransaction.create({
       data: {
         amount: validatedData.amount,
         transactionDate,
-        transactionType: validatedData.transactionType || 'SALE',
+        transactionType: validatedData.transactionType || "SALE",
         parentTransactionId: validatedData.parentTransactionId,
         productCategoryId: validatedData.productCategoryId,
         invoiceNumber: validatedData.invoiceNumber,
@@ -207,25 +219,25 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         project: {
           include: {
             client: {
-              include: { territory: true }
-            }
+              include: { territory: true },
+            },
           },
         },
         client: true, // Include direct client reference
         user: true,
         productCategory: true,
       },
-    })
+    });
 
     // Calculate commission if plan exists
-    let calculation = null
+    let calculation = null;
     if (commissionPlan && commissionPlan.rules.length > 0) {
       // Calculate net sales amount
-      const netAmount = await calculateNetSalesAmount(transaction.id)
+      const netAmount = await calculateNetSalesAmount(transaction.id);
 
-      // Build calculation context
-      // Note: Client info is optional - sales without clients can still earn commissions
-      const context: CalculationContext = {
+      // Build extended calculation context with full trace data
+      const extendedContext: ExtendedCalculationContext = {
+        // Basic calculation fields
         grossAmount: validatedData.amount,
         netAmount,
         transactionDate,
@@ -235,34 +247,61 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         productCategoryId: validatedData.productCategoryId,
         territoryId: client?.territoryId || undefined,
         commissionBasis: commissionPlan.commissionBasis,
-      }
 
-      // Use precedence-aware calculator
-      const result = calculateCommissionWithPrecedence(
-        context,
-        commissionPlan.rules as ScopedCommissionRule[]
-      )
+        // Extended fields for trace
+        transactionId: transaction.id,
+        transactionType: transaction.transactionType,
+        invoiceNumber: validatedData.invoiceNumber || undefined,
+        description: validatedData.description || undefined,
 
-      // Build metadata for audit trail
-      const metadata = {
-        basis: result.basis,
-        basisAmount: result.basisAmount,
-        grossAmount: validatedData.amount,
-        netAmount,
-        context: {
-          customerTier: client?.tier,
-          customerId: client?.id,
-          customerName: client?.name,
-          productCategoryId: validatedData.productCategoryId,
-          territoryId: client?.territoryId,
-          territoryName: client?.territory?.name,
-          projectId: validatedData.projectId,
+        // Entity snapshots
+        client: client
+          ? {
+              id: client.id,
+              name: client.name,
+              tier: client.tier,
+            }
+          : undefined,
+        project: project
+          ? {
+              id: project.id,
+              name: project.name,
+            }
+          : undefined,
+        territory: client?.territory
+          ? {
+              id: client.territory.id,
+              name: client.territory.name,
+            }
+          : undefined,
+        productCategory: transaction.productCategory
+          ? {
+              id: transaction.productCategory.id,
+              name: transaction.productCategory.name,
+            }
+          : undefined,
+        salesperson: {
+          id: user.id,
+          name:
+            `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+            user.email,
+          email: user.email,
         },
-        selectedRule: result.selectedRule,
-        matchedRules: result.matchedRules,
-        appliedRules: result.appliedRules,
-        calculatedAt: new Date().toISOString(),
-      }
+
+        // Plan version info
+        plan: {
+          id: commissionPlan.id,
+          name: commissionPlan.name,
+          commissionBasis: commissionPlan.commissionBasis,
+          updatedAt: commissionPlan.updatedAt,
+        },
+      };
+
+      // Use trace-aware calculator for full audit trail
+      const { result, trace } = calculateCommissionWithTrace(
+        extendedContext,
+        commissionPlan.rules as ScopedCommissionRule[],
+      );
 
       calculation = await prisma.commissionCalculation.create({
         data: {
@@ -270,18 +309,18 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
           userId: validatedData.userId,
           commissionPlanId: commissionPlan.id,
           amount: result.finalAmount,
-          metadata,
+          metadata: trace as object, // Store full trace as metadata
           calculatedAt: new Date(),
-          status: 'PENDING',
+          status: "PENDING",
           organizationId,
         },
-      })
+      });
     }
 
-    revalidatePath('/dashboard/sales')
-    revalidatePath('/dashboard/commissions')
+    revalidatePath("/dashboard/sales");
+    revalidatePath("/dashboard/commissions");
     if (validatedData.projectId) {
-      revalidatePath(`/dashboard/projects/${validatedData.projectId}`)
+      revalidatePath(`/dashboard/projects/${validatedData.projectId}`);
     }
 
     return {
@@ -290,13 +329,16 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
         transaction,
         calculation,
       },
-    }
+    };
   } catch (error) {
-    console.error('Error creating sales transaction:', error)
+    console.error("Error creating sales transaction:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create sales transaction',
-    }
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to create sales transaction",
+    };
   }
 }
 
@@ -305,7 +347,7 @@ export async function createSalesTransaction(data: CreateSalesTransactionInput) 
  */
 export async function getSalesTransactions() {
   try {
-    const organizationId = await getOrganizationId()
+    const organizationId = await getOrganizationId();
 
     const transactions = await prisma.salesTransaction.findMany({
       where: {
@@ -327,20 +369,23 @@ export async function getSalesTransactions() {
         },
       },
       orderBy: {
-        transactionDate: 'desc',
+        transactionDate: "desc",
       },
-    })
+    });
 
     return {
       success: true,
       data: transactions,
-    }
+    };
   } catch (error) {
-    console.error('Error fetching sales transactions:', error)
+    console.error("Error fetching sales transactions:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch sales transactions',
-    }
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch sales transactions",
+    };
   }
 }
 
@@ -349,7 +394,7 @@ export async function getSalesTransactions() {
  */
 export async function getSalesTransaction(transactionId: string) {
   try {
-    const organizationId = await getOrganizationId()
+    const organizationId = await getOrganizationId();
 
     const transaction = await prisma.salesTransaction.findFirst({
       where: {
@@ -373,22 +418,25 @@ export async function getSalesTransaction(transactionId: string) {
           },
         },
       },
-    })
+    });
 
     if (!transaction) {
-      throw new Error('Sales transaction not found')
+      throw new Error("Sales transaction not found");
     }
 
     return {
       success: true,
       data: transaction,
-    }
+    };
   } catch (error) {
-    console.error('Error fetching sales transaction:', error)
+    console.error("Error fetching sales transaction:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch sales transaction',
-    }
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch sales transaction",
+    };
   }
 }
 
@@ -397,13 +445,13 @@ export async function getSalesTransaction(transactionId: string) {
  */
 export async function updateSalesTransaction(
   transactionId: string,
-  data: UpdateSalesTransactionInput
+  data: UpdateSalesTransactionInput,
 ) {
   try {
-    const organizationId = await getOrganizationId()
-    
+    const organizationId = await getOrganizationId();
+
     // Validate input
-    const validatedData = updateSalesTransactionSchema.parse(data)
+    const validatedData = updateSalesTransactionSchema.parse(data);
 
     // Verify transaction belongs to organization and get existing calculations
     const existingTransaction = await prisma.salesTransaction.findFirst({
@@ -427,17 +475,21 @@ export async function updateSalesTransaction(
           },
         },
       },
-    })
+    });
 
     if (!existingTransaction) {
-      throw new Error('Sales transaction not found')
+      throw new Error("Sales transaction not found");
     }
 
     // Track if we need to recalculate commissions
     const needsRecalculation =
-      (validatedData.amount !== undefined && validatedData.amount !== existingTransaction.amount) ||
-      (validatedData.transactionDate !== undefined && validatedData.transactionDate !== existingTransaction.transactionDate.toISOString().split('T')[0]) ||
-      (validatedData.projectId !== undefined && validatedData.projectId !== existingTransaction.projectId)
+      (validatedData.amount !== undefined &&
+        validatedData.amount !== existingTransaction.amount) ||
+      (validatedData.transactionDate !== undefined &&
+        validatedData.transactionDate !==
+          existingTransaction.transactionDate.toISOString().split("T")[0]) ||
+      (validatedData.projectId !== undefined &&
+        validatedData.projectId !== existingTransaction.projectId);
 
     // If updating project, verify it belongs to organization
     if (validatedData.projectId) {
@@ -446,10 +498,10 @@ export async function updateSalesTransaction(
           id: validatedData.projectId,
           organizationId,
         },
-      })
+      });
 
       if (!project) {
-        throw new Error('Project not found')
+        throw new Error("Project not found");
       }
     }
 
@@ -460,17 +512,17 @@ export async function updateSalesTransaction(
           id: validatedData.userId,
           organizationId,
         },
-      })
+      });
 
       if (!user) {
-        throw new Error('Salesperson not found')
+        throw new Error("Salesperson not found");
       }
     }
 
     // Convert date string if provided
-    const updateData: any = { ...validatedData }
+    const updateData: any = { ...validatedData };
     if (validatedData.transactionDate) {
-      updateData.transactionDate = new Date(validatedData.transactionDate)
+      updateData.transactionDate = new Date(validatedData.transactionDate);
     }
 
     // Update transaction
@@ -493,42 +545,49 @@ export async function updateSalesTransaction(
           },
         },
       },
-    })
+    });
 
     // Auto-recalculate commissions if needed
-    let recalculationResults = null
-    if (needsRecalculation && existingTransaction.commissionCalculations.length > 0) {
-      const { calculateCommissionWithPrecedence } = await import('@/lib/commission-calculator')
-      const { calculateNetSalesAmount } = await import('@/lib/net-sales-calculator')
+    let recalculationResults = null;
+    if (
+      needsRecalculation &&
+      existingTransaction.commissionCalculations.length > 0
+    ) {
+      const { calculateCommissionWithPrecedence } =
+        await import("@/lib/commission-calculator");
+      const { calculateNetSalesAmount } =
+        await import("@/lib/net-sales-calculator");
 
       // Check if any calculations are APPROVED or PAID
       const hasApprovedOrPaid = existingTransaction.commissionCalculations.some(
-        (calc) => calc.status === 'APPROVED' || calc.status === 'PAID'
-      )
+        (calc) => calc.status === "APPROVED" || calc.status === "PAID",
+      );
 
       if (hasApprovedOrPaid) {
         // Don't recalculate, but include a warning in the response
         recalculationResults = {
-          warning: 'Transaction has approved or paid commissions that were not recalculated. Consider reviewing these manually.',
+          warning:
+            "Transaction has approved or paid commissions that were not recalculated. Consider reviewing these manually.",
           skippedCount: existingTransaction.commissionCalculations.filter(
-            (calc) => calc.status === 'APPROVED' || calc.status === 'PAID'
+            (calc) => calc.status === "APPROVED" || calc.status === "PAID",
           ).length,
-        }
+        };
       }
 
       // Recalculate PENDING and CALCULATED commissions
-      const recalculableCalcs = existingTransaction.commissionCalculations.filter(
-        (calc) => calc.status === 'PENDING' || calc.status === 'CALCULATED'
-      )
+      const recalculableCalcs =
+        existingTransaction.commissionCalculations.filter(
+          (calc) => calc.status === "PENDING" || calc.status === "CALCULATED",
+        );
 
       if (recalculableCalcs.length > 0) {
-        let recalculatedCount = 0
-        const errors: string[] = []
+        let recalculatedCount = 0;
+        const errors: string[] = [];
 
         for (const calc of recalculableCalcs) {
           try {
             // Calculate net sales amount
-            const netAmount = await calculateNetSalesAmount(transaction.id)
+            const netAmount = await calculateNetSalesAmount(transaction.id);
 
             // Build calculation context from updated transaction
             const context = {
@@ -538,15 +597,16 @@ export async function updateSalesTransaction(
               customerId: transaction.project?.clientId,
               customerTier: transaction.project?.client?.tier,
               projectId: transaction.projectId || undefined,
-              territoryId: transaction.project?.client?.territoryId || undefined,
+              territoryId:
+                transaction.project?.client?.territoryId || undefined,
               commissionBasis: calc.commissionPlan.commissionBasis,
-            }
+            };
 
             // Recalculate with current rules
             const result = calculateCommissionWithPrecedence(
               context,
-              calc.commissionPlan.rules as any
-            )
+              calc.commissionPlan.rules as any,
+            );
 
             // Update calculation with new amount
             await prisma.commissionCalculation.update({
@@ -556,12 +616,12 @@ export async function updateSalesTransaction(
                 calculatedAt: new Date(),
                 metadata: { ...(result as any), autoRecalculated: true },
               },
-            })
+            });
 
-            recalculatedCount++
+            recalculatedCount++;
           } catch (error) {
-            console.error(`Error recalculating commission ${calc.id}:`, error)
-            errors.push(`Failed to recalculate commission ${calc.id}`)
+            console.error(`Error recalculating commission ${calc.id}:`, error);
+            errors.push(`Failed to recalculate commission ${calc.id}`);
           }
         }
 
@@ -569,25 +629,28 @@ export async function updateSalesTransaction(
           ...recalculationResults,
           recalculatedCount,
           errors: errors.length > 0 ? errors : undefined,
-        }
+        };
       }
     }
 
-    revalidatePath('/dashboard/sales')
-    revalidatePath(`/dashboard/sales/${transactionId}`)
-    revalidatePath('/dashboard/commissions')
+    revalidatePath("/dashboard/sales");
+    revalidatePath(`/dashboard/sales/${transactionId}`);
+    revalidatePath("/dashboard/commissions");
 
     return {
       success: true,
       data: transaction,
       recalculation: recalculationResults,
-    }
+    };
   } catch (error) {
-    console.error('Error updating sales transaction:', error)
+    console.error("Error updating sales transaction:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to update sales transaction',
-    }
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to update sales transaction",
+    };
   }
 }
 
@@ -596,7 +659,7 @@ export async function updateSalesTransaction(
  */
 export async function deleteSalesTransaction(transactionId: string) {
   try {
-    const organizationId = await getOrganizationId()
+    const organizationId = await getOrganizationId();
 
     // Verify transaction belongs to organization
     const existingTransaction = await prisma.salesTransaction.findFirst({
@@ -607,48 +670,54 @@ export async function deleteSalesTransaction(transactionId: string) {
       include: {
         commissionCalculations: true,
       },
-    })
+    });
 
     if (!existingTransaction) {
-      throw new Error('Sales transaction not found')
+      throw new Error("Sales transaction not found");
     }
 
     // Check if any calculations are already paid
     const hasPaidCalculations = existingTransaction.commissionCalculations.some(
-      (calc) => calc.status === 'PAID'
-    )
+      (calc) => calc.status === "PAID",
+    );
 
     if (hasPaidCalculations) {
-      throw new Error('Cannot delete transaction with paid commissions')
+      throw new Error("Cannot delete transaction with paid commissions");
     }
 
     // Delete transaction (will cascade delete calculations)
     await prisma.salesTransaction.delete({
       where: { id: transactionId },
-    })
+    });
 
-    revalidatePath('/dashboard/sales')
-    revalidatePath('/dashboard/commissions')
-    
+    revalidatePath("/dashboard/sales");
+    revalidatePath("/dashboard/commissions");
+
     return {
       success: true,
-      message: 'Sales transaction deleted successfully',
-    }
+      message: "Sales transaction deleted successfully",
+    };
   } catch (error) {
-    console.error('Error deleting sales transaction:', error)
+    console.error("Error deleting sales transaction:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to delete sales transaction',
-    }
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to delete sales transaction",
+    };
   }
 }
 
 /**
  * Recalculate commission for a transaction
  */
-export async function recalculateCommission(transactionId: string, planId: string) {
+export async function recalculateCommission(
+  transactionId: string,
+  planId: string,
+) {
   try {
-    const organizationId = await getOrganizationId()
+    const organizationId = await getOrganizationId();
 
     // Get transaction with full context
     const transaction = await prisma.salesTransaction.findFirst({
@@ -673,10 +742,10 @@ export async function recalculateCommission(transactionId: string, planId: strin
         },
         productCategory: true,
       },
-    })
+    });
 
     if (!transaction) {
-      throw new Error('Sales transaction not found')
+      throw new Error("Sales transaction not found");
     }
 
     // Get commission plan with rules
@@ -688,17 +757,17 @@ export async function recalculateCommission(transactionId: string, planId: strin
       include: {
         rules: true,
       },
-    })
+    });
 
     if (!plan) {
-      throw new Error('Commission plan not found')
+      throw new Error("Commission plan not found");
     }
 
     // Get client from project or direct client relationship
-    const client = transaction.project?.client || transaction.client
+    const client = transaction.project?.client || transaction.client;
 
     // Calculate net sales amount
-    const netAmount = await calculateNetSalesAmount(transaction.id)
+    const netAmount = await calculateNetSalesAmount(transaction.id);
 
     // Build calculation context
     // Note: Client info is optional - sales without clients can still earn commissions
@@ -712,13 +781,13 @@ export async function recalculateCommission(transactionId: string, planId: strin
       productCategoryId: transaction.productCategoryId || undefined,
       territoryId: client?.territoryId || undefined,
       commissionBasis: plan.commissionBasis,
-    }
+    };
 
     // Use precedence-aware calculator
     const result = calculateCommissionWithPrecedence(
       context,
-      plan.rules as ScopedCommissionRule[]
-    )
+      plan.rules as ScopedCommissionRule[],
+    );
 
     // Build metadata
     const metadata = {
@@ -739,15 +808,15 @@ export async function recalculateCommission(transactionId: string, planId: strin
       appliedRules: result.appliedRules,
       calculatedAt: new Date().toISOString(),
       recalculated: true,
-    }
+    };
 
     // Delete existing calculations for this transaction that aren't paid
     await prisma.commissionCalculation.deleteMany({
       where: {
         salesTransactionId: transactionId,
-        status: { not: 'PAID' },
+        status: { not: "PAID" },
       },
-    })
+    });
 
     // Create new calculation
     const calculation = await prisma.commissionCalculation.create({
@@ -758,28 +827,31 @@ export async function recalculateCommission(transactionId: string, planId: strin
         amount: result.finalAmount,
         metadata,
         calculatedAt: new Date(),
-        status: 'PENDING',
+        status: "PENDING",
         organizationId,
       },
       include: {
         commissionPlan: true,
       },
-    })
+    });
 
-    revalidatePath('/dashboard/sales')
-    revalidatePath('/dashboard/commissions')
-    revalidatePath(`/dashboard/sales/${transactionId}`)
+    revalidatePath("/dashboard/sales");
+    revalidatePath("/dashboard/commissions");
+    revalidatePath(`/dashboard/sales/${transactionId}`);
 
     return {
       success: true,
       data: calculation,
-    }
+    };
   } catch (error) {
-    console.error('Error recalculating commission:', error)
+    console.error("Error recalculating commission:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to recalculate commission',
-    }
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to recalculate commission",
+    };
   }
 }
 
@@ -788,38 +860,39 @@ export async function recalculateCommission(transactionId: string, planId: strin
  */
 export async function getSalesStats() {
   try {
-    const organizationId = await getOrganizationId()
+    const organizationId = await getOrganizationId();
 
-    const [totalSales, totalAmount, thisMonthSales, thisMonthAmount] = await Promise.all([
-      // Total sales count
-      prisma.salesTransaction.count({
-        where: { organizationId },
-      }),
-      // Total sales amount
-      prisma.salesTransaction.aggregate({
-        where: { organizationId },
-        _sum: { amount: true },
-      }),
-      // This month sales count
-      prisma.salesTransaction.count({
-        where: {
-          organizationId,
-          transactionDate: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    const [totalSales, totalAmount, thisMonthSales, thisMonthAmount] =
+      await Promise.all([
+        // Total sales count
+        prisma.salesTransaction.count({
+          where: { organizationId },
+        }),
+        // Total sales amount
+        prisma.salesTransaction.aggregate({
+          where: { organizationId },
+          _sum: { amount: true },
+        }),
+        // This month sales count
+        prisma.salesTransaction.count({
+          where: {
+            organizationId,
+            transactionDate: {
+              gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+            },
           },
-        },
-      }),
-      // This month sales amount
-      prisma.salesTransaction.aggregate({
-        where: {
-          organizationId,
-          transactionDate: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        }),
+        // This month sales amount
+        prisma.salesTransaction.aggregate({
+          where: {
+            organizationId,
+            transactionDate: {
+              gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+            },
           },
-        },
-        _sum: { amount: true },
-      }),
-    ])
+          _sum: { amount: true },
+        }),
+      ]);
 
     return {
       success: true,
@@ -829,12 +902,13 @@ export async function getSalesStats() {
         thisMonthSales,
         thisMonthAmount: thisMonthAmount._sum.amount || 0,
       },
-    }
+    };
   } catch (error) {
-    console.error('Error fetching sales stats:', error)
+    console.error("Error fetching sales stats:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to fetch statistics',
-    }
+      error:
+        error instanceof Error ? error.message : "Failed to fetch statistics",
+    };
   }
 }

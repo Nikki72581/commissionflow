@@ -1,92 +1,118 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { DateRangePicker } from '@/components/dashboard/date-range-picker'
-import { ExportButton } from '@/components/dashboard/export-button'
-import { StatsCard } from '@/components/dashboard/stats-card'
-import { getMyCommissions, getMyCommissionStats, getMyCommissionExportData } from '@/app/actions/my-commissions'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import { DollarSign, TrendingUp, Clock, CheckCircle, Wallet } from 'lucide-react'
-import type { DateRange } from '@/lib/date-range'
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DateRangePicker } from "@/components/dashboard/date-range-picker";
+import { ExportButton } from "@/components/dashboard/export-button";
+import { StatsCard } from "@/components/dashboard/stats-card";
+import {
+  getMyCommissions,
+  getMyCommissionStats,
+  getMyCommissionExportData,
+} from "@/app/actions/my-commissions";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import {
+  DollarSign,
+  TrendingUp,
+  Clock,
+  CheckCircle,
+  Wallet,
+  Lightbulb,
+} from "lucide-react";
+import { MyCommissionExplanation } from "@/components/commissions/my-commission-explanation";
+import { Button } from "@/components/ui/button";
+import type { DateRange } from "@/lib/date-range";
 
 interface CommissionStats {
-  totalEarned: number
-  pending: number
-  approved: number
-  paid: number
-  totalSales: number
-  salesCount: number
-  commissionsCount: number
-  averageCommissionRate: number
-  pendingCount: number
-  approvedCount: number
-  paidCount: number
+  totalEarned: number;
+  pending: number;
+  approved: number;
+  paid: number;
+  totalSales: number;
+  salesCount: number;
+  commissionsCount: number;
+  averageCommissionRate: number;
+  pendingCount: number;
+  approvedCount: number;
+  paidCount: number;
 }
 
 interface Commission {
-  id: string
-  amount: number
-  status: string
-  calculatedAt?: Date
-  approvedAt?: Date | null
-  paidAt?: Date | null
+  id: string;
+  amount: number;
+  status: string;
+  calculatedAt?: Date;
+  approvedAt?: Date | null;
+  paidAt?: Date | null;
   salesTransaction: {
-    id: string
-    amount: number
-    trandate?: Date
-    saleDate?: Date
+    id: string;
+    amount: number;
+    trandate?: Date;
+    saleDate?: Date;
     project: {
-      name: string
+      name: string;
       client: {
-        name: string
-      }
-    }
-  }
+        name: string;
+      };
+    };
+  };
   commissionPlan: {
-    name: string
-  }
+    name: string;
+  };
 }
 
 export default function MyCommissionsPage() {
-  const [stats, setStats] = useState<CommissionStats | null>(null)
-  const [commissions, setCommissions] = useState<Commission[]>([])
-  const [exportData, setExportData] = useState<any[]>([])
-  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
-  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<CommissionStats | null>(null);
+  const [commissions, setCommissions] = useState<Commission[]>([]);
+  const [exportData, setExportData] = useState<any[]>([]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData()
-  }, [dateRange])
+    fetchData();
+  }, [dateRange]);
 
   async function fetchData() {
-    setLoading(true)
+    setLoading(true);
 
     const [statsResult, commissionsResult, exportResult] = await Promise.all([
       getMyCommissionStats(dateRange),
       getMyCommissions(dateRange),
       getMyCommissionExportData(dateRange),
-    ])
+    ]);
 
     if (statsResult.success) {
-      setStats(statsResult.data as CommissionStats)
+      setStats(statsResult.data as CommissionStats);
     }
     if (commissionsResult.success) {
-      setCommissions((commissionsResult.data ?? []) as Commission[])
+      setCommissions((commissionsResult.data ?? []) as Commission[]);
     }
 
     if (exportResult.success) {
-      setExportData(exportResult.data || [])
+      setExportData(exportResult.data || []);
     }
 
-    setLoading(false)
+    setLoading(false);
   }
 
   function handleDateRangeChange(range: DateRange | undefined) {
-    setDateRange(range)
+    setDateRange(range);
   }
 
   if (loading) {
@@ -97,7 +123,7 @@ export default function MyCommissionsPage() {
           <Skeleton className="h-4 w-96" />
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map(i => (
+          {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardHeader>
                 <Skeleton className="h-4 w-24" />
@@ -109,7 +135,7 @@ export default function MyCommissionsPage() {
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -125,11 +151,11 @@ export default function MyCommissionsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <DateRangePicker 
+          <DateRangePicker
             onRangeChange={handleDateRangeChange}
             defaultPreset="thisMonth"
           />
-          <ExportButton 
+          <ExportButton
             data={exportData}
             filename="my-commissions"
             label="Export My Data"
@@ -213,6 +239,7 @@ export default function MyCommissionsPage() {
                     <TableHead className="text-right">Commission</TableHead>
                     <TableHead className="text-right">Rate</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -222,8 +249,8 @@ export default function MyCommissionsPage() {
                         {commission.salesTransaction.saleDate
                           ? formatDate(commission.salesTransaction.saleDate)
                           : commission.salesTransaction.trandate
-                          ? formatDate(commission.salesTransaction.trandate)
-                          : 'N/A'}
+                            ? formatDate(commission.salesTransaction.trandate)
+                            : "N/A"}
                       </TableCell>
                       <TableCell>
                         {commission.salesTransaction.project.client.name}
@@ -243,30 +270,51 @@ export default function MyCommissionsPage() {
                         {formatCurrency(commission.amount)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {((commission.amount / commission.salesTransaction.amount) * 100).toFixed(2)}%
+                        {(
+                          (commission.amount /
+                            commission.salesTransaction.amount) *
+                          100
+                        ).toFixed(2)}
+                        %
                       </TableCell>
                       <TableCell>
                         <Badge
                           variant={
-                            commission.status === 'PAID'
-                              ? 'default'
-                              : commission.status === 'APPROVED'
-                              ? 'secondary'
-                              : 'outline'
+                            commission.status === "PAID"
+                              ? "default"
+                              : commission.status === "APPROVED"
+                                ? "secondary"
+                                : "outline"
                           }
                         >
                           {commission.status}
                         </Badge>
-                        {commission.status === 'PAID' && commission.paidAt && (
+                        {commission.status === "PAID" && commission.paidAt && (
                           <div className="text-xs text-muted-foreground mt-1">
                             Paid: {formatDate(commission.paidAt)}
                           </div>
                         )}
-                        {commission.status === 'APPROVED' && commission.approvedAt && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Approved: {formatDate(commission.approvedAt)}
-                          </div>
-                        )}
+                        {commission.status === "APPROVED" &&
+                          commission.approvedAt && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Approved: {formatDate(commission.approvedAt)}
+                            </div>
+                          )}
+                      </TableCell>
+                      <TableCell>
+                        <MyCommissionExplanation
+                          calculationId={commission.id}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 px-2 text-amber-600 dark:text-amber-400"
+                            >
+                              <Lightbulb className="h-4 w-4 mr-1" />
+                              Explain
+                            </Button>
+                          }
+                        />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -277,5 +325,5 @@ export default function MyCommissionsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
