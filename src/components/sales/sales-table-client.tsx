@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { TablePagination } from '@/components/ui/table-pagination'
 import { SalesTransactionActions } from '@/components/sales/sales-transaction-actions'
 import { CommissionDetailDialog } from '@/components/commissions/commission-detail-dialog'
+import { Card } from '@/components/ui/card'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { SalesTransactionWithRelations } from '@/lib/types'
 
@@ -76,9 +77,135 @@ export function SalesTableClient({
     )
   }
 
+  // Helper to get transaction badge styles
+  const getTransactionStyles = (type: string) => {
+    const label = type === 'RETURN' ? 'Return' : type === 'ADJUSTMENT' ? 'Adjustment' : 'Sale'
+    const variant = type === 'RETURN' ? 'destructive' : type === 'ADJUSTMENT' ? 'warning' : 'success'
+    return { label, variant: variant as 'success' | 'destructive' | 'warning' }
+  }
+
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-blue-500/20 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 shadow-sm overflow-hidden">
+      {/* Mobile Card View */}
+      <div className="space-y-3 md:hidden">
+        {paginatedSales.map((sale) => {
+          const hasCommission = sale.commissionCalculations.length > 0
+          const commission = hasCommission ? sale.commissionCalculations[0] : null
+          const { label: transactionTypeLabel, variant: transactionTypeVariant } = getTransactionStyles(sale.transactionType)
+
+          return (
+            <Card key={sale.id} className="p-4">
+              {/* Header: Amount + Type + Actions */}
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                    {formatCurrency(sale.amount)}
+                  </span>
+                  <Badge variant={transactionTypeVariant} className="text-xs">
+                    {transactionTypeLabel}
+                  </Badge>
+                </div>
+                <SalesTransactionActions
+                  transaction={sale}
+                  projects={projects}
+                  clients={clients}
+                  users={users}
+                  productCategories={productCategories}
+                  requireProjects={requireProjects}
+                />
+              </div>
+
+              {/* Project / Client */}
+              <div className="mb-3">
+                {sale.project ? (
+                  <Link
+                    href={`/dashboard/projects/${sale.project.id}`}
+                    className="font-medium text-blue-700 dark:text-blue-400"
+                  >
+                    {sale.project.name}
+                  </Link>
+                ) : (
+                  <span className="text-muted-foreground">No project</span>
+                )}
+                <div className="text-sm text-muted-foreground">
+                  {sale.project?.client.name || sale.client?.name || '—'}
+                </div>
+              </div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-3">
+                <div>
+                  <span className="text-muted-foreground">Date</span>
+                  <div>{formatDate(sale.transactionDate)}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Salesperson</span>
+                  <div>{sale.user.firstName} {sale.user.lastName}</div>
+                </div>
+                {sale.invoiceNumber && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Invoice</span>
+                    <div className="text-blue-700 dark:text-blue-400">{sale.invoiceNumber}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Commission Section */}
+              {commission && (
+                <div className="pt-3 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Commission:</span>
+                      <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                        {formatCurrency(commission.amount)}
+                      </span>
+                      <Badge
+                        variant={
+                          commission.status === 'PAID'
+                            ? 'success'
+                            : commission.status === 'APPROVED'
+                            ? 'info'
+                            : commission.status === 'PENDING'
+                            ? 'warning'
+                            : 'outline'
+                        }
+                        className="text-xs"
+                      >
+                        {commission.status}
+                      </Badge>
+                    </div>
+                    <CommissionDetailDialog
+                      calculation={commission}
+                      salesAmount={sale.amount}
+                      salesDate={sale.transactionDate}
+                      salesDescription={sale.description}
+                      salesInvoice={sale.invoiceNumber}
+                      salespersonName={`${sale.user.firstName} ${sale.user.lastName}`}
+                      trigger={
+                        <button className="text-xs font-medium text-blue-600 dark:text-blue-400 px-2 py-1 rounded hover:bg-accent">
+                          Details
+                        </button>
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Product Category Badge */}
+              {sale.productCategory && (
+                <div className="mt-2">
+                  <Badge variant="outline" className="text-xs border-cyan-500/30 text-cyan-700 dark:text-cyan-400">
+                    {sale.productCategory.name}
+                  </Badge>
+                </div>
+              )}
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block rounded-lg border border-blue-500/20 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -98,18 +225,7 @@ export function SalesTableClient({
                 const hasCommission = sale.commissionCalculations.length > 0
                 const commission = hasCommission ? sale.commissionCalculations[0] : null
 
-                // Debug: log commission data for first row
-                if (index === 0 && commission) {
-                  console.log('First row commission data:', {
-                    hasCommission,
-                    commissionId: commission.id,
-                    commissionAmount: commission.amount,
-                    commissionStatus: commission.status
-                  })
-                }
-
-                const transactionTypeLabel = sale.transactionType === 'RETURN' ? 'Return' : sale.transactionType === 'ADJUSTMENT' ? 'Adjustment' : 'Sale'
-                const transactionTypeVariant = sale.transactionType === 'RETURN' ? 'destructive' : sale.transactionType === 'ADJUSTMENT' ? 'warning' : 'success'
+                const { label: transactionTypeLabel, variant: transactionTypeVariant } = getTransactionStyles(sale.transactionType)
 
                 // Get row background based on transaction type
                 const rowBgClass = sale.transactionType === 'RETURN'
@@ -127,7 +243,7 @@ export function SalesTableClient({
                       {formatCurrency(sale.amount)}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={transactionTypeVariant as 'success' | 'destructive' | 'warning'} className="text-xs">
+                      <Badge variant={transactionTypeVariant} className="text-xs">
                         {transactionTypeLabel}
                       </Badge>
                     </TableCell>

@@ -33,61 +33,98 @@ export function TablePagination({
   const endRecord = Math.min(currentPage * pageSize, totalRecords)
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>Show</span>
-        <Select
-          value={pageSize.toString()}
-          onValueChange={(value) => onPageSizeChange(Number(value))}
+    <div className="flex flex-col gap-3 py-4">
+      {/* Mobile: Simplified pagination */}
+      <div className="flex items-center justify-between gap-2 sm:hidden">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="h-10 px-4"
         >
-          <SelectTrigger className="w-[70px] h-8">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {pageSizeOptions.map((size) => (
-              <SelectItem key={size} value={size.toString()}>
-                {size}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <span>records per page</span>
-      </div>
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Prev
+        </Button>
 
-      <div className="flex items-center gap-4">
-        <div className="text-sm text-muted-foreground">
-          Showing {startRecord.toLocaleString()} to {endRecord.toLocaleString()} of{' '}
-          {totalRecords.toLocaleString()} {totalRecords === 1 ? 'record' : 'records'}
+        <div className="flex flex-col items-center text-sm">
+          <span className="font-medium">
+            {currentPage} of {totalPages}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {totalRecords.toLocaleString()} total
+          </span>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="sr-only">Previous page</span>
-          </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="h-10 px-4"
+        >
+          Next
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
 
-          <div className="flex items-center gap-1 px-2">
-            <span className="text-sm font-medium">{currentPage}</span>
-            <span className="text-sm text-muted-foreground">of</span>
-            <span className="text-sm font-medium">{totalPages}</span>
+      {/* Desktop: Full pagination controls */}
+      <div className="hidden sm:flex items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>Show</span>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={(value) => onPageSizeChange(Number(value))}
+          >
+            <SelectTrigger className="w-[70px] h-8">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {pageSizeOptions.map((size) => (
+                <SelectItem key={size} value={size.toString()}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span>records per page</span>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {startRecord.toLocaleString()} to {endRecord.toLocaleString()} of{' '}
+            {totalRecords.toLocaleString()} {totalRecords === 1 ? 'record' : 'records'}
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onPageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronRight className="h-4 w-4" />
-            <span className="sr-only">Next page</span>
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="sr-only">Previous page</span>
+            </Button>
+
+            <div className="flex items-center gap-1 px-2">
+              <span className="text-sm font-medium">{currentPage}</span>
+              <span className="text-sm text-muted-foreground">of</span>
+              <span className="text-sm font-medium">{totalPages}</span>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="h-8 w-8 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+              <span className="sr-only">Next page</span>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TablePagination } from '@/components/ui/table-pagination'
 import { CommissionDetailDialog } from '@/components/commissions/commission-detail-dialog'
+import { Card } from '@/components/ui/card'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
 interface CommissionsTableClientProps {
@@ -110,8 +111,112 @@ export function CommissionsTableClient({
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
+      {/* Mobile Card View */}
+      <div className="space-y-3 md:hidden">
+        {paginatedCalculations.map((calc) => {
+          const customerName = calc.salesTransaction.client?.name ||
+            calc.salesTransaction.project?.client?.name || null
+
+          return (
+            <Card key={calc.id} className="p-4">
+              {/* Header: Commission Amount + Status */}
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div>
+                  <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400">
+                    {formatCurrency(calc.amount)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {((calc.amount / calc.salesTransaction.amount) * 100).toFixed(1)}% of {formatCurrency(calc.salesTransaction.amount)}
+                  </div>
+                </div>
+                <Badge
+                  variant={
+                    calc.status === 'PAID'
+                      ? 'success'
+                      : calc.status === 'APPROVED'
+                      ? 'info'
+                      : 'warning'
+                  }
+                >
+                  {calc.status}
+                </Badge>
+              </div>
+
+              {/* Salesperson */}
+              <div className="mb-3">
+                <div className="font-medium">
+                  {calc.user.firstName} {calc.user.lastName}
+                </div>
+                <div className="text-sm text-muted-foreground">{calc.user.email}</div>
+              </div>
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-3">
+                <div>
+                  <span className="text-muted-foreground">Date</span>
+                  <div>{formatDate(calc.calculatedAt)}</div>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Plan</span>
+                  <div>
+                    <Link
+                      href={`/dashboard/plans/${calc.commissionPlan.id}`}
+                      className="text-blue-600 dark:text-blue-400"
+                    >
+                      {calc.commissionPlan.name}
+                    </Link>
+                  </div>
+                </div>
+                {calc.salesTransaction.project && (
+                  <div>
+                    <span className="text-muted-foreground">Project</span>
+                    <div>
+                      <Link
+                        href={`/dashboard/projects/${calc.salesTransaction.project.id}`}
+                        className="text-blue-600 dark:text-blue-400"
+                      >
+                        {calc.salesTransaction.project.name}
+                      </Link>
+                    </div>
+                  </div>
+                )}
+                {customerName && (
+                  <div>
+                    <span className="text-muted-foreground">Customer</span>
+                    <div>{customerName}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Paid Date if applicable */}
+              {calc.status === 'PAID' && (calc as any).paidAt && (
+                <div className="text-xs text-muted-foreground mb-3">
+                  Paid on {formatDate((calc as any).paidAt)}
+                </div>
+              )}
+
+              {/* View Details Button */}
+              <div className="pt-3 border-t">
+                <CommissionDetailDialog
+                  calculation={calc}
+                  trigger={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      View Breakdown
+                    </Button>
+                  }
+                />
+              </div>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
