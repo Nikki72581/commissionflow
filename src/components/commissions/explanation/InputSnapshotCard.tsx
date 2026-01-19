@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import {
   User,
@@ -9,28 +9,34 @@ import {
   Receipt,
   Calendar,
   DollarSign,
-} from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
-import { formatCurrency, formatDate } from '@/lib/utils'
-import type { InputSnapshot } from '@/types/commission-trace'
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import type { InputSnapshot } from "@/types/commission-trace";
 
 interface InputSnapshotCardProps {
-  snapshot: InputSnapshot
-  className?: string
+  snapshot: InputSnapshot;
+  className?: string;
 }
 
 interface InfoRowProps {
-  icon: typeof User
-  label: string
-  value?: string | number | null
-  badge?: boolean
-  badgeVariant?: 'default' | 'secondary' | 'outline'
+  icon: typeof User;
+  label: string;
+  value?: string | number | null;
+  badge?: boolean;
+  badgeVariant?: "default" | "secondary" | "outline";
 }
 
-function InfoRow({ icon: Icon, label, value, badge, badgeVariant = 'outline' }: InfoRowProps) {
-  if (!value && value !== 0) return null
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+  badge,
+  badgeVariant = "outline",
+}: InfoRowProps) {
+  if (!value && value !== 0) return null;
 
   return (
     <div className="flex items-center gap-3 py-2">
@@ -46,12 +52,15 @@ function InfoRow({ icon: Icon, label, value, badge, badgeVariant = 'outline' }: 
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export function InputSnapshotCard({ snapshot, className }: InputSnapshotCardProps) {
+export function InputSnapshotCard({
+  snapshot,
+  className,
+}: InputSnapshotCardProps) {
   return (
-    <Card className={cn('', className)}>
+    <Card className={cn("", className)}>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <Receipt className="h-4 w-4" />
@@ -69,14 +78,18 @@ export function InputSnapshotCard({ snapshot, className }: InputSnapshotCardProp
               <DollarSign className="h-3 w-3" />
               Gross Amount
             </div>
-            <div className="text-lg font-bold">{formatCurrency(snapshot.grossAmount)}</div>
+            <div className="text-lg font-bold">
+              {formatCurrency(snapshot.grossAmount)}
+            </div>
           </div>
           <div>
             <div className="text-xs text-muted-foreground flex items-center gap-1">
               <DollarSign className="h-3 w-3" />
               Net Amount
             </div>
-            <div className="text-lg font-bold">{formatCurrency(snapshot.netAmount)}</div>
+            <div className="text-lg font-bold">
+              {formatCurrency(snapshot.netAmount)}
+            </div>
           </div>
         </div>
 
@@ -112,11 +125,13 @@ export function InputSnapshotCard({ snapshot, className }: InputSnapshotCardProp
         <div className="border-t my-2" />
 
         {/* Related Entities */}
-        <InfoRow
-          icon={User}
-          label="Salesperson"
-          value={snapshot.salesperson.name}
-        />
+        {snapshot.salesperson && (
+          <InfoRow
+            icon={User}
+            label="Salesperson"
+            value={snapshot.salesperson.name}
+          />
+        )}
 
         {snapshot.client && (
           <>
@@ -163,10 +178,13 @@ export function InputSnapshotCard({ snapshot, className }: InputSnapshotCardProp
         {/* Transaction ID */}
         <div className="pt-2 border-t">
           <div className="text-xs text-muted-foreground">
-            Transaction ID: <code className="bg-muted px-1 rounded">{snapshot.transactionId}</code>
+            Transaction ID:{" "}
+            <code className="bg-muted px-1 rounded">
+              {snapshot.transactionId}
+            </code>
           </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
