@@ -111,7 +111,7 @@ export default function MyCommissionsPage() {
     setLoading(false);
   }
 
-  function handleDateRangeChange(range: DateRange | undefined) {
+  function handleDateRangeChange(range: DateRange) {
     setDateRange(range);
   }
 
@@ -152,7 +152,8 @@ export default function MyCommissionsPage() {
         </div>
         <div className="flex items-center gap-2">
           <DateRangePicker
-            onRangeChange={handleDateRangeChange}
+            onRangeChange={(range) => handleDateRangeChange(range)}
+            currentRange={dateRange}
             defaultPreset="thisMonth"
           />
           <ExportButton

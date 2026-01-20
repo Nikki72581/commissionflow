@@ -1,59 +1,68 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { DollarSign, TrendingUp, Users, BarChart3, Clock, CheckCircle, Wallet, Sparkles } from 'lucide-react'
-import { StatsCard } from '@/components/dashboard/stats-card'
-import { CommissionTrendsChart } from '@/components/dashboard/commission-trends-chart'
-import { TopPerformers } from '@/components/dashboard/top-performers'
-import { DateRangePicker } from '@/components/dashboard/date-range-picker'
-import { ExportButton } from '@/components/dashboard/export-button'
-import { DateRange, formatDateRange } from '@/lib/date-range'
-import { CommissionExportData } from '@/lib/csv-export'
-import { DashboardSkeleton } from './dashboard-skeleton'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+import { useState } from "react";
+import {
+  DollarSign,
+  TrendingUp,
+  Users,
+  BarChart3,
+  Clock,
+  CheckCircle,
+  Wallet,
+  Sparkles,
+} from "lucide-react";
+import { StatsCard } from "@/components/dashboard/stats-card";
+import { CommissionTrendsChart } from "@/components/dashboard/commission-trends-chart";
+import { TopPerformers } from "@/components/dashboard/top-performers";
+import { DateRangePicker } from "@/components/dashboard/date-range-picker";
+import { ExportButton } from "@/components/dashboard/export-button";
+import { DateRange, DateRangePreset, formatDateRange } from "@/lib/date-range";
+import { CommissionExportData } from "@/lib/csv-export";
+import { DashboardSkeleton } from "./dashboard-skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface DashboardStats {
-  totalSales: number
-  salesCount: number
-  totalCommissions: number
-  commissionsCount: number
-  pendingCommissions: number
-  pendingCount: number
-  approvedCommissions: number
-  approvedCount: number
-  paidCommissions: number
-  paidCount: number
-  averageCommissionRate: number
-  activePlansCount: number
-  activeClientsCount: number
-  salesPeopleCount: number
+  totalSales: number;
+  salesCount: number;
+  totalCommissions: number;
+  commissionsCount: number;
+  pendingCommissions: number;
+  pendingCount: number;
+  approvedCommissions: number;
+  approvedCount: number;
+  paidCommissions: number;
+  paidCount: number;
+  averageCommissionRate: number;
+  activePlansCount: number;
+  activeClientsCount: number;
+  salesPeopleCount: number;
 }
 
 interface TrendData {
-  month: string
-  sales: number
-  commissions: number
-  count: number
-  rate: number
+  month: string;
+  sales: number;
+  commissions: number;
+  count: number;
+  rate: number;
 }
 
 interface Performer {
-  userId: string
-  name: string
-  email: string
-  totalSales: number
-  totalCommissions: number
-  salesCount: number
-  averageCommissionRate: number
+  userId: string;
+  name: string;
+  email: string;
+  totalSales: number;
+  totalCommissions: number;
+  salesCount: number;
+  averageCommissionRate: number;
 }
 
 interface DashboardContentProps {
-  initialStats: DashboardStats
-  initialTrends: TrendData[]
-  initialPerformers: Performer[]
-  initialDateRange: DateRange
+  initialStats: DashboardStats;
+  initialTrends: TrendData[];
+  initialPerformers: Performer[];
+  initialDateRange: DateRange;
 }
 
 export function DashboardContent({
@@ -67,56 +76,64 @@ export function DashboardContent({
     initialStats.activeClientsCount === 0 &&
     initialStats.salesCount === 0 &&
     initialStats.commissionsCount === 0 &&
-    initialStats.salesPeopleCount === 0
-  const [isLoading, setIsLoading] = useState(false)
-  const [stats, setStats] = useState<DashboardStats>(initialStats)
-  const [trends, setTrends] = useState<TrendData[]>(initialTrends)
-  const [performers, setPerformers] = useState<Performer[]>(initialPerformers)
-  const [exportData, setExportData] = useState<CommissionExportData[]>([])
-  const [dateRange, setDateRange] = useState<DateRange>(initialDateRange)
+    initialStats.salesPeopleCount === 0;
+  const [isLoading, setIsLoading] = useState(false);
+  const [stats, setStats] = useState<DashboardStats>(initialStats);
+  const [trends, setTrends] = useState<TrendData[]>(initialTrends);
+  const [performers, setPerformers] = useState<Performer[]>(initialPerformers);
+  const [exportData, setExportData] = useState<CommissionExportData[]>([]);
+  const [dateRange, setDateRange] = useState<DateRange>(initialDateRange);
+  const [selectedPreset, setSelectedPreset] =
+    useState<DateRangePreset>("thisMonth");
 
-  const handleDateRangeChange = async (range: DateRange) => {
-    setDateRange(range)
-    setIsLoading(true)
+  const handleDateRangeChange = async (
+    range: DateRange,
+    preset: DateRangePreset,
+  ) => {
+    setDateRange(range);
+    setSelectedPreset(preset);
+    setIsLoading(true);
 
     try {
       // Fetch filtered data
-      const [statsRes, trendsRes, performersRes, exportRes] = await Promise.all([
-        fetch('/api/dashboard/stats', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dateRange: range }),
-        }).then(r => r.json()),
-        fetch('/api/dashboard/trends', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dateRange: range }),
-        }).then(r => r.json()),
-        fetch('/api/dashboard/performers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dateRange: range }),
-        }).then(r => r.json()),
-        fetch('/api/dashboard/export', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dateRange: range }),
-        }).then(r => r.json()),
-      ])
+      const [statsRes, trendsRes, performersRes, exportRes] = await Promise.all(
+        [
+          fetch("/api/dashboard/stats", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dateRange: range }),
+          }).then((r) => r.json()),
+          fetch("/api/dashboard/trends", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dateRange: range }),
+          }).then((r) => r.json()),
+          fetch("/api/dashboard/performers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dateRange: range }),
+          }).then((r) => r.json()),
+          fetch("/api/dashboard/export", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ dateRange: range }),
+          }).then((r) => r.json()),
+        ],
+      );
 
-      if (statsRes.success) setStats(statsRes.data)
-      if (trendsRes.success) setTrends(trendsRes.data)
-      if (performersRes.success) setPerformers(performersRes.data)
-      if (exportRes.success) setExportData(exportRes.data)
+      if (statsRes.success) setStats(statsRes.data);
+      if (trendsRes.success) setTrends(trendsRes.data);
+      if (performersRes.success) setPerformers(performersRes.data);
+      if (exportRes.success) setExportData(exportRes.data);
     } catch (error) {
-      console.error('Error fetching filtered dashboard data:', error)
+      console.error("Error fetching filtered dashboard data:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   if (isLoading) {
-    return <DashboardSkeleton />
+    return <DashboardSkeleton />;
   }
 
   return (
@@ -135,7 +152,11 @@ export function DashboardContent({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <DateRangePicker onRangeChange={handleDateRangeChange} />
+          <DateRangePicker
+            onRangeChange={handleDateRangeChange}
+            currentRange={dateRange}
+            defaultPreset={selectedPreset}
+          />
           <ExportButton data={exportData} label="Export" />
         </div>
       </div>
@@ -145,7 +166,9 @@ export function DashboardContent({
           <Sparkles />
           <AlertTitle>Welcome! You’re all set to get started.</AlertTitle>
           <AlertDescription className="text-amber-800/90">
-            <p>Visit the help and support page for quick guides and next steps.</p>
+            <p>
+              Visit the help and support page for quick guides and next steps.
+            </p>
             <Button asChild size="sm" className="mt-2">
               <Link href="/dashboard/help">Go to Help & Support</Link>
             </Button>
@@ -223,5 +246,5 @@ export function DashboardContent({
         <TopPerformers performers={performers.slice(0, 5)} accent="dashboard" />
       </div>
     </div>
-  )
+  );
 }
