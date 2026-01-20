@@ -1,54 +1,41 @@
-import { Suspense } from 'react'
-import { getDashboardStats, getCommissionTrends, getTopPerformers } from '@/app/actions/dashboard'
-import { getDateRangeFromPreset } from '@/lib/date-range'
-import { DashboardStats } from './dashboard-stats'
-import { DashboardCharts } from './dashboard-charts'
-import { StatsSkeleton, ChartsSkeleton } from './dashboard-skeleton'
-import { DashboardHeader } from './dashboard-header'
+import {
+  getDashboardStats,
+  getCommissionTrends,
+  getTopPerformers,
+} from "@/app/actions/dashboard";
+import { getDateRangeFromPreset } from "@/lib/date-range";
+import { DashboardContent } from "./dashboard-content";
+import { DashboardSkeleton } from "./dashboard-skeleton";
 
-async function DashboardStatsSection() {
-  const defaultDateRange = getDateRangeFromPreset('thisMonth')
-  const statsResult = await getDashboardStats(defaultDateRange)
+export async function DashboardServer() {
+  const defaultDateRange = getDateRangeFromPreset("thisMonth");
+
+  const [statsResult, trendsResult, performersResult] = await Promise.all([
+    getDashboardStats(defaultDateRange),
+    getCommissionTrends({ dateRange: defaultDateRange }),
+    getTopPerformers(defaultDateRange, 10),
+  ]);
 
   if (!statsResult.success || !statsResult.data) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">Failed to load dashboard statistics</p>
+        <p className="text-muted-foreground">
+          Failed to load dashboard statistics
+        </p>
       </div>
-    )
+    );
   }
 
-  return <DashboardStats stats={statsResult.data} />
-}
+  const trends = (trendsResult.success ? trendsResult.data : []) || [];
+  const performers =
+    (performersResult.success ? performersResult.data : []) || [];
 
-async function DashboardChartsSection() {
-  const defaultDateRange = getDateRangeFromPreset('thisMonth')
-
-  const [trendsResult, performersResult] = await Promise.all([
-    getCommissionTrends({ dateRange: defaultDateRange }),
-    getTopPerformers(defaultDateRange, 10),
-  ])
-
-  const trends = (trendsResult.success ? trendsResult.data : []) || []
-  const performers = (performersResult.success ? performersResult.data : []) || []
-
-  return <DashboardCharts trends={trends} performers={performers} />
-}
-
-export function DashboardServer() {
   return (
-    <div className="space-y-6">
-      <DashboardHeader />
-
-      {/* Load stats first - critical for FCP */}
-      <Suspense fallback={<StatsSkeleton />}>
-        <DashboardStatsSection />
-      </Suspense>
-
-      {/* Load charts separately - improves LCP */}
-      <Suspense fallback={<ChartsSkeleton />}>
-        <DashboardChartsSection />
-      </Suspense>
-    </div>
-  )
+    <DashboardContent
+      initialStats={statsResult.data}
+      initialTrends={trends}
+      initialPerformers={performers}
+      initialDateRange={defaultDateRange}
+    />
+  );
 }

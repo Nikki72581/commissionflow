@@ -1,148 +1,162 @@
-import { startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, subMonths, subQuarters, subYears } from 'date-fns'
+import {
+  startOfMonth,
+  endOfMonth,
+  startOfQuarter,
+  endOfQuarter,
+  startOfYear,
+  endOfYear,
+  subMonths,
+  subQuarters,
+  subYears,
+  startOfDay,
+  endOfDay,
+} from "date-fns";
 
-export type DateRangePreset = 
-  | 'today'
-  | 'yesterday'
-  | 'last7days'
-  | 'last30days'
-  | 'thisMonth'
-  | 'lastMonth'
-  | 'thisQuarter'
-  | 'lastQuarter'
-  | 'thisYear'
-  | 'lastYear'
-  | 'allTime'
+export type DateRangePreset =
+  | "today"
+  | "yesterday"
+  | "last7days"
+  | "last30days"
+  | "thisMonth"
+  | "lastMonth"
+  | "thisQuarter"
+  | "lastQuarter"
+  | "thisYear"
+  | "lastYear"
+  | "allTime";
 
 export interface DateRange {
-  from: Date
-  to: Date
+  from: Date;
+  to: Date;
 }
 
 export type SerializableDateRange = {
-  from: Date | string
-  to: Date | string
-}
+  from: Date | string;
+  to: Date | string;
+};
 
 export function getDateRangeFromPreset(preset: DateRangePreset): DateRange {
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const now = new Date();
 
   switch (preset) {
-    case 'today':
+    case "today":
       return {
-        from: today,
-        to: now,
-      }
-    
-    case 'yesterday': {
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
+        from: startOfDay(now),
+        to: endOfDay(now),
+      };
+
+    case "yesterday": {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
       return {
-        from: yesterday,
-        to: yesterday,
-      }
+        from: startOfDay(yesterday),
+        to: endOfDay(yesterday),
+      };
     }
-    
-    case 'last7days': {
-      const sevenDaysAgo = new Date(today)
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+    case "last7days": {
+      const sevenDaysAgo = new Date(now);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       return {
-        from: sevenDaysAgo,
-        to: now,
-      }
+        from: startOfDay(sevenDaysAgo),
+        to: endOfDay(now),
+      };
     }
-    
-    case 'last30days': {
-      const thirtyDaysAgo = new Date(today)
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    case "last30days": {
+      const thirtyDaysAgo = new Date(now);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       return {
-        from: thirtyDaysAgo,
-        to: now,
-      }
+        from: startOfDay(thirtyDaysAgo),
+        to: endOfDay(now),
+      };
     }
-    
-    case 'thisMonth':
+
+    case "thisMonth":
       return {
         from: startOfMonth(now),
-        to: now,
-      }
-    
-    case 'lastMonth': {
-      const lastMonth = subMonths(now, 1)
+        to: endOfDay(now),
+      };
+
+    case "lastMonth": {
+      const lastMonth = subMonths(now, 1);
       return {
         from: startOfMonth(lastMonth),
         to: endOfMonth(lastMonth),
-      }
+      };
     }
-    
-    case 'thisQuarter':
+
+    case "thisQuarter":
       return {
         from: startOfQuarter(now),
-        to: now,
-      }
-    
-    case 'lastQuarter': {
-      const lastQuarter = subQuarters(now, 1)
+        to: endOfDay(now),
+      };
+
+    case "lastQuarter": {
+      const lastQuarter = subQuarters(now, 1);
       return {
         from: startOfQuarter(lastQuarter),
         to: endOfQuarter(lastQuarter),
-      }
+      };
     }
-    
-    case 'thisYear':
+
+    case "thisYear":
       return {
         from: startOfYear(now),
-        to: now,
-      }
-    
-    case 'lastYear': {
-      const lastYear = subYears(now, 1)
+        to: endOfDay(now),
+      };
+
+    case "lastYear": {
+      const lastYear = subYears(now, 1);
       return {
         from: startOfYear(lastYear),
         to: endOfYear(lastYear),
-      }
+      };
     }
-    
-    case 'allTime':
+
+    case "allTime":
       return {
         from: new Date(2020, 0, 1), // Start from Jan 1, 2020
-        to: now,
-      }
-    
+        to: endOfDay(now),
+      };
+
     default:
       return {
         from: startOfMonth(now),
-        to: now,
-      }
+        to: endOfDay(now),
+      };
   }
 }
 
-export function normalizeDateRange(range?: SerializableDateRange | null): DateRange | undefined {
-  if (!range?.from || !range?.to) return undefined
+export function normalizeDateRange(
+  range?: SerializableDateRange | null,
+): DateRange | undefined {
+  if (!range?.from || !range?.to) return undefined;
 
-  const from = range.from instanceof Date ? range.from : new Date(range.from)
-  const to = range.to instanceof Date ? range.to : new Date(range.to)
+  const from = range.from instanceof Date ? range.from : new Date(range.from);
+  const to = range.to instanceof Date ? range.to : new Date(range.to);
 
-  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return undefined
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()))
+    return undefined;
 
-  return { from, to }
+  return { from, to };
 }
 
 export function formatDateRange(range: DateRange): string {
-  const fromStr = range.from.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    year: 'numeric' 
-  })
-  const toStr = range.to.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric',
-    year: 'numeric' 
-  })
-  
-  return `${fromStr} - ${toStr}`
+  const fromStr = range.from.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const toStr = range.to.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  return `${fromStr} - ${toStr}`;
 }
 
 export function isWithinDateRange(date: Date, range: DateRange): boolean {
-  return date >= range.from && date <= range.to
+  return date >= range.from && date <= range.to;
 }
