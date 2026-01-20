@@ -49,9 +49,11 @@ API keys use scope-based permissions for fine-grained access control:
 - `projects:read` - Read projects
 - `projects:write` - Create, update, and delete projects
 - `categories:read` - Read product categories
-- `categories:write` - Create product categories
+- `categories:write` - Create, update, and delete product categories
 - `territories:read` - Read territories
-- `territories:write` - Create territories
+- `territories:write` - Create, update, and delete territories
+- `users:read` - Read users/salespeople
+- `commissions:read` - Read commission calculations
 - `*` - All permissions (use with caution)
 
 ## Rate Limiting
@@ -140,5 +142,9 @@ Response includes pagination metadata:
 - [Sales Transactions API](./sales-transactions.md)
 - [Clients API](./clients.md)
 - [Projects API](./projects.md)
+- [Users API](./users.md)
+- [Commissions API](./commissions.md)
+- [Product Categories API](./product-categories.md)
+- [Territories API](./territories.md)
 - [Error Handling](./errors.md)
 - [Interactive API Documentation](https://app.commissionflow.com/api/v1/openapi.json)
