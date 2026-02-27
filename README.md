@@ -109,40 +109,30 @@ npm run dev
 ## Project Structure
 
 ```
-commissionflow/
+src/
 ├── app/
-│   ├── actions/           # Server actions for data mutations
-│   ├── api/              # API routes (webhooks, etc.)
-│   ├── dashboard/        # Main application pages
-│   │   ├── clients/      # Client management
-│   │   ├── projects/     # Project management
-│   │   ├── plans/        # Commission plan builder
-│   │   ├── sales/        # Sales transaction tracking
-│   │   ├── commissions/  # Commission calculations & approvals
-│   │   ├── my-commissions/ # Salesperson portal
-│   │   └── audit-logs/   # Audit log viewer
-│   └── (auth)/           # Authentication pages
-├── components/
-│   ├── ui/              # shadcn/ui components
-│   ├── clients/         # Client-specific components
-│   ├── projects/        # Project-specific components
-│   ├── plans/           # Commission plan components
-│   ├── sales/           # Sales components
-│   ├── commissions/     # Commission components
-│   └── shared/          # Shared components
+│   ├── actions/            # Server Actions (data mutations)
+│   ├── api/
+│   │   ├── v1/             # External REST API (API-key auth)
+│   │   ├── acumatica/      # Acumatica webhook/sync endpoints
+│   │   ├── webhooks/       # Clerk webhooks
+│   │   └── dashboard/      # Internal API routes
+│   └── dashboard/          # Authenticated pages (admin + salesperson)
+├── components/             # React components organized by feature
+├── hooks/                  # Custom React hooks
 ├── lib/
-│   ├── validations/     # Zod schemas for validation
-│   ├── commission-calculator.ts  # Commission calculation engine
-│   ├── email.ts         # Email service
-│   ├── audit-log.ts     # Audit logging utilities
-│   └── utils.ts         # Utility functions
-├── prisma/
-│   ├── schema.prisma    # Database schema
-│   └── seed.ts          # Seed script
-└── tests/
-    ├── unit/            # Unit tests
-    ├── integration/     # Integration tests
-    └── e2e/             # End-to-end tests
+│   ├── acumatica/          # Acumatica API client + sync logic
+│   ├── validations/        # Zod schemas
+│   ├── commission-calculator.ts  # Core calculation engine
+│   └── ...                 # Auth, db, email, audit-log, etc.
+├── types/                  # TypeScript type definitions
+prisma/
+├── schema.prisma           # Database schema
+└── seed.ts                 # Seed script
+tests/
+├── unit/                   # Unit tests (Vitest)
+├── integration/            # Integration tests
+└── e2e/                    # E2E tests (Playwright)
 ```
 
 ## Available Scripts
@@ -164,28 +154,20 @@ npm run test:coverage    # Generate coverage report
 
 ## Documentation
 
-### Implementation Guides
-- [STEP-2-README.md](STEP-2-README.md) - Clients & Projects Management
-- [STEP-3-README.md](STEP-3-README.md) - Commission Plan Builder
-- [STEP-4-README.md](STEP-4-README.md) - Sales Data & Calculations
-- [STEP-5-INSTALL.md](STEP-5-INSTALL.md) - Reporting & Dashboards
-- [STEP-6-GUIDE.md](STEP-6-GUIDE.md) - Advanced Features
+### Developer Reference
+- [CLAUDE.md](CLAUDE.md) - Architecture, patterns, and commands (primary dev reference)
+- [TESTING.md](TESTING.md) - Testing guide (unit, integration, E2E)
+- [TEST-IDS-GUIDE.md](TEST-IDS-GUIDE.md) - data-testid conventions for E2E tests
+- [BRAND-STYLE-GUIDE.md](BRAND-STYLE-GUIDE.md) - UI design tokens and patterns
 
-### Quick Reference
-- [STEP-3-QUICK-REFERENCE.md](STEP-3-QUICK-REFERENCE.md) - Commission plans quick reference
-- [STEP-4-QUICK-REFERENCE.md](STEP-4-QUICK-REFERENCE.md) - Sales & calculations quick reference
-- [STEP-6-QUICK-REFERENCE.md](STEP-6-QUICK-REFERENCE.md) - Advanced features quick reference
+### Integration & Setup
+- [ACUMATICA_SETUP.md](ACUMATICA_SETUP.md) - Acumatica ERP integration setup and troubleshooting
+- [CommissionFlow-Acumatica-Integration-ProductSpec-v2.md](CommissionFlow-Acumatica-Integration-ProductSpec-v2.md) - Acumatica integration product spec
+- [TEAM_INVITATIONS_SETUP.md](TEAM_INVITATIONS_SETUP.md) - Clerk Organizations team invitation setup
 
-### Setup Guides
-- [RESEND-SETUP.md](RESEND-SETUP.md) - Email service configuration
-- [INTEGRATION-GUIDE.md](INTEGRATION-GUIDE.md) - Email notification integration
-- [TEAM_INVITATIONS_SETUP.md](TEAM_INVITATIONS_SETUP.md) - Team invitation setup
-- [FILE-STRUCTURE.md](FILE-STRUCTURE.md) - Detailed project structure
-
-### Testing
-- [TESTING.md](TESTING.md) - Comprehensive testing guide
-- [TESTING-SUMMARY.md](TESTING-SUMMARY.md) - Test infrastructure overview
-- [TEST-IDS-GUIDE.md](TEST-IDS-GUIDE.md) - Guide for adding test IDs to components
+### API Reference
+- [docs/api/getting-started.md](docs/api/getting-started.md) - External API authentication, scopes, and rate limits
+- [docs/api/](docs/api/) - Full REST API documentation by resource
 
 ## Key Features
 
@@ -239,7 +221,7 @@ npx shadcn-ui@latest add button card input label table badge dialog
 ```
 
 ### Testing Issues
-See [TESTING.md](TESTING.md) for detailed troubleshooting guides.
+See [TESTING.md](TESTING.md) for detailed testing setup and troubleshooting.
 
 ## Contributing
 

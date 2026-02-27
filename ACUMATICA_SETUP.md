@@ -232,10 +232,69 @@ Once the connection is tested successfully, the remaining steps are:
 - Run `npx prisma migrate dev` to apply pending migrations
 - Check that there are no conflicting data (unique constraints)
 
-## Support
+## Deploying to Vercel
 
-For issues or questions:
-1. Check the troubleshooting section above
-2. Review the implementation guide document
-3. Verify all environment variables are set correctly
-4. Ensure database migrations have been applied
+### 1. Add ENCRYPTION_KEY to Vercel
+
+```bash
+# Generate a production encryption key (use a DIFFERENT key than local dev)
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+In Vercel Dashboard > Settings > Environment Variables, add:
+- `ENCRYPTION_KEY` = (generated key) for all environments
+
+### 2. Commit and Push
+
+Vercel will automatically run `prisma migrate deploy`, `prisma generate`, and `next build`.
+
+### 3. Verify Deployment
+
+1. Visit your production URL
+2. Navigate to `/dashboard/integrations`
+3. Verify Acumatica card shows "Not Connected"
+4. Click "Connect" and verify the setup page loads
+
+## Troubleshooting
+
+### "ENCRYPTION_KEY environment variable is not set"
+- Add `ENCRYPTION_KEY` to `.env.local` (local) or Vercel environment variables (production)
+- Restart your dev server after adding the variable
+
+### "Property 'acumaticaIntegration' does not exist on type 'PrismaClient'"
+```bash
+npx prisma generate
+# Restart your TypeScript server in VS Code and your dev server
+```
+
+### "Test Connection" button does nothing
+1. Check browser console (F12) for errors
+2. Check server logs for `[Server]` prefixed messages
+3. Verify the database migration has been applied: `npx prisma migrate dev`
+4. Verify `ENCRYPTION_KEY` is set and dev server was restarted
+5. Try clearing the Next.js cache: `rm -rf .next && npm run dev`
+6. Visit the debug page: `/dashboard/integrations/acumatica/debug`
+
+### "Connection test failed"
+- Verify Acumatica instance URL is correct and accessible (must be HTTPS)
+- Ensure the API version matches your Acumatica instance
+- Check that username and password are correct
+- Verify the API user has necessary permissions (SalesInvoice, Salesperson, Customer, Project, Branch, Company endpoints)
+- Check that the Company ID matches exactly
+
+### Database migration issues
+```bash
+# If you see unique constraint errors with existing data:
+npx prisma migrate reset  # WARNING: loses all data
+
+# Or fix constraints manually:
+# UPDATE clients SET external_id = NULL WHERE external_system IS NULL;
+# UPDATE projects SET external_id = NULL WHERE external_system IS NULL;
+# UPDATE sales_transactions SET external_id = NULL WHERE external_system IS NULL;
+```
+
+### Vercel build fails with "type already exists"
+The migration was partially applied. Mark it as resolved:
+```bash
+npx prisma migrate resolve --applied <migration_name>
+```
