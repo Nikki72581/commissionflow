@@ -1,51 +1,15 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/db'
 import type { DateRange } from '@/lib/date-range'
+import { getCurrentUserWithOrg } from '@/lib/auth'
 
 /**
  * Get current user's ID from database
  */
 async function getCurrentUserId(): Promise<string> {
-  const { userId: clerkId } = await auth()
-  
-  if (!clerkId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { id: true, organizationId: true },
-  })
-
-  if (!user) {
-    throw new Error('User not found')
-  }
-
+  const user = await getCurrentUserWithOrg()
   return user.id
-}
-
-/**
- * Get organization ID for current user
- */
-async function getOrganizationId(): Promise<string> {
-  const { userId: clerkId } = await auth()
-  
-  if (!clerkId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: { organizationId: true },
-  })
-
-  if (!user?.organizationId) {
-    throw new Error('User not associated with an organization')
-  }
-
-  return user.organizationId
 }
 
 // ============================================

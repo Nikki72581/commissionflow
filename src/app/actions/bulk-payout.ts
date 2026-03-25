@@ -1,30 +1,8 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
-
-/**
- * Get organization ID for current user
- */
-async function getOrganizationId(): Promise<string> {
-  const { userId } = await auth()
-  
-  if (!userId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    select: { organizationId: true },
-  })
-
-  if (!user?.organizationId) {
-    throw new Error('User not associated with an organization')
-  }
-
-  return user.organizationId
-}
+import { getOrganizationId } from '@/lib/auth'
 
 // ============================================
 // BULK PAYOUT ACTIONS

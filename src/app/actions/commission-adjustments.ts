@@ -1,11 +1,11 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
 import { createAuditLog } from '@/lib/audit-log'
 import type { AdjustmentType } from '@prisma/client'
+import { getCurrentUserWithOrg } from '@/lib/auth'
 
 /**
  * Get organization ID and user info for current user
@@ -15,26 +15,7 @@ async function getCurrentUserContext(): Promise<{
   userId: string
   userName: string
 }> {
-  const { userId: clerkId } = await auth()
-
-  if (!clerkId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: {
-      id: true,
-      organizationId: true,
-      firstName: true,
-      lastName: true,
-    },
-  })
-
-  if (!user?.organizationId) {
-    throw new Error('User not associated with an organization')
-  }
-
+  const user = await getCurrentUserWithOrg()
   return {
     organizationId: user.organizationId,
     userId: user.id,

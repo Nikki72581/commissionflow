@@ -1,5 +1,5 @@
 // lib/auth.ts
-import { currentUser } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { cookies } from 'next/headers';
 import { db } from './db';
 import { redirect } from 'next/navigation';
@@ -55,10 +55,41 @@ export async function requireAdmin() {
 
 export async function getClerkUser() {
   const clerkUser = await currentUser();
-  
+
   if (!clerkUser) {
     redirect('/sign-in');
   }
 
   return clerkUser;
+}
+
+export async function getOrganizationId(): Promise<string> {
+  // Check for demo session first
+  const cookieStore = await cookies();
+  const demoCookie = cookieStore.get(DEMO_COOKIE_NAME);
+
+  if (demoCookie?.value === DEMO_COOKIE_VALUE) {
+    const demoOrg = await db.organization.findUnique({
+      where: { slug: DEMO_ORG_SLUG },
+      select: { id: true },
+    });
+    if (demoOrg) return demoOrg.id;
+  }
+
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error('Unauthorized');
+  }
+
+  const user = await db.user.findUnique({
+    where: { clerkId: userId },
+    select: { organizationId: true },
+  });
+
+  if (!user?.organizationId) {
+    throw new Error('User not associated with an organization');
+  }
+
+  return user.organizationId;
 }

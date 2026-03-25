@@ -1,9 +1,9 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
+import { getOrganizationId } from '@/lib/auth'
 
 const territorySchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name is too long'),
@@ -11,24 +11,6 @@ const territorySchema = z.object({
 })
 
 type TerritoryInput = z.infer<typeof territorySchema>
-
-async function getOrganizationId(): Promise<string> {
-  const { userId } = await auth()
-  if (!userId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    select: { organizationId: true },
-  })
-
-  if (!user) {
-    throw new Error('User not found')
-  }
-
-  return user.organizationId
-}
 
 export async function createTerritory(data: TerritoryInput) {
   try {

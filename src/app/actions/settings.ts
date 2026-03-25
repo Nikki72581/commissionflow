@@ -1,6 +1,5 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import {
@@ -10,6 +9,7 @@ import {
   type UpdateNotificationPreferencesInput
 } from '@/lib/validations/user'
 import { z } from 'zod'
+import { getCurrentUserWithOrg } from '@/lib/auth'
 
 const updateThemePreferenceSchema = z.object({
   themePreference: z.enum(['light', 'dark', 'system']),
@@ -27,21 +27,7 @@ type UpdateOrganizationSettingsInput = z.infer<typeof updateOrganizationSettings
  * Get current user for settings
  */
 async function getCurrentUser() {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
-
-  if (!user) {
-    throw new Error('User not found')
-  }
-
-  return user
+  return getCurrentUserWithOrg()
 }
 
 /**

@@ -1,20 +1,16 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/db'
 import { DateRange } from '@/lib/types'
 import { Prisma } from '@prisma/client'
+import { getOrganizationId } from '@/lib/auth'
 
 export async function getSalesByCategory(dateRange?: DateRange) {
   try {
-    const { userId, orgId } = await auth()
-
-    if (!userId || !orgId) {
-      return { success: false, error: 'Unauthorized' }
-    }
+    const organizationId = await getOrganizationId()
 
     const whereClause: Prisma.SalesTransactionWhereInput = {
-      organizationId: orgId,
+      organizationId,
       transactionType: 'SALE',
     }
 
@@ -71,14 +67,10 @@ export async function getSalesByCategory(dateRange?: DateRange) {
 
 export async function getSalesByTerritory(dateRange?: DateRange) {
   try {
-    const { userId, orgId } = await auth()
-
-    if (!userId || !orgId) {
-      return { success: false, error: 'Unauthorized' }
-    }
+    const organizationId = await getOrganizationId()
 
     const whereClause: Prisma.SalesTransactionWhereInput = {
-      organizationId: orgId,
+      organizationId,
       transactionType: 'SALE',
     }
 
@@ -130,14 +122,10 @@ export async function getSalesByTerritory(dateRange?: DateRange) {
 
 export async function getSalesByClientTier(dateRange?: DateRange) {
   try {
-    const { userId, orgId } = await auth()
-
-    if (!userId || !orgId) {
-      return { success: false, error: 'Unauthorized' }
-    }
+    const organizationId = await getOrganizationId()
 
     const whereClause: Prisma.SalesTransactionWhereInput = {
-      organizationId: orgId,
+      organizationId,
       transactionType: 'SALE',
     }
 

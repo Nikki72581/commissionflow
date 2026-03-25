@@ -1,59 +1,16 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { logBulkPayout } from '@/lib/audit-log'
 import { sendBulkPayoutNotifications } from '@/app/actions/email-notifications'
-
-/**
- * Get organization ID for current user
- */
-async function getOrganizationId(): Promise<string> {
-  const { userId } = await auth()
-  
-  if (!userId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    select: { organizationId: true },
-  })
-
-  if (!user?.organizationId) {
-    throw new Error('User not associated with an organization')
-  }
-
-  return user.organizationId
-}
+import { getOrganizationId, getCurrentUserWithOrg } from '@/lib/auth'
 
 /**
  * Get current user info for audit logging
  */
 async function getCurrentUserInfo() {
-  const { userId: clerkId } = await auth()
-  
-  if (!clerkId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      organizationId: true,
-    },
-  })
-
-  if (!user) {
-    throw new Error('User not found')
-  }
-
-  return user
+  return getCurrentUserWithOrg()
 }
 
 // ============================================

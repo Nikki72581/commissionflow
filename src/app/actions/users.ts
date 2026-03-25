@@ -3,28 +3,7 @@
 import { auth, clerkClient } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
-
-/**
- * Get organization ID for current user
- */
-async function getOrganizationId(): Promise<string> {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    select: { organizationId: true },
-  })
-
-  if (!user?.organizationId) {
-    throw new Error('User not associated with an organization')
-  }
-
-  return user.organizationId
-}
+import { getOrganizationId, getCurrentUserWithOrg } from '@/lib/auth'
 
 /**
  * Get all users in the organization
@@ -139,20 +118,7 @@ export async function getUsersByRole(role: 'ADMIN' | 'SALESPERSON') {
  * Check if current user is an admin
  */
 async function requireAdmin() {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    include: { organization: true },
-  })
-
-  if (!user) {
-    throw new Error('User not found')
-  }
+  const user = await getCurrentUserWithOrg()
 
   if (user.role !== 'ADMIN') {
     throw new Error('Admin access required')

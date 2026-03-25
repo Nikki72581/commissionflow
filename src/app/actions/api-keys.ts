@@ -1,10 +1,10 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { createApiKey, revokeApiKey } from '@/lib/api-key-service'
 import { createAuditLog } from '@/lib/audit-log'
+import { getCurrentUserWithOrg } from '@/lib/auth'
 
 async function getOrganizationId(): Promise<{
   organizationId: string
@@ -16,20 +16,7 @@ async function getOrganizationId(): Promise<{
     lastName: string | null
   }
 }> {
-  const { userId } = await auth()
-  if (!userId) throw new Error('Unauthorized')
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-    select: {
-      id: true,
-      organizationId: true,
-      role: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-    },
-  })
+  const user = await getCurrentUserWithOrg()
 
   if (!user?.organizationId)
     throw new Error('User not associated with organization')

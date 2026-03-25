@@ -1,6 +1,5 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/db'
 import type {
   CommissionCalculationTrace,
@@ -8,6 +7,7 @@ import type {
   CommissionAdjustmentTrace,
   ExplanationOptions,
 } from '@/types/commission-trace'
+import { getCurrentUserWithOrg } from '@/lib/auth'
 
 /**
  * Get current user with organization and role info
@@ -18,27 +18,9 @@ async function getCurrentUserWithRole(): Promise<{
   role: 'ADMIN' | 'SALESPERSON'
   dbUserId: string
 }> {
-  const { userId: clerkId } = await auth()
-
-  if (!clerkId) {
-    throw new Error('Unauthorized')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId },
-    select: {
-      id: true,
-      organizationId: true,
-      role: true,
-    },
-  })
-
-  if (!user?.organizationId) {
-    throw new Error('User not associated with an organization')
-  }
-
+  const user = await getCurrentUserWithOrg()
   return {
-    userId: clerkId,
+    userId: user.id,
     organizationId: user.organizationId,
     role: user.role,
     dbUserId: user.id,
