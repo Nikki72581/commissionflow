@@ -1,6 +1,6 @@
 // app/sign-in/[[...sign-in]]/page.tsx
 import { SignIn } from '@clerk/nextjs';
-import { DollarSign, Play } from 'lucide-react';
+import { DollarSign } from 'lucide-react';
 import Link from 'next/link';
 
 export default function SignInPage() {
@@ -22,24 +22,6 @@ export default function SignInPage() {
 
       <SignIn />
 
-      {/* Demo CTA */}
-      <div className="mt-6 flex flex-col items-center gap-3">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span className="h-px w-16 bg-border" />
-          <span>or</span>
-          <span className="h-px w-16 bg-border" />
-        </div>
-        <Link
-          href="/api/demo-login"
-          className="flex items-center gap-2 rounded-lg border border-border bg-background/80 px-5 py-2.5 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          <Play className="h-4 w-4 text-blue-500" />
-          View Demo — no sign-up required
-        </Link>
-        <p className="text-xs text-muted-foreground">
-          Explore with pre-loaded sample data. Changes are visible to everyone.
-        </p>
-      </div>
     </div>
   );
 }
